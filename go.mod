@@ -72,3 +72,5 @@ require (
 replace github.com/gobuffalo/pop/v5 => github.com/gobuffalo/pop/v5 v5.3.2-0.20201029132236-f36afb546df1
 
 replace github.com/ory/fosite v0.39.0 => ../ory-fosite
+
+replace github.com/ory/x v0.0.211 => ../ory-x

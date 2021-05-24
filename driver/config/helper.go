@@ -16,9 +16,9 @@ func MustValidate(l *logrusx.Logger, p *Provider) {
 			l.Fatalf(`Scheme from configuration key "%s" must be "https" unless --dangerous-force-http is passed but got scheme in value "%s" is "%s". To find out more, use "hydra help serve".`, KeyIssuerURL, p.IssuerURL().String(), p.IssuerURL().Scheme)
 		}
 
-		if len(p.InsecureRedirects()) > 0 {
-			l.Fatal(`Flag --dangerous-allow-insecure-redirect-urls can only be used in combination with flag --dangerous-force-http`)
-		}
+		//if len(p.InsecureRedirects()) > 0 {
+		//	l.Fatal(`Flag --dangerous-allow-insecure-redirect-urls can only be used in combination with flag --dangerous-force-http`)
+		//}
 	}
 }
 

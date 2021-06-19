@@ -435,6 +435,35 @@
           "additionalProperties": false,
           "description": "Configures the /.well-known/jwks.json endpoint.",
           "properties": {
+            "hsm": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Configures Hardware Security Module.",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "library": {
+                  "type": "string",
+                  "description": "Full pathname (including extension) of the PKCS#11 library"
+                },
+                "pin": {
+                  "type": "string"
+                },
+                "slot": {
+                  "type": "integer",
+                  "description": "Slot of the token to use (if label is not specified)"
+                },
+                "token-label": {
+                  "type": "string",
+                  "description": "Label of the token to use (if slot is not specified)"
+                },
+                "key-id": {
+                  "type": "string",
+                  "description": "Id of the RSA signing key"
+                }
+              }
+            },
             "broadcast_keys": {
               "type": "array",
               "description": "A list of JSON Web Keys that should be exposed at that endpoint. This is usually the public key for verifying OpenID Connect ID Tokens. However, you might want to add additional keys here as well.",

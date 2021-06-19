@@ -2,7 +2,9 @@ package driver
 
 import (
 	"context"
+	"crypto/rsa"
 	"fmt"
+	"github.com/ThalesIgnite/crypto11"
 	"net"
 	"net/http"
 	"strings"
@@ -50,6 +52,7 @@ type RegistryBase struct {
 	cv           *client.Validator
 	hh           *healthx.Handler
 	kg           map[string]jwk.KeyGenerator
+	hsm 		 *crypto11.Context
 	kc           *jwk.AEAD
 	cs           sessions.Store
 	csPrev       [][]byte
@@ -184,6 +187,38 @@ func (m *RegistryBase) KeyHandler() *jwk.Handler {
 		m.kh = jwk.NewHandler(m.r, m.C)
 	}
 	return m.kh
+}
+
+func (m *RegistryBase) HardwareSecurityModule() *crypto11.Context {
+	if m.hsm == nil && m.C.HsmEnabled() {
+		config11 := &crypto11.Config{
+			Path: m.C.HsmLibraryPath(),
+			Pin:  m.C.HsmPin(),
+		}
+
+		if m.C.HsmTokenLabel() != "" {
+			config11.TokenLabel = m.C.HsmTokenLabel()
+		} else {
+			config11.SlotNumber = m.C.HsmSlotNumber()
+		}
+
+		ctx11, err := crypto11.Configure(config11)
+		if err != nil {
+			m.Logger().WithError(err).Fatalf("Unable to configure Hardware Security Module. HSM library path: %s, slot: %v, token: %s",
+				m.C.HsmLibraryPath(), m.C.HsmSlotNumber(), m.C.HsmTokenLabel())
+		}
+
+		if signingKey, err := ctx11.FindKeyPair([]byte(m.C.HsmKeyId()), nil); signingKey == nil || err != nil {
+			m.Logger().WithError(err).Fatalf("Signing key with CKA_ID '%s' is not found. HSM library path: %s, slot: %v, token: %s",
+				m.C.HsmKeyId(), m.C.HsmLibraryPath(), m.C.HsmSlotNumber(), m.C.HsmTokenLabel())
+		} else if _, ok := signingKey.Public().(*rsa.PublicKey); !ok {
+			m.Logger().Fatalf("Signing key with CKA_ID '%s' is not an RSA Key. HSM library path: %s, slot: %v, token: %s",
+				m.C.HsmKeyId(), m.C.HsmLibraryPath(), m.C.HsmSlotNumber(), m.C.HsmTokenLabel())
+		}
+
+		m.hsm = ctx11
+	}
+	return m.hsm
 }
 
 func (m *RegistryBase) HealthHandler() *healthx.Handler {
@@ -344,18 +379,20 @@ func (m *RegistryBase) ScopeStrategy() fosite.ScopeStrategy {
 }
 
 func (m *RegistryBase) newKeyStrategy(key string) (s jwk.JWTStrategy) {
-	if err := jwk.EnsureAsymmetricKeypairExists(context.Background(), m.r, new(jwk.RS256Generator), key); err != nil {
-		var netError net.Error
-		if errors.As(err, &netError) {
-			m.Logger().WithError(err).Fatalf(`Could not ensure that signing keys for "%s" exists. A network error occurred, see error for specific details.`, key)
-			return
-		}
+	if !m.C.HsmEnabled() {
+		if err := jwk.EnsureAsymmetricKeypairExists(context.Background(), m.r, new(jwk.RS256Generator), key); err != nil {
+			var netError net.Error
+			if errors.As(err, &netError) {
+				m.Logger().WithError(err).Fatalf(`Could not ensure that signing keys for "%s" exists. A network error occurred, see error for specific details.`, key)
+				return
+			}
 
-		m.Logger().WithError(err).Fatalf(`Could not ensure that signing keys for "%s" exists. If you are running against a persistent SQL database this is most likely because your "secrets.system" ("SECRETS_SYSTEM" environment variable) is not set or changed. When running with an SQL database backend you need to make sure that the secret is set and stays the same, unless when doing key rotation. This may also happen when you forget to run "hydra migrate sql"..`, key)
+			m.Logger().WithError(err).Fatalf(`Could not ensure that signing keys for "%s" exists. If you are running against a persistent SQL database this is most likely because your "secrets.system" ("SECRETS_SYSTEM" environment variable) is not set or changed. When running with an SQL database backend you need to make sure that the secret is set and stays the same, unless when doing key rotation. This may also happen when you forget to run "hydra migrate sql"..`, key)
+		}
 	}
 
 	if err := resilience.Retry(m.Logger(), time.Second*15, time.Minute*15, func() (err error) {
-		s, err = jwk.NewRS256JWTStrategy(m.r, func() string {
+		s, err = jwk.NewRS256JWTStrategy(*m.C, m.r, func() string {
 			return key
 		})
 		return err

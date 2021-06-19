@@ -90,20 +90,35 @@ func (h *Handler) SetRoutes(admin *x.RouterAdmin, public *x.RouterPublic, corsMi
 func (h *Handler) WellKnown(w http.ResponseWriter, r *http.Request) {
 	var jwks jose.JSONWebKeySet
 
-	for _, set := range stringslice.Unique(h.c.WellKnownKeys()) {
-		keys, err := h.r.KeyManager().GetKeySet(r.Context(), set)
-		if err != nil {
+	if h.c.HsmEnabled() {
+		if keyPair, err := h.r.HardwareSecurityModule().FindKeyPair([]byte(h.c.HsmKeyId()), nil); err != nil {
 			h.r.Writer().WriteError(w, r, err)
 			return
+		} else {
+			keys := &jose.JSONWebKeySet{Keys: []jose.JSONWebKey{{
+				Algorithm: "RS256",
+				Use:       "sig",
+				Key:       keyPair.Public(),
+				KeyID:     "public:" + h.c.HsmKeyId(),
+			}}}
+			jwks.Keys = append(jwks.Keys, keys.Keys...)
 		}
+	} else {
+		for _, set := range stringslice.Unique(h.c.WellKnownKeys()) {
+			keys, err := h.r.KeyManager().GetKeySet(r.Context(), set)
+			if err != nil {
+				h.r.Writer().WriteError(w, r, err)
+				return
+			}
 
-		keys, err = FindKeysByPrefix(keys, "public")
-		if err != nil {
-			h.r.Writer().WriteError(w, r, err)
-			return
+			keys, err = FindKeysByPrefix(keys, "public")
+			if err != nil {
+				h.r.Writer().WriteError(w, r, err)
+				return
+			}
+
+			jwks.Keys = append(jwks.Keys, keys.Keys...)
 		}
-
-		jwks.Keys = append(jwks.Keys, keys.Keys...)
 	}
 
 	h.r.Writer().Write(w, r, &jwks)

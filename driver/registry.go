@@ -19,6 +19,7 @@ import (
 	"github.com/ory/x/dbal"
 	"github.com/ory/x/healthx"
 
+	"github.com/ThalesIgnite/crypto11"
 	"github.com/ory/hydra/client"
 	"github.com/ory/hydra/consent"
 	"github.com/ory/hydra/driver/config"
@@ -50,6 +51,7 @@ type Registry interface {
 	RegisterRoutes(admin *x.RouterAdmin, public *x.RouterPublic)
 	ClientHandler() *client.Handler
 	KeyHandler() *jwk.Handler
+	HardwareSecurityModule() *crypto11.Context
 	ConsentHandler() *consent.Handler
 	OAuth2Handler() *oauth2.Handler
 	HealthHandler() *healthx.Handler
@@ -86,6 +88,7 @@ func CallRegistry(ctx context.Context, r Registry) {
 	r.ConsentManager()
 	r.ConsentStrategy()
 	r.SubjectIdentifierAlgorithm()
+	r.HardwareSecurityModule()
 	r.KeyManager()
 	r.KeyGenerators()
 	r.KeyCipher()

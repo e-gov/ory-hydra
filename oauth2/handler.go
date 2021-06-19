@@ -227,32 +227,34 @@ func (h *Handler) LogoutHandler(w http.ResponseWriter, r *http.Request, ps httpr
 //       500: genericError
 func (h *Handler) WellKnownHandler(w http.ResponseWriter, r *http.Request) {
 	h.r.Writer().Write(w, r, &WellKnown{
-		Issuer:                                 strings.TrimRight(h.c.IssuerURL().String(), "/") + "/",
+		Issuer:                                 strings.TrimRight(h.c.IssuerURL().String(), "/"),
 		AuthURL:                                h.c.OAuth2AuthURL().String(),
 		TokenURL:                               h.c.OAuth2TokenURL().String(),
 		JWKsURI:                                h.c.JWKSURL().String(),
-		RevocationEndpoint:                     urlx.AppendPaths(h.c.IssuerURL(), RevocationPath).String(),
+		//RevocationEndpoint:                     urlx.AppendPaths(h.c.IssuerURL(), RevocationPath).String(),
 		RegistrationEndpoint:                   h.c.OAuth2ClientRegistrationURL().String(),
 		SubjectTypes:                           h.c.SubjectTypesSupported(),
-		ResponseTypes:                          []string{"code", "code id_token", "id_token", "token id_token", "token", "token id_token code"},
+		ResponseTypes:                          []string{"code"},
 		ClaimsSupported:                        h.c.OIDCDiscoverySupportedClaims(),
 		ScopesSupported:                        h.c.OIDCDiscoverySupportedScope(),
 		UserinfoEndpoint:                       h.c.OIDCDiscoveryUserinfoEndpoint().String(),
-		TokenEndpointAuthMethodsSupported:      []string{"client_secret_post", "client_secret_basic", "private_key_jwt", "none"},
+		TokenEndpointAuthMethodsSupported:      []string{"client_secret_basic"},
 		IDTokenSigningAlgValuesSupported:       []string{"RS256"},
-		GrantTypesSupported:                    []string{"authorization_code", "implicit", "client_credentials", "refresh_token"},
-		ResponseModesSupported:                 []string{"query", "fragment"},
-		UserinfoSigningAlgValuesSupported:      []string{"none", "RS256"},
-		RequestParameterSupported:              true,
-		RequestURIParameterSupported:           true,
-		RequireRequestURIRegistration:          true,
-		BackChannelLogoutSupported:             true,
-		BackChannelLogoutSessionSupported:      true,
-		FrontChannelLogoutSupported:            true,
-		FrontChannelLogoutSessionSupported:     true,
-		EndSessionEndpoint:                     urlx.AppendPaths(h.c.IssuerURL(), LogoutPath).String(),
-		RequestObjectSigningAlgValuesSupported: []string{"RS256", "none"},
-		CodeChallengeMethodsSupported:          []string{"plain", "S256"},
+		GrantTypesSupported:                    []string{"authorization_code"},
+		ClaimTypesSupported:                    []string{"normal"},
+		UiLocalesSupported:                     []string{"et", "en", "ru"},
+		//ResponseModesSupported:                 []string{"query", "fragment"},
+		//UserinfoSigningAlgValuesSupported:      []string{"none", "RS256"},
+		//RequestParameterSupported:              true,
+		//RequestURIParameterSupported:           true,
+		//RequireRequestURIRegistration:          true,
+		//BackChannelLogoutSupported:             true,
+		//BackChannelLogoutSessionSupported:      true,
+		//FrontChannelLogoutSupported:            true,
+		//FrontChannelLogoutSessionSupported:     true,
+		//EndSessionEndpoint:                     urlx.AppendPaths(h.c.IssuerURL(), LogoutPath).String(),
+		//RequestObjectSigningAlgValuesSupported: []string{"RS256", "none"},
+		//CodeChallengeMethodsSupported:          []string{"plain", "S256"},
 	})
 }
 
@@ -307,6 +309,8 @@ func (h *Handler) UserinfoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	interim := ar.GetSession().(*Session).IDTokenClaims().ToMap()
+	interim["auth_time"] = interim["iat"]
+
 	delete(interim, "nonce")
 	delete(interim, "at_hash")
 	delete(interim, "c_hash")
@@ -314,22 +318,34 @@ func (h *Handler) UserinfoHandler(w http.ResponseWriter, r *http.Request) {
 	delete(interim, "sid")
 	delete(interim, "jti")
 
-	aud, ok := interim["aud"].([]string)
-	if !ok || len(aud) == 0 {
-		aud = []string{c.GetID()}
-	} else {
-		found := false
-		for _, a := range aud {
-			if a == c.GetID() {
-				found = true
-				break
-			}
-		}
-		if !found {
-			aud = append(aud, c.GetID())
-		}
+	//aud, ok := interim["aud"].([]string)
+	//if !ok || len(aud) == 0 {
+	//	aud = []string{c.GetID()}
+	//} else {
+	//	found := false
+	//	for _, a := range aud {
+	//		if a == c.GetID() {
+	//			found = true
+	//			break
+	//		}
+	//	}
+	//	if !found {
+	//		aud = append(aud, c.GetID())
+	//	}
+	//}
+	//interim["aud"] = aud
+
+	delete(interim, "state")
+	delete(interim, "iat")
+	delete(interim, "iss")
+	delete(interim, "nbf")
+	delete(interim, "aud")
+
+	profileAttributes := interim["profile_attributes"].(map[string]interface{})
+	for key, element := range profileAttributes {
+		interim[key] = element
 	}
-	interim["aud"] = aud
+	delete(interim, "profile_attributes")
 
 	if c.UserinfoSignedResponseAlg == "RS256" {
 		interim["jti"] = uuid.New()
@@ -493,7 +509,7 @@ func (h *Handler) IntrospectHandler(w http.ResponseWriter, r *http.Request, _ ht
 		Username:          session.GetUsername(),
 		Extra:             session.Extra,
 		Audience:          audience,
-		Issuer:            strings.TrimRight(h.c.IssuerURL().String(), "/") + "/",
+		Issuer:            strings.TrimRight(h.c.IssuerURL().String(), "/"),
 		ObfuscatedSubject: obfuscated,
 		TokenType:         resp.GetAccessTokenType(),
 		TokenUse:          string(resp.GetTokenUse()),
@@ -601,7 +617,7 @@ func (h *Handler) TokenHandler(w http.ResponseWriter, r *http.Request) {
 		session.Subject = accessRequest.GetClient().GetID()
 		session.ClientID = accessRequest.GetClient().GetID()
 		session.KID = accessTokenKeyID
-		session.DefaultSession.Claims.Issuer = strings.TrimRight(h.c.IssuerURL().String(), "/") + "/"
+		session.DefaultSession.Claims.Issuer = strings.TrimRight(h.c.IssuerURL().String(), "/")
 		session.DefaultSession.Claims.IssuedAt = time.Now().UTC()
 
 		var scopes = accessRequest.GetRequestedScopes()
@@ -633,6 +649,12 @@ func (h *Handler) TokenHandler(w http.ResponseWriter, r *http.Request) {
 		h.r.OAuth2Provider().WriteAccessError(w, accessRequest, err)
 		return
 	}
+
+	h.r.Logger().
+		WithField("tara.session.oidc.state", accessRequest.GetSession().(*Session).IDTokenClaims().Get("state")).
+		WithField("tara.session.oidc.id_token", accessResponse.GetExtra("id_token")).
+		WithField("tara.session.oidc.scope", accessResponse.GetExtra("scope")).
+		Infoln("ID-Token response")
 
 	h.r.OAuth2Provider().WriteAccessResponse(w, accessRequest, accessResponse)
 }
@@ -716,7 +738,7 @@ func (h *Handler) AuthHandler(w http.ResponseWriter, r *http.Request, _ httprout
 	authorizeRequest.SetID(session.ID)
 	claims := &jwt.IDTokenClaims{
 		Subject: session.ConsentRequest.SubjectIdentifier,
-		Issuer:  strings.TrimRight(h.c.IssuerURL().String(), "/") + "/",
+		Issuer:  strings.TrimRight(h.c.IssuerURL().String(), "/"),
 
 		AuthTime:                            time.Time(session.AuthenticatedAt),
 		RequestedAt:                         session.RequestedAt,
@@ -725,13 +747,13 @@ func (h *Handler) AuthHandler(w http.ResponseWriter, r *http.Request, _ httprout
 
 		// These are required for work around https://github.com/ory/fosite/issues/530
 		Nonce:    authorizeRequest.GetRequestForm().Get("nonce"),
-		Audience: []string{authorizeRequest.GetClient().GetID()},
+		Audience: authorizeRequest.GetClient().GetID(),
 		IssuedAt: time.Now().Truncate(time.Second).UTC(),
 
 		// This is set by the fosite strategy
 		// ExpiresAt:   time.Now().Add(h.IDTokenLifespan).UTC(),
 	}
-	claims.Add("sid", session.ConsentRequest.LoginSessionID)
+	//claims.Add("sid", session.ConsentRequest.LoginSessionID)
 
 	// done
 	response, err := h.r.OAuth2Provider().NewAuthorizeResponse(ctx, authorizeRequest, &Session{

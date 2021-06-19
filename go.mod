@@ -78,4 +78,4 @@ require (
 	gopkg.in/square/go-jose.v2 v2.5.1
 )
 
-replace github.com/ory/fosite v0.40.2 => ../ory-fosite-dev
+replace github.com/ory/fosite v0.40.2 => ../ory-fosite

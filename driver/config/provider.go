@@ -444,7 +444,7 @@ func (p *Provider) HsmLibraryPath() string {
 }
 
 func (p *Provider) HsmSlotNumber() *int {
-	n := p.p.Int(HsmSlotNumber) // TODO:
+	n := p.p.Int(HsmSlotNumber)
 	return &n
 }
 

@@ -204,16 +204,16 @@ func (m *RegistryBase) HardwareSecurityModule() *crypto11.Context {
 
 		ctx11, err := crypto11.Configure(config11)
 		if err != nil {
-			m.Logger().WithError(err).Fatalf("Unable to configure Hardware Security Module. HSM library path: %s, slot: %v, token: %s",
-				m.C.HsmLibraryPath(), m.C.HsmSlotNumber(), m.C.HsmTokenLabel())
+			m.Logger().WithError(err).Fatalf("Unable to configure Hardware Security Module. HSM library path: %s, slot: %v, token: %s, key id: %s",
+				m.C.HsmLibraryPath(), *m.C.HsmSlotNumber(), m.C.HsmTokenLabel(), m.C.HsmKeyId())
 		}
 
 		if signingKey, err := ctx11.FindKeyPair([]byte(m.C.HsmKeyId()), nil); signingKey == nil || err != nil {
 			m.Logger().WithError(err).Fatalf("Signing key with CKA_ID '%s' is not found. HSM library path: %s, slot: %v, token: %s",
-				m.C.HsmKeyId(), m.C.HsmLibraryPath(), m.C.HsmSlotNumber(), m.C.HsmTokenLabel())
+				m.C.HsmKeyId(), m.C.HsmLibraryPath(), *m.C.HsmSlotNumber(), m.C.HsmTokenLabel())
 		} else if _, ok := signingKey.Public().(*rsa.PublicKey); !ok {
 			m.Logger().Fatalf("Signing key with CKA_ID '%s' is not an RSA Key. HSM library path: %s, slot: %v, token: %s",
-				m.C.HsmKeyId(), m.C.HsmLibraryPath(), m.C.HsmSlotNumber(), m.C.HsmTokenLabel())
+				m.C.HsmKeyId(), m.C.HsmLibraryPath(), *m.C.HsmSlotNumber(), m.C.HsmTokenLabel())
 		}
 
 		m.hsm = ctx11

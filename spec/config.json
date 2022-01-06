@@ -447,6 +447,61 @@
         }
       }
     },
+    "client.tls": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Configures http client TLS settings.",
+      "properties": {
+        "min_version": {
+          "type": "string",
+          "description": "Minimum supported TLS version.",
+          "examples": [
+            "tls10","tls11","tls12","tls13"
+          ]
+        },
+        "max_version": {
+          "type": "string",
+          "description": "Maximum supported TLS version.",
+          "examples": [
+            "tls10","tls11","tls12","tls13"
+          ]
+        },
+        "cipher_suites": {
+          "type": "array",
+          "description": "A list of supported cipher suites.",
+          "items": {
+            "type": "string"
+          },
+          "examples": [
+            "TLS_RSA_WITH_RC4_128_SHA",
+            "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+            "TLS_RSA_WITH_AES_128_CBC_SHA",
+            "TLS_RSA_WITH_AES_256_CBC_SHA",
+            "TLS_RSA_WITH_AES_128_CBC_SHA256",
+            "TLS_RSA_WITH_AES_128_GCM_SHA256",
+            "TLS_RSA_WITH_AES_256_GCM_SHA384",
+            "TLS_ECDHE_ECDSA_WITH_RC4_128_SHA",
+            "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
+            "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
+            "TLS_ECDHE_RSA_WITH_RC4_128_SHA",
+            "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA",
+            "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+            "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+            "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256",
+            "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
+            "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+            "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+            "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+            "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+            "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305",
+            "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305",
+            "TLS_AES_128_GCM_SHA256",
+            "TLS_AES_256_GCM_SHA384",
+            "TLS_CHACHA20_POLY1305_SHA256"
+          ]
+        }
+      }
+    },
     "dsn": {
       "type": "string",
       "description": "Sets the data source name. This configures the backend where Ory Hydra persists data. If dsn is \"memory\", data will be written to memory and is lost when you restart this instance. Ory Hydra supports popular SQL databases. For more detailed configuration information go to: https://www.ory.sh/docs/hydra/dependencies-environment#sql"

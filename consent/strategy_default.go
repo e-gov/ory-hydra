@@ -22,10 +22,12 @@ package consent
 
 import (
 	"context"
+	"crypto/tls"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ory/hydra/driver/config"
@@ -66,17 +68,20 @@ const (
 )
 
 type DefaultStrategy struct {
-	c *config.Provider
-	r InternalRegistry
+	c               *config.Provider
+	r               InternalRegistry
+	tlsClientConfig *tls.Config
 }
 
-func NewStrategy(
-	r InternalRegistry,
-	c *config.Provider,
-) *DefaultStrategy {
+func NewStrategy(r InternalRegistry, c *config.Provider) *DefaultStrategy {
+	clientConfig, err := c.TLSClientConfig()
+	if err != nil {
+		r.Logger().WithError(err).Fatalf("Unable to setup backchannel logout request client TLS configuration.")
+	}
 	return &DefaultStrategy{
-		c: c,
-		r: r,
+		c:               c,
+		r:               r,
+		tlsClientConfig: clientConfig,
 	}
 }
 
@@ -731,7 +736,15 @@ func (s *DefaultStrategy) executeBackChannelLogout(ctx context.Context, r *http.
 		tasks = append(tasks, task{url: c.BackChannelLogoutURI, clientID: c.ClientID, token: t})
 	}
 
-	hc := httpx.NewResilientClient()
+	var wg sync.WaitGroup
+	hc := httpx.NewResilientClient(
+		httpx.ResilientClientWithClient(&http.Client{
+			Timeout: time.Minute,
+			Transport: &http.Transport{
+				TLSClientConfig: s.tlsClientConfig,
+			},
+		}))
+	wg.Add(len(tasks))
 
 	var execute = func(t task) {
 		log := s.r.Logger().WithRequest(r).

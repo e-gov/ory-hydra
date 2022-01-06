@@ -70,7 +70,8 @@ func (h *Handler) SetRoutes(admin *x.RouterAdmin) {
 	admin.PUT(ConsentPath+"/accept", h.AcceptConsentRequest)
 	admin.PUT(ConsentPath+"/reject", h.RejectConsentRequest)
 
-	admin.DELETE(SessionsPath+"/login", h.DeleteLoginSession)
+	admin.DELETE(SessionsPath+"/login/:id", h.DeleteLoginSession)
+	admin.DELETE(SessionsPath+"/login", h.DeleteSubjectLoginSession)
 	admin.GET(SessionsPath+"/consent", h.GetConsentSessions)
 	admin.DELETE(SessionsPath+"/consent", h.DeleteConsentSession)
 
@@ -214,6 +215,38 @@ func (h *Handler) GetConsentSessions(w http.ResponseWriter, r *http.Request, ps 
 	h.r.Writer().Write(w, r, a)
 }
 
+// swagger:route DELETE /oauth2/auth/sessions/login/{id} admin revokeAuthenticationSession
+//
+// Invalidates an Authentication Session
+//
+// This endpoint invalidates an authentication session by session id. After revoking the authentication session, the subject
+// has to re-authenticate at ORY Hydra. This endpoint does not invalidate any tokens and does not work with OpenID Connect
+// Front- or Back-channel logout.
+//
+//
+//     Consumes:
+//     - application/json
+//
+//     Produces:
+//     - application/json
+//
+//     Schemes: http, https
+//
+//     Responses:
+//       204: emptyResponse
+//       400: jsonError
+//       500: jsonError
+func (h *Handler) DeleteLoginSession(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	var loginSessionId = ps.ByName("id")
+
+	if err := h.r.ConsentManager().DeleteLoginSession(r.Context(), loginSessionId); err != nil && !errors.Is(err, x.ErrNotFound) {
+		h.r.Writer().WriteError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // swagger:route DELETE /oauth2/auth/sessions/login admin revokeAuthenticationSession
 //
 // Invalidates All Login Sessions of a Certain User
@@ -236,7 +269,7 @@ func (h *Handler) GetConsentSessions(w http.ResponseWriter, r *http.Request, ps 
 //       204: emptyResponse
 //       400: jsonError
 //       500: jsonError
-func (h *Handler) DeleteLoginSession(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (h *Handler) DeleteSubjectLoginSession(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	subject := r.URL.Query().Get("subject")
 	if subject == "" {
 		h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrInvalidRequest.WithHint(`Query parameter 'subject' is not defined but should have been.`)))

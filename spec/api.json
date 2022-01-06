@@ -3186,6 +3186,52 @@
         ]
       }
     },
+    "/oauth2/auth/sessions/login/{id}": {
+      "delete": {
+        "description": "This endpoint invalidates an authentication session by session id. After revoking the authentication session, the subject\nhas to re-authenticate at ORY Hydra. This endpoint does not invalidate any tokens and does not work with OpenID Connect\nFront- or Back-channel logout.",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "schemes": [
+          "http",
+          "https"
+        ],
+        "tags": [
+          "admin"
+        ],
+        "summary": "Invalidates an Authentication Session",
+        "operationId": "revokeAuthenticationSessionById",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "The id of the login session",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Empty responses are sent when, for example, resources are deleted. The HTTP status code for empty responses is\ntypically 201."
+          },
+          "400": {
+            "description": "jsonError",
+            "schema": {
+              "$ref": "#/definitions/jsonError"
+            }
+          },
+          "500": {
+            "description": "jsonError",
+            "schema": {
+              "$ref": "#/definitions/jsonError"
+            }
+          }
+        }
+      }
+    },
     "/oauth2/auth/sessions/login": {
       "delete": {
         "description": "This endpoint invalidates a subject's authentication session. After revoking the authentication session, the subject\nhas to re-authenticate at ORY Hydra. This endpoint does not invalidate any tokens and does not work with OpenID Connect\nFront- or Back-channel logout.",

@@ -27,6 +27,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	"github.com/pborman/uuid"
+
+	"github.com/ory/x/sqlxx"
 
 	"github.com/ory/hydra/x"
 
@@ -212,4 +217,33 @@ func TestGetConsentRequest(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDeleteLoginSession(t *testing.T) {
+	conf := internal.NewConfigurationWithDefaults()
+	reg := internal.NewRegistryMemory(t, conf)
+	loginSessionId := uuid.NewUUID().String()
+	require.NoError(t, reg.ConsentManager().CreateLoginSession(context.Background(), &LoginSession{
+		ID:              loginSessionId,
+		AuthenticatedAt: sqlxx.NullTime(time.Now().Round(time.Second).UTC()),
+		Subject:         fmt.Sprintf("subject-%s", loginSessionId),
+		Remember:        true,
+	}))
+	h := NewHandler(reg, conf)
+	r := x.NewRouterAdmin()
+	h.SetRoutes(r)
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+	_, err := reg.ConsentManager().GetRememberedLoginSession(context.Background(), loginSessionId)
+	require.NoError(t, err)
+	c := &http.Client{}
+
+	req, err := http.NewRequest("DELETE", ts.URL+SessionsPath+"/login/"+loginSessionId, nil)
+
+	require.NoError(t, err)
+	resp, err := c.Do(req)
+	require.NoError(t, err)
+	require.EqualValues(t, http.StatusNoContent, resp.StatusCode)
+	_, err = reg.ConsentManager().GetRememberedLoginSession(context.Background(), loginSessionId)
+	require.EqualError(t, err, x.ErrNotFound.Error())
 }

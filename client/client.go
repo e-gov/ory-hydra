@@ -245,6 +245,15 @@ type Client struct {
 	RefreshTokenGrantRefreshTokenLifespan x.NullDuration `json:"refresh_token_grant_refresh_token_lifespan,omitempty" db:"refresh_token_grant_refresh_token_lifespan"`
 }
 
+type AuthenticatedClient struct {
+	ClientID                          string `json:"client_id" db:"id"`
+	FrontChannelLogoutURI             string `json:"frontchannel_logout_uri,omitempty" db:"frontchannel_logout_uri"`
+	FrontChannelLogoutSessionRequired bool   `json:"frontchannel_logout_session_required,omitempty" db:"frontchannel_logout_session_required"`
+	BackChannelLogoutURI              string `json:"backchannel_logout_uri,omitempty" db:"backchannel_logout_uri"`
+	BackChannelLogoutSessionRequired  bool   `json:"backchannel_logout_session_required,omitempty" db:"backchannel_logout_session_required"`
+	LoginSessionID                    string `json:"login_session_id,omitempty" db:"login_session_id"`
+}
+
 func (Client) TableName() string {
 	return "hydra_client"
 }

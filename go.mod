@@ -35,6 +35,7 @@ require (
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/gtank/cryptopasta v0.0.0-20170601214702-1f550f6f2f69
 	github.com/hashicorp/go-cleanhttp v0.5.2
+	github.com/hashicorp/go-secure-stdlib/tlsutil v0.1.1
 	github.com/jackc/pgx/v4 v4.13.0
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/julienschmidt/httprouter v1.3.0

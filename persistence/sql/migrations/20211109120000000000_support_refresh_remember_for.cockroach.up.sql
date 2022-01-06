@@ -1,0 +1,1 @@
+ALTER TABLE hydra_oauth2_authentication_request_handled ADD refresh_remember_for BOOLEAN NOT NULL DEFAULT FALSE;

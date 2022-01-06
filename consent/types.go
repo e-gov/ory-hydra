@@ -296,6 +296,9 @@ type HandledLoginRequest struct {
 	// authorization will be remembered for the duration of the browser session (using a session cookie).
 	RememberFor int `json:"remember_for" db:"remember_for"`
 
+	// RefreshRememberFor, if set to true, session cookie expiry time will be reset when session is refreshed.
+	RefreshRememberFor bool `json:"refresh_remember_for" db:"refresh_remember_for"`
+
 	// ACR sets the Authentication AuthorizationContext Class Reference value for this authentication session. You can use it
 	// to express that, for example, a user authenticated using two factor authentication.
 	ACR string `json:"acr" db:"acr"`

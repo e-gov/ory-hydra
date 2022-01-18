@@ -414,7 +414,7 @@ func (p *Provider) OIDCDiscoverySupportedClaims() []string {
 func (p *Provider) OIDCDiscoverySupportedScope() []string {
 	return stringslice.Unique(
 		append(
-			[]string{"offline_access", "offline", "openid"},
+			[]string{"openid"},
 			p.p.Strings(KeyOIDCDiscoverySupportedScope)...,
 		),
 	)

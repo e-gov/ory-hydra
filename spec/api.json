@@ -1008,6 +1008,13 @@
       "oidcConfiguration": {
         "description": "Includes links to several endpoints (for example `/oauth2/token`) and exposes information on supported signature algorithms\namong others.",
         "properties": {
+          "acr_values_supported": {
+            "description": "OpenID Connect Supported Authentication Context Class Reference values\n\nJSON array containing a list of the Authentication Context Class References that this OP supports.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "authorization_endpoint": {
             "description": "OAuth 2.0 Authorization Endpoint URL",
             "example": "https://playground.ory.sh/ory-hydra/public/oauth2/auth",
@@ -1020,6 +1027,13 @@
           "backchannel_logout_supported": {
             "description": "OpenID Connect Back-Channel Logout Supported\n\nBoolean value specifying whether the OP supports back-channel logout, with true indicating support.",
             "type": "boolean"
+          },
+          "claim_types_supported": {
+            "description": "OpenID Connect Supported Claim Types\n\nJSON array containing a list of the Claim Types that the OpenID Provider supports. These Claim Types are\ndescribed in Section 5.6 of OpenID Connect Core 1.0 [OpenID.Core]. Values defined by this specification are\nnormal, aggregated, and distributed. If omitted, the implementation supports only normal Claims.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
           },
           "claims_parameter_supported": {
             "description": "OpenID Connect Claims Parameter Parameter Supported\n\nBoolean value specifying whether the OP supports use of the claims parameter, with true indicating support.",
@@ -1131,6 +1145,10 @@
             },
             "type": "array"
           },
+          "service_documentation": {
+            "description": "OpenID Provider documentation URL\n\nURL of a page containing human-readable information that developers might want or need to know when using the\nOpenID Provider. In particular, if the OpenID Provider does not support Dynamic Client Registration, then\ninformation on how to register Clients needs to be provided in this documentation.",
+            "type": "string"
+          },
           "subject_types_supported": {
             "description": "OpenID Connect Supported Subject Types\n\nJSON array containing a list of the Subject Identifier types that this OP supports. Valid types include\npairwise and public.",
             "items": {
@@ -1145,6 +1163,13 @@
           },
           "token_endpoint_auth_methods_supported": {
             "description": "OAuth 2.0 Supported Client Authentication Methods\n\nJSON array containing a list of Client Authentication methods supported by this Token Endpoint. The options are\nclient_secret_post, client_secret_basic, client_secret_jwt, and private_key_jwt, as described in Section 9 of OpenID Connect Core 1.0",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "ui_locales_supported": {
+            "description": "OpenID Connect Supported UI Locales\n\nJSON array containing a list of the UI locales that this OP supports.",
             "items": {
               "type": "string"
             },
@@ -1176,9 +1201,7 @@
           "jwks_uri",
           "subject_types_supported",
           "response_types_supported",
-          "id_token_signing_alg_values_supported",
-          "id_token_signed_response_alg",
-          "userinfo_signed_response_alg"
+          "id_token_signing_alg_values_supported"
         ],
         "title": "OpenID Connect Discovery Metadata",
         "type": "object"

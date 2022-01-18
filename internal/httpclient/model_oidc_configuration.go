@@ -17,12 +17,16 @@ import (
 
 // OidcConfiguration Includes links to several endpoints (for example `/oauth2/token`) and exposes information on supported signature algorithms among others.
 type OidcConfiguration struct {
+	// OpenID Connect Supported Authentication Context Class Reference values  JSON array containing a list of the Authentication Context Class References that this OP supports.
+	AcrValuesSupported []string `json:"acr_values_supported,omitempty"`
 	// OAuth 2.0 Authorization Endpoint URL
 	AuthorizationEndpoint string `json:"authorization_endpoint"`
 	// OpenID Connect Back-Channel Logout Session Required  Boolean value specifying whether the OP can pass a sid (session ID) Claim in the Logout Token to identify the RP session with the OP. If supported, the sid Claim is also included in ID Tokens issued by the OP
 	BackchannelLogoutSessionSupported *bool `json:"backchannel_logout_session_supported,omitempty"`
 	// OpenID Connect Back-Channel Logout Supported  Boolean value specifying whether the OP supports back-channel logout, with true indicating support.
 	BackchannelLogoutSupported *bool `json:"backchannel_logout_supported,omitempty"`
+	// OpenID Connect Supported Claim Types  JSON array containing a list of the Claim Types that the OpenID Provider supports. These Claim Types are described in Section 5.6 of OpenID Connect Core 1.0 [OpenID.Core]. Values defined by this specification are normal, aggregated, and distributed. If omitted, the implementation supports only normal Claims.
+	ClaimTypesSupported []string `json:"claim_types_supported,omitempty"`
 	// OpenID Connect Claims Parameter Parameter Supported  Boolean value specifying whether the OP supports use of the claims parameter, with true indicating support.
 	ClaimsParameterSupported *bool `json:"claims_parameter_supported,omitempty"`
 	// OpenID Connect Supported Claims  JSON array containing a list of the Claim Names of the Claims that the OpenID Provider MAY be able to supply values for. Note that for privacy or other reasons, this might not be an exhaustive list.
@@ -38,7 +42,7 @@ type OidcConfiguration struct {
 	// OAuth 2.0 Supported Grant Types  JSON array containing a list of the OAuth 2.0 Grant Type values that this OP supports.
 	GrantTypesSupported []string `json:"grant_types_supported,omitempty"`
 	// OpenID Connect Default ID Token Signing Algorithms  Algorithm used to sign OpenID Connect ID Tokens.
-	IdTokenSignedResponseAlg []string `json:"id_token_signed_response_alg"`
+	IdTokenSignedResponseAlg []string `json:"id_token_signed_response_alg,omitempty"`
 	// OpenID Connect Supported ID Token Signing Algorithms  JSON array containing a list of the JWS signing algorithms (alg values) supported by the OP for the ID Token to encode the Claims in a JWT.
 	IdTokenSigningAlgValuesSupported []string `json:"id_token_signing_alg_values_supported"`
 	// OpenID Connect Issuer URL  An URL using the https scheme with no query or fragment component that the OP asserts as its IssuerURL Identifier. If IssuerURL discovery is supported , this value MUST be identical to the issuer value returned by WebFinger. This also MUST be identical to the iss Claim value in ID Tokens issued from this IssuerURL.
@@ -63,16 +67,20 @@ type OidcConfiguration struct {
 	RevocationEndpoint *string `json:"revocation_endpoint,omitempty"`
 	// OAuth 2.0 Supported Scope Values  JSON array containing a list of the OAuth 2.0 [RFC6749] scope values that this server supports. The server MUST support the openid scope value. Servers MAY choose not to advertise some supported scope values even when this parameter is used
 	ScopesSupported []string `json:"scopes_supported,omitempty"`
+	// OpenID Provider documentation URL  URL of a page containing human-readable information that developers might want or need to know when using the OpenID Provider. In particular, if the OpenID Provider does not support Dynamic Client Registration, then information on how to register Clients needs to be provided in this documentation.
+	ServiceDocumentation *string `json:"service_documentation,omitempty"`
 	// OpenID Connect Supported Subject Types  JSON array containing a list of the Subject Identifier types that this OP supports. Valid types include pairwise and public.
 	SubjectTypesSupported []string `json:"subject_types_supported"`
 	// OAuth 2.0 Token Endpoint URL
 	TokenEndpoint string `json:"token_endpoint"`
 	// OAuth 2.0 Supported Client Authentication Methods  JSON array containing a list of Client Authentication methods supported by this Token Endpoint. The options are client_secret_post, client_secret_basic, client_secret_jwt, and private_key_jwt, as described in Section 9 of OpenID Connect Core 1.0
 	TokenEndpointAuthMethodsSupported []string `json:"token_endpoint_auth_methods_supported,omitempty"`
+	// OpenID Connect Supported UI Locales  JSON array containing a list of the UI locales that this OP supports.
+	UiLocalesSupported []string `json:"ui_locales_supported,omitempty"`
 	// OpenID Connect Userinfo URL  URL of the OP's UserInfo Endpoint.
 	UserinfoEndpoint *string `json:"userinfo_endpoint,omitempty"`
 	// OpenID Connect User Userinfo Signing Algorithm  Algorithm used to sign OpenID Connect Userinfo Responses.
-	UserinfoSignedResponseAlg []string `json:"userinfo_signed_response_alg"`
+	UserinfoSignedResponseAlg []string `json:"userinfo_signed_response_alg,omitempty"`
 	// OpenID Connect Supported Userinfo Signing Algorithm  JSON array containing a list of the JWS [JWS] signing algorithms (alg values) [JWA] supported by the UserInfo Endpoint to encode the Claims in a JWT [JWT].
 	UserinfoSigningAlgValuesSupported []string `json:"userinfo_signing_alg_values_supported,omitempty"`
 }
@@ -81,17 +89,15 @@ type OidcConfiguration struct {
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewOidcConfiguration(authorizationEndpoint string, idTokenSignedResponseAlg []string, idTokenSigningAlgValuesSupported []string, issuer string, jwksUri string, responseTypesSupported []string, subjectTypesSupported []string, tokenEndpoint string, userinfoSignedResponseAlg []string) *OidcConfiguration {
+func NewOidcConfiguration(authorizationEndpoint string, idTokenSigningAlgValuesSupported []string, issuer string, jwksUri string, responseTypesSupported []string, subjectTypesSupported []string, tokenEndpoint string) *OidcConfiguration {
 	this := OidcConfiguration{}
 	this.AuthorizationEndpoint = authorizationEndpoint
-	this.IdTokenSignedResponseAlg = idTokenSignedResponseAlg
 	this.IdTokenSigningAlgValuesSupported = idTokenSigningAlgValuesSupported
 	this.Issuer = issuer
 	this.JwksUri = jwksUri
 	this.ResponseTypesSupported = responseTypesSupported
 	this.SubjectTypesSupported = subjectTypesSupported
 	this.TokenEndpoint = tokenEndpoint
-	this.UserinfoSignedResponseAlg = userinfoSignedResponseAlg
 	return &this
 }
 
@@ -101,6 +107,38 @@ func NewOidcConfiguration(authorizationEndpoint string, idTokenSignedResponseAlg
 func NewOidcConfigurationWithDefaults() *OidcConfiguration {
 	this := OidcConfiguration{}
 	return &this
+}
+
+// GetAcrValuesSupported returns the AcrValuesSupported field value if set, zero value otherwise.
+func (o *OidcConfiguration) GetAcrValuesSupported() []string {
+	if o == nil || o.AcrValuesSupported == nil {
+		var ret []string
+		return ret
+	}
+	return o.AcrValuesSupported
+}
+
+// GetAcrValuesSupportedOk returns a tuple with the AcrValuesSupported field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *OidcConfiguration) GetAcrValuesSupportedOk() ([]string, bool) {
+	if o == nil || o.AcrValuesSupported == nil {
+		return nil, false
+	}
+	return o.AcrValuesSupported, true
+}
+
+// HasAcrValuesSupported returns a boolean if a field has been set.
+func (o *OidcConfiguration) HasAcrValuesSupported() bool {
+	if o != nil && o.AcrValuesSupported != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetAcrValuesSupported gets a reference to the given []string and assigns it to the AcrValuesSupported field.
+func (o *OidcConfiguration) SetAcrValuesSupported(v []string) {
+	o.AcrValuesSupported = v
 }
 
 // GetAuthorizationEndpoint returns the AuthorizationEndpoint field value
@@ -189,6 +227,38 @@ func (o *OidcConfiguration) HasBackchannelLogoutSupported() bool {
 // SetBackchannelLogoutSupported gets a reference to the given bool and assigns it to the BackchannelLogoutSupported field.
 func (o *OidcConfiguration) SetBackchannelLogoutSupported(v bool) {
 	o.BackchannelLogoutSupported = &v
+}
+
+// GetClaimTypesSupported returns the ClaimTypesSupported field value if set, zero value otherwise.
+func (o *OidcConfiguration) GetClaimTypesSupported() []string {
+	if o == nil || o.ClaimTypesSupported == nil {
+		var ret []string
+		return ret
+	}
+	return o.ClaimTypesSupported
+}
+
+// GetClaimTypesSupportedOk returns a tuple with the ClaimTypesSupported field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *OidcConfiguration) GetClaimTypesSupportedOk() ([]string, bool) {
+	if o == nil || o.ClaimTypesSupported == nil {
+		return nil, false
+	}
+	return o.ClaimTypesSupported, true
+}
+
+// HasClaimTypesSupported returns a boolean if a field has been set.
+func (o *OidcConfiguration) HasClaimTypesSupported() bool {
+	if o != nil && o.ClaimTypesSupported != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetClaimTypesSupported gets a reference to the given []string and assigns it to the ClaimTypesSupported field.
+func (o *OidcConfiguration) SetClaimTypesSupported(v []string) {
+	o.ClaimTypesSupported = v
 }
 
 // GetClaimsParameterSupported returns the ClaimsParameterSupported field value if set, zero value otherwise.
@@ -415,26 +485,34 @@ func (o *OidcConfiguration) SetGrantTypesSupported(v []string) {
 	o.GrantTypesSupported = v
 }
 
-// GetIdTokenSignedResponseAlg returns the IdTokenSignedResponseAlg field value
+// GetIdTokenSignedResponseAlg returns the IdTokenSignedResponseAlg field value if set, zero value otherwise.
 func (o *OidcConfiguration) GetIdTokenSignedResponseAlg() []string {
-	if o == nil {
+	if o == nil || o.IdTokenSignedResponseAlg == nil {
 		var ret []string
 		return ret
 	}
-
 	return o.IdTokenSignedResponseAlg
 }
 
-// GetIdTokenSignedResponseAlgOk returns a tuple with the IdTokenSignedResponseAlg field value
+// GetIdTokenSignedResponseAlgOk returns a tuple with the IdTokenSignedResponseAlg field value if set, nil otherwise
 // and a boolean to check if the value has been set.
 func (o *OidcConfiguration) GetIdTokenSignedResponseAlgOk() ([]string, bool) {
-	if o == nil {
+	if o == nil || o.IdTokenSignedResponseAlg == nil {
 		return nil, false
 	}
 	return o.IdTokenSignedResponseAlg, true
 }
 
-// SetIdTokenSignedResponseAlg sets field value
+// HasIdTokenSignedResponseAlg returns a boolean if a field has been set.
+func (o *OidcConfiguration) HasIdTokenSignedResponseAlg() bool {
+	if o != nil && o.IdTokenSignedResponseAlg != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetIdTokenSignedResponseAlg gets a reference to the given []string and assigns it to the IdTokenSignedResponseAlg field.
 func (o *OidcConfiguration) SetIdTokenSignedResponseAlg(v []string) {
 	o.IdTokenSignedResponseAlg = v
 }
@@ -791,6 +869,38 @@ func (o *OidcConfiguration) SetScopesSupported(v []string) {
 	o.ScopesSupported = v
 }
 
+// GetServiceDocumentation returns the ServiceDocumentation field value if set, zero value otherwise.
+func (o *OidcConfiguration) GetServiceDocumentation() string {
+	if o == nil || o.ServiceDocumentation == nil {
+		var ret string
+		return ret
+	}
+	return *o.ServiceDocumentation
+}
+
+// GetServiceDocumentationOk returns a tuple with the ServiceDocumentation field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *OidcConfiguration) GetServiceDocumentationOk() (*string, bool) {
+	if o == nil || o.ServiceDocumentation == nil {
+		return nil, false
+	}
+	return o.ServiceDocumentation, true
+}
+
+// HasServiceDocumentation returns a boolean if a field has been set.
+func (o *OidcConfiguration) HasServiceDocumentation() bool {
+	if o != nil && o.ServiceDocumentation != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetServiceDocumentation gets a reference to the given string and assigns it to the ServiceDocumentation field.
+func (o *OidcConfiguration) SetServiceDocumentation(v string) {
+	o.ServiceDocumentation = &v
+}
+
 // GetSubjectTypesSupported returns the SubjectTypesSupported field value
 func (o *OidcConfiguration) GetSubjectTypesSupported() []string {
 	if o == nil {
@@ -871,6 +981,38 @@ func (o *OidcConfiguration) SetTokenEndpointAuthMethodsSupported(v []string) {
 	o.TokenEndpointAuthMethodsSupported = v
 }
 
+// GetUiLocalesSupported returns the UiLocalesSupported field value if set, zero value otherwise.
+func (o *OidcConfiguration) GetUiLocalesSupported() []string {
+	if o == nil || o.UiLocalesSupported == nil {
+		var ret []string
+		return ret
+	}
+	return o.UiLocalesSupported
+}
+
+// GetUiLocalesSupportedOk returns a tuple with the UiLocalesSupported field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *OidcConfiguration) GetUiLocalesSupportedOk() ([]string, bool) {
+	if o == nil || o.UiLocalesSupported == nil {
+		return nil, false
+	}
+	return o.UiLocalesSupported, true
+}
+
+// HasUiLocalesSupported returns a boolean if a field has been set.
+func (o *OidcConfiguration) HasUiLocalesSupported() bool {
+	if o != nil && o.UiLocalesSupported != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetUiLocalesSupported gets a reference to the given []string and assigns it to the UiLocalesSupported field.
+func (o *OidcConfiguration) SetUiLocalesSupported(v []string) {
+	o.UiLocalesSupported = v
+}
+
 // GetUserinfoEndpoint returns the UserinfoEndpoint field value if set, zero value otherwise.
 func (o *OidcConfiguration) GetUserinfoEndpoint() string {
 	if o == nil || o.UserinfoEndpoint == nil {
@@ -903,26 +1045,34 @@ func (o *OidcConfiguration) SetUserinfoEndpoint(v string) {
 	o.UserinfoEndpoint = &v
 }
 
-// GetUserinfoSignedResponseAlg returns the UserinfoSignedResponseAlg field value
+// GetUserinfoSignedResponseAlg returns the UserinfoSignedResponseAlg field value if set, zero value otherwise.
 func (o *OidcConfiguration) GetUserinfoSignedResponseAlg() []string {
-	if o == nil {
+	if o == nil || o.UserinfoSignedResponseAlg == nil {
 		var ret []string
 		return ret
 	}
-
 	return o.UserinfoSignedResponseAlg
 }
 
-// GetUserinfoSignedResponseAlgOk returns a tuple with the UserinfoSignedResponseAlg field value
+// GetUserinfoSignedResponseAlgOk returns a tuple with the UserinfoSignedResponseAlg field value if set, nil otherwise
 // and a boolean to check if the value has been set.
 func (o *OidcConfiguration) GetUserinfoSignedResponseAlgOk() ([]string, bool) {
-	if o == nil {
+	if o == nil || o.UserinfoSignedResponseAlg == nil {
 		return nil, false
 	}
 	return o.UserinfoSignedResponseAlg, true
 }
 
-// SetUserinfoSignedResponseAlg sets field value
+// HasUserinfoSignedResponseAlg returns a boolean if a field has been set.
+func (o *OidcConfiguration) HasUserinfoSignedResponseAlg() bool {
+	if o != nil && o.UserinfoSignedResponseAlg != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetUserinfoSignedResponseAlg gets a reference to the given []string and assigns it to the UserinfoSignedResponseAlg field.
 func (o *OidcConfiguration) SetUserinfoSignedResponseAlg(v []string) {
 	o.UserinfoSignedResponseAlg = v
 }
@@ -961,6 +1111,9 @@ func (o *OidcConfiguration) SetUserinfoSigningAlgValuesSupported(v []string) {
 
 func (o OidcConfiguration) MarshalJSON() ([]byte, error) {
 	toSerialize := map[string]interface{}{}
+	if o.AcrValuesSupported != nil {
+		toSerialize["acr_values_supported"] = o.AcrValuesSupported
+	}
 	if true {
 		toSerialize["authorization_endpoint"] = o.AuthorizationEndpoint
 	}
@@ -969,6 +1122,9 @@ func (o OidcConfiguration) MarshalJSON() ([]byte, error) {
 	}
 	if o.BackchannelLogoutSupported != nil {
 		toSerialize["backchannel_logout_supported"] = o.BackchannelLogoutSupported
+	}
+	if o.ClaimTypesSupported != nil {
+		toSerialize["claim_types_supported"] = o.ClaimTypesSupported
 	}
 	if o.ClaimsParameterSupported != nil {
 		toSerialize["claims_parameter_supported"] = o.ClaimsParameterSupported
@@ -991,7 +1147,7 @@ func (o OidcConfiguration) MarshalJSON() ([]byte, error) {
 	if o.GrantTypesSupported != nil {
 		toSerialize["grant_types_supported"] = o.GrantTypesSupported
 	}
-	if true {
+	if o.IdTokenSignedResponseAlg != nil {
 		toSerialize["id_token_signed_response_alg"] = o.IdTokenSignedResponseAlg
 	}
 	if true {
@@ -1030,6 +1186,9 @@ func (o OidcConfiguration) MarshalJSON() ([]byte, error) {
 	if o.ScopesSupported != nil {
 		toSerialize["scopes_supported"] = o.ScopesSupported
 	}
+	if o.ServiceDocumentation != nil {
+		toSerialize["service_documentation"] = o.ServiceDocumentation
+	}
 	if true {
 		toSerialize["subject_types_supported"] = o.SubjectTypesSupported
 	}
@@ -1039,10 +1198,13 @@ func (o OidcConfiguration) MarshalJSON() ([]byte, error) {
 	if o.TokenEndpointAuthMethodsSupported != nil {
 		toSerialize["token_endpoint_auth_methods_supported"] = o.TokenEndpointAuthMethodsSupported
 	}
+	if o.UiLocalesSupported != nil {
+		toSerialize["ui_locales_supported"] = o.UiLocalesSupported
+	}
 	if o.UserinfoEndpoint != nil {
 		toSerialize["userinfo_endpoint"] = o.UserinfoEndpoint
 	}
-	if true {
+	if o.UserinfoSignedResponseAlg != nil {
 		toSerialize["userinfo_signed_response_alg"] = o.UserinfoSignedResponseAlg
 	}
 	if o.UserinfoSigningAlgValuesSupported != nil {

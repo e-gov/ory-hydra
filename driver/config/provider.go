@@ -451,7 +451,7 @@ func (p *DefaultProvider) OIDCDiscoverySupportedClaims(ctx context.Context) []st
 func (p *DefaultProvider) OIDCDiscoverySupportedScope(ctx context.Context) []string {
 	return stringslice.Unique(
 		append(
-			[]string{"offline_access", "offline", "openid"},
+			[]string{"openid"},
 			p.getProvider(ctx).Strings(KeyOIDCDiscoverySupportedScope)...,
 		),
 	)

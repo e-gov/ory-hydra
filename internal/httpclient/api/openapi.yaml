@@ -3509,17 +3509,24 @@ components:
         scopes_supported:
         - scopes_supported
         - scopes_supported
+        acr_values_supported:
+        - acr_values_supported
+        - acr_values_supported
         issuer: https://playground.ory.sh/ory-hydra/public/
         userinfo_signed_response_alg:
         - userinfo_signed_response_alg
         - userinfo_signed_response_alg
         authorization_endpoint: https://playground.ory.sh/ory-hydra/public/oauth2/auth
+        service_documentation: service_documentation
         claims_supported:
         - claims_supported
         - claims_supported
         userinfo_signing_alg_values_supported:
         - userinfo_signing_alg_values_supported
         - userinfo_signing_alg_values_supported
+        claim_types_supported:
+        - claim_types_supported
+        - claim_types_supported
         token_endpoint_auth_methods_supported:
         - token_endpoint_auth_methods_supported
         - token_endpoint_auth_methods_supported
@@ -3539,6 +3546,9 @@ components:
         - grant_types_supported
         - grant_types_supported
         end_session_endpoint: end_session_endpoint
+        ui_locales_supported:
+        - ui_locales_supported
+        - ui_locales_supported
         revocation_endpoint: revocation_endpoint
         userinfo_endpoint: userinfo_endpoint
         frontchannel_logout_supported: true
@@ -3559,6 +3569,14 @@ components:
         - request_object_signing_alg_values_supported
         - request_object_signing_alg_values_supported
       properties:
+        acr_values_supported:
+          description: |-
+            OpenID Connect Supported Authentication Context Class Reference values
+
+            JSON array containing a list of the Authentication Context Class References that this OP supports.
+          items:
+            type: string
+          type: array
         authorization_endpoint:
           description: OAuth 2.0 Authorization Endpoint URL
           example: https://playground.ory.sh/ory-hydra/public/oauth2/auth
@@ -3574,6 +3592,15 @@ components:
             \ specifying whether the OP supports back-channel logout, with true indicating\
             \ support."
           type: boolean
+        claim_types_supported:
+          description: "OpenID Connect Supported Claim Types\n\nJSON array containing\
+            \ a list of the Claim Types that the OpenID Provider supports. These Claim\
+            \ Types are\ndescribed in Section 5.6 of OpenID Connect Core 1.0 [OpenID.Core].\
+            \ Values defined by this specification are\nnormal, aggregated, and distributed.\
+            \ If omitted, the implementation supports only normal Claims."
+          items:
+            type: string
+          type: array
         claims_parameter_supported:
           description: "OpenID Connect Claims Parameter Parameter Supported\n\nBoolean\
             \ value specifying whether the OP supports use of the claims parameter,\
@@ -3723,6 +3750,13 @@ components:
           items:
             type: string
           type: array
+        service_documentation:
+          description: "OpenID Provider documentation URL\n\nURL of a page containing\
+            \ human-readable information that developers might want or need to know\
+            \ when using the\nOpenID Provider. In particular, if the OpenID Provider\
+            \ does not support Dynamic Client Registration, then\ninformation on how\
+            \ to register Clients needs to be provided in this documentation."
+          type: string
         subject_types_supported:
           description: |-
             OpenID Connect Supported Subject Types
@@ -3742,6 +3776,14 @@ components:
             \ this Token Endpoint. The options are\nclient_secret_post, client_secret_basic,\
             \ client_secret_jwt, and private_key_jwt, as described in Section 9 of\
             \ OpenID Connect Core 1.0"
+          items:
+            type: string
+          type: array
+        ui_locales_supported:
+          description: |-
+            OpenID Connect Supported UI Locales
+
+            JSON array containing a list of the UI locales that this OP supports.
           items:
             type: string
           type: array
@@ -3769,14 +3811,12 @@ components:
           type: array
       required:
       - authorization_endpoint
-      - id_token_signed_response_alg
       - id_token_signing_alg_values_supported
       - issuer
       - jwks_uri
       - response_types_supported
       - subject_types_supported
       - token_endpoint
-      - userinfo_signed_response_alg
       title: OpenID Connect Discovery Metadata
       type: object
     oidcUserInfo:

@@ -706,9 +706,10 @@ func (s *DefaultStrategy) executeBackChannelLogout(ctx context.Context, r *http.
 	}
 
 	type task struct {
-		url      string
-		token    string
-		clientID string
+		url       string
+		token     string
+		clientID  string
+		sessionID string
 	}
 
 	var tasks []task
@@ -733,7 +734,7 @@ func (s *DefaultStrategy) executeBackChannelLogout(ctx context.Context, r *http.
 			return err
 		}
 
-		tasks = append(tasks, task{url: c.BackChannelLogoutURI, clientID: c.ClientID, token: t})
+		tasks = append(tasks, task{url: c.BackChannelLogoutURI, clientID: c.ClientID, sessionID: c.LoginSessionID, token: t})
 	}
 
 	var wg sync.WaitGroup
@@ -748,22 +749,25 @@ func (s *DefaultStrategy) executeBackChannelLogout(ctx context.Context, r *http.
 
 	var execute = func(t task) {
 		res, err := hc.PostForm(t.url, url.Values{"logout_token": {t.token}})
+		l := s.r.Logger().WithRequest(r).
+			WithField("client_id", t.clientID).
+			WithField("session_id", t.sessionID).
+			WithField("backchannel_logout_url", t.url).
+			WithField("logout_token", t.token)
+
 		if err != nil {
-			s.r.Logger().WithRequest(r).WithError(err).
-				WithField("client_id", t.clientID).
-				WithField("backchannel_logout_url", t.url).
-				Error("Unable to execute OpenID Connect Back-Channel Logout Request")
+			l.WithError(err).Error("Unable to execute OpenID Connect Back-Channel Logout Request")
 			return
 		}
 		defer res.Body.Close()
 
 		if res.StatusCode != http.StatusOK {
-			s.r.Logger().WithError(errors.Errorf("expected HTTP status code %d but got %d", http.StatusOK, res.StatusCode)).
-				WithRequest(r).
-				WithField("client_id", t.clientID).
-				WithField("backchannel_logout_url", t.url).
+			l.WithField("http.response.status_code", res.StatusCode).
+				WithError(errors.Errorf("expected HTTP status code %d but got %d", http.StatusOK, res.StatusCode)).
 				Error("Unable to execute OpenID Connect Back-Channel Logout Request")
-			return
+		} else {
+			l.WithField("http.response.status_code", res.StatusCode).
+				Info("OpenID Connect Back-Channel Logout Request")
 		}
 	}
 

@@ -706,9 +706,10 @@ func (s *DefaultStrategy) executeBackChannelLogout(ctx context.Context, r *http.
 	}
 
 	type task struct {
-		url      string
-		token    string
-		clientID string
+		url       string
+		token     string
+		clientID  string
+		sessionID string
 	}
 
 	var tasks []task
@@ -733,7 +734,7 @@ func (s *DefaultStrategy) executeBackChannelLogout(ctx context.Context, r *http.
 			return err
 		}
 
-		tasks = append(tasks, task{url: c.BackChannelLogoutURI, clientID: c.ClientID, token: t})
+		tasks = append(tasks, task{url: c.BackChannelLogoutURI, clientID: c.ClientID, sessionID: c.LoginSessionID, token: t})
 	}
 
 	var wg sync.WaitGroup
@@ -749,6 +750,8 @@ func (s *DefaultStrategy) executeBackChannelLogout(ctx context.Context, r *http.
 	var execute = func(t task) {
 		log := s.r.Logger().WithRequest(r).
 			WithField("client_id", t.clientID).
+			WithField("session_id", t.sessionID).
+			WithField("logout_token", t.token).
 			WithField("backchannel_logout_url", t.url)
 
 		res, err := hc.PostForm(t.url, url.Values{"logout_token": {t.token}})
@@ -759,11 +762,13 @@ func (s *DefaultStrategy) executeBackChannelLogout(ctx context.Context, r *http.
 		defer res.Body.Close()
 
 		if res.StatusCode != http.StatusOK {
-			log.WithError(errors.Errorf("expected HTTP status code %d but got %d", http.StatusOK, res.StatusCode)).
+			log.WithField("http.response.status_code", res.StatusCode).
+				WithError(errors.Errorf("expected HTTP status code %d but got %d", http.StatusOK, res.StatusCode)).
 				Error("Unable to execute OpenID Connect Back-Channel Logout Request")
 			return
 		} else {
-			log.Info("Back-Channel Logout Request")
+			log.WithField("http.response.status_code", res.StatusCode).
+				Info("Back-Channel Logout Request")
 		}
 	}
 

@@ -639,7 +639,6 @@ func (h *Handler) TokenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.r.Logger().
-		WithField("govsso.session.oidc.state", accessRequest.GetSession().(*Session).IDTokenClaims().Get("state")).
 		WithField("govsso.session.oidc.id_token", accessResponse.GetExtra("id_token")).
 		WithField("govsso.session.oidc.scope", accessResponse.GetExtra("scope")).
 		Info("ID-Token response")

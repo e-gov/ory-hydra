@@ -136,14 +136,26 @@ func (h *Handler) DeleteConsentSession(w http.ResponseWriter, r *http.Request, p
 			}
 		}
 	case allClients:
-		if triggerBackChannelLogout == "true" {
-			if err := h.r.ConsentStrategy().ExecuteBackChannelLogoutBySubject(r.Context(), r, subject); err != nil {
-				h.r.Logger().WithError(err).Warn("Unable to execute back channel logout")
+		if len(loginSessionId) > 0 {
+			if triggerBackChannelLogout == "true" {
+				if err := h.r.ConsentStrategy().ExecuteBackChannelLogoutBySession(r.Context(), r, subject, loginSessionId); err != nil {
+					h.r.Logger().WithError(err).Warn("Unable to execute back channel logout")
+				}
 			}
-		}
-		if err := h.r.ConsentManager().RevokeSubjectConsentSession(r.Context(), subject); err != nil && !errors.Is(err, x.ErrNotFound) {
-			h.r.Writer().WriteError(w, r, err)
-			return
+			if err := h.r.ConsentManager().RevokeLoginSessionConsentSession(r.Context(), loginSessionId); err != nil && !errors.Is(err, x.ErrNotFound) {
+				h.r.Writer().WriteError(w, r, err)
+				return
+			}
+		} else {
+			if triggerBackChannelLogout == "true" {
+				if err := h.r.ConsentStrategy().ExecuteBackChannelLogoutBySubject(r.Context(), r, subject); err != nil {
+					h.r.Logger().WithError(err).Warn("Unable to execute back channel logout")
+				}
+			}
+			if err := h.r.ConsentManager().RevokeSubjectConsentSession(r.Context(), subject); err != nil && !errors.Is(err, x.ErrNotFound) {
+				h.r.Writer().WriteError(w, r, err)
+				return
+			}
 		}
 	default:
 		h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrInvalidRequest.WithHint(`Query parameter both 'client' and 'all' is not defined but one of them should have been.`)))

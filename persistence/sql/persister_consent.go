@@ -27,6 +27,10 @@ func (p *Persister) RevokeSubjectConsentSession(ctx context.Context, user string
 	return p.transaction(ctx, p.revokeConsentSession("r.subject = ?", user))
 }
 
+func (p *Persister) RevokeLoginSessionConsentSession(ctx context.Context, loginSessionId string) error {
+	return p.transaction(ctx, p.revokeConsentSession("r.login_session_id = ?", loginSessionId))
+}
+
 func (p *Persister) RevokeSubjectClientConsentSession(ctx context.Context, user, client string) error {
 	return p.transaction(ctx, p.revokeConsentSession("r.subject = ? AND r.client_id = ?", user, client))
 }

@@ -236,7 +236,6 @@ func (h *Handler) WellKnownHandler(w http.ResponseWriter, r *http.Request) {
 		ResponseTypes:                     []string{"code"},
 		ClaimsSupported:                   h.c.OIDCDiscoverySupportedClaims(),
 		ScopesSupported:                   h.c.OIDCDiscoverySupportedScope(),
-		UserinfoEndpoint:                  h.c.OIDCDiscoveryUserinfoEndpoint().String(),
 		TokenEndpointAuthMethodsSupported: []string{"client_secret_basic"},
 		IDTokenSigningAlgValuesSupported:  []string{"RS256"},
 		GrantTypesSupported:               []string{"authorization_code"},

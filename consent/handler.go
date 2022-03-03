@@ -649,6 +649,13 @@ func (h *Handler) AcceptConsentRequest(w http.ResponseWriter, r *http.Request, p
 		h.r.Writer().WriteError(w, r, errorsx.WithStack(err))
 		return
 	} else if hr.Skip {
+		if p.Remember && p.RememberFor > 0 { // TODO: Consider removing 'p.RememberFor > 0' to always update consent requests (p.RememberFor = 0 means remember indefinitely)
+			err = h.r.ConsentManager().ExtendConsentRequest(r.Context(), h.r.ScopeStrategy(), hr, p.RememberFor)
+			if err != nil {
+				h.r.Writer().WriteError(w, r, errorsx.WithStack(err))
+				return
+			}
+		}
 		p.Remember = false
 	}
 

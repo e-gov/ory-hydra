@@ -203,6 +203,74 @@ func (p *Persister) HandleConsentRequest(ctx context.Context, challenge string, 
 	return p.GetConsentRequest(ctx, challenge)
 }
 
+func (p *Persister) ExtendConsentRequest(ctx context.Context, scopeStrategy fosite.ScopeStrategy, cr *consent.ConsentRequest, extendBy int) error {
+	return p.transaction(ctx, func(ctx context.Context, c *pop.Connection) error {
+		tn := consent.HandledConsentRequest{}.TableName()
+
+		var sessionHcr consent.HandledConsentRequest
+		if err := c.
+			Where(fmt.Sprintf("r.subject = ? AND r.client_id = ? AND r.login_session_id = ? AND r.skip=FALSE AND (%s.error='{}' AND %s.remember=TRUE)", tn, tn), cr.Subject, cr.ClientID, cr.LoginSessionID.String()).
+			Join("hydra_oauth2_consent_request AS r", fmt.Sprintf("%s.challenge = r.challenge", tn)).
+			Order(fmt.Sprintf("%s.requested_at DESC", tn)).
+			Limit(1).
+			First(&sessionHcr); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return errorsx.WithStack(consent.ErrNoPreviousConsentFound)
+			}
+			return sqlcon.HandleError(err)
+		}
+
+		var latestHcr consent.HandledConsentRequest
+		if err := c.
+			Where(fmt.Sprintf("r.subject = ? AND r.client_id = ? AND r.skip=FALSE AND (%s.error='{}' AND %s.remember=TRUE)", tn, tn), cr.Subject, cr.ClientID).
+			Join("hydra_oauth2_consent_request AS r", fmt.Sprintf("%s.challenge = r.challenge", tn)).
+			Order(fmt.Sprintf("%s.requested_at DESC", tn)).
+			Limit(1).
+			First(&latestHcr); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return errorsx.WithStack(consent.ErrNoPreviousConsentFound)
+			}
+			return sqlcon.HandleError(err)
+		}
+
+		if err := p.extendHandledConsentRequest(ctx, cr, scopeStrategy, sessionHcr, extendBy); err != nil {
+			return err
+		}
+
+		if latestHcr.ID != sessionHcr.ID {
+			if err := p.extendHandledConsentRequest(ctx, cr, scopeStrategy, latestHcr, extendBy); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func (p *Persister) extendHandledConsentRequest(ctx context.Context, cr *consent.ConsentRequest, scopeStrategy fosite.ScopeStrategy, hcr consent.HandledConsentRequest, extendBy int) error {
+	for _, scope := range cr.RequestedScope {
+		if !scopeStrategy(hcr.GrantedScope, scope) {
+			return nil
+		}
+	}
+
+	isConsentRequestExpired := hcr.RememberFor > 0 && hcr.RequestedAt.Add(time.Duration(hcr.RememberFor)*time.Second).Before(time.Now().UTC())
+	if isConsentRequestExpired {
+		return nil
+	}
+
+	remainingValidityTime := hcr.RequestedAt.Unix() + int64(hcr.RememberFor) - time.Now().Unix()
+	if remainingValidityTime > 0 {
+		hcr.RememberFor = hcr.RememberFor + extendBy - int(remainingValidityTime)
+	} else {
+		hcr.RememberFor = hcr.RememberFor + extendBy
+	}
+
+	if err := sqlcon.HandleError(p.Connection(ctx).Update(&hcr)); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (p *Persister) VerifyAndInvalidateConsentRequest(ctx context.Context, verifier string) (*consent.HandledConsentRequest, error) {
 	var r consent.HandledConsentRequest
 	return &r, p.transaction(ctx, func(ctx context.Context, c *pop.Connection) error {

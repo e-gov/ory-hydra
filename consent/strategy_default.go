@@ -744,6 +744,9 @@ func (s *DefaultStrategy) executeBackChannelLogout(ctx context.Context, r *http.
 			Transport: &http.Transport{
 				TLSClientConfig: s.tlsClientConfig,
 			},
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return errors.New("unexpected redirect") // Using http.ErrUseLastResponse would result no retry
+			},
 		}))
 	wg.Add(len(tasks))
 

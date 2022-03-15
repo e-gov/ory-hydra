@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"crypto/tls"
 	"testing"
 
@@ -12,7 +13,7 @@ import (
 
 func TestTLSClientConfig_CipherSuite(t *testing.T) {
 	l := logrusx.New("", "")
-	c := MustNew(l, configx.WithValue("client.tls.cipher_suites", []string{"TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384"}))
+	c := MustNew(context.TODO(), l, configx.WithValue("client.tls.cipher_suites", []string{"TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384"}))
 
 	tlsClientConfig, err := c.TLSClientConfig()
 	assert.NoError(t, err)
@@ -25,7 +26,7 @@ func TestTLSClientConfig_CipherSuite(t *testing.T) {
 
 func TestTLSClientConfig_InvalidCipherSuite(t *testing.T) {
 	l := logrusx.New("", "")
-	c := MustNew(l, configx.WithValue("client.tls.cipher_suites", []string{"TLS_AES_128_GCM_SHA256", "TLS_INVALID_CIPHER_SUITE"}))
+	c := MustNew(context.TODO(), l, configx.WithValue("client.tls.cipher_suites", []string{"TLS_AES_128_GCM_SHA256", "TLS_INVALID_CIPHER_SUITE"}))
 
 	_, err := c.TLSClientConfig()
 
@@ -34,7 +35,7 @@ func TestTLSClientConfig_InvalidCipherSuite(t *testing.T) {
 
 func TestTLSClientConfig_MinVersion(t *testing.T) {
 	l := logrusx.New("", "")
-	c := MustNew(l, configx.WithValue("client.tls.min_version", "tls13"))
+	c := MustNew(context.TODO(), l, configx.WithValue("client.tls.min_version", "tls13"))
 
 	tlsClientConfig, err := c.TLSClientConfig()
 
@@ -44,7 +45,7 @@ func TestTLSClientConfig_MinVersion(t *testing.T) {
 
 func TestTLSClientConfig_InvalidMinVersion(t *testing.T) {
 	l := logrusx.New("", "")
-	c := MustNew(l, configx.WithValue("client.tls.min_version", "tlsx"))
+	c := MustNew(context.TODO(), l, configx.WithValue("client.tls.min_version", "tlsx"))
 
 	_, err := c.TLSClientConfig()
 
@@ -53,7 +54,7 @@ func TestTLSClientConfig_InvalidMinVersion(t *testing.T) {
 
 func TestTLSClientConfig_MaxVersion(t *testing.T) {
 	l := logrusx.New("", "")
-	c := MustNew(l, configx.WithValue("client.tls.max_version", "tls10"))
+	c := MustNew(context.TODO(), l, configx.WithValue("client.tls.max_version", "tls10"))
 
 	tlsClientConfig, err := c.TLSClientConfig()
 
@@ -63,7 +64,7 @@ func TestTLSClientConfig_MaxVersion(t *testing.T) {
 
 func TestTLSClientConfig_InvalidMaxTlsVersion(t *testing.T) {
 	l := logrusx.New("", "")
-	c := MustNew(l, configx.WithValue("client.tls.max_version", "tlsx"))
+	c := MustNew(context.TODO(), l, configx.WithValue("client.tls.max_version", "tlsx"))
 
 	_, err := c.TLSClientConfig()
 

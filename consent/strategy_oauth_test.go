@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/twmb/murmur3"
+
 	"golang.org/x/oauth2"
 
 	"github.com/ory/x/pointerx"
@@ -269,6 +271,76 @@ func TestStrategyLoginConsentNext(t *testing.T) {
 				t.Run(fmt.Sprintf("case=%d", k), run)
 			}
 		})
+	})
+
+	t.Run("case=should set csrf cookie names with challenge suffix", func(t *testing.T) {
+		subject := "subject-1"
+		c := createDefaultClient(t)
+		testhelpers.NewLoginConsentUI(t, reg.Config(),
+			acceptLoginHandler(t, subject, &models.AcceptLoginRequest{
+				Remember: true,
+			}),
+			acceptConsentHandler(t, &models.AcceptConsentRequest{
+				Remember:   true,
+				GrantScope: []string{"openid"},
+				Session: &models.ConsentRequestSession{
+					AccessToken: map[string]interface{}{"foo": "bar"},
+					IDToken:     map[string]interface{}{"bar": "baz"},
+				},
+			}))
+		testhelpers.NewLoginConsentUI(t, reg.Config(),
+			checkAndAcceptLoginHandler(t, adminClient.Admin, subject, func(t *testing.T, res *admin.GetLoginRequestOK, err error) *models.AcceptLoginRequest {
+				require.NoError(t, err)
+				assert.Empty(t, res.Payload.Subject)
+				assert.Empty(t, res.Payload.Client.ClientSecret)
+				return &models.AcceptLoginRequest{
+					Subject: &subject,
+					Context: map[string]interface{}{"foo": "bar"},
+				}
+			}),
+			checkAndAcceptConsentHandler(t, adminClient.Admin, func(t *testing.T, res *admin.GetConsentRequestOK, err error) *models.AcceptConsentRequest {
+				require.NoError(t, err)
+				assert.Equal(t, subject, res.Payload.Subject)
+				assert.Empty(t, res.Payload.Client.ClientSecret)
+				return &models.AcceptConsentRequest{
+					Remember:   true,
+					GrantScope: []string{"openid"},
+					Session: &models.ConsentRequestSession{
+						AccessToken: map[string]interface{}{"foo": "bar"},
+						IDToken:     map[string]interface{}{"bar": "baz"},
+					},
+				}
+			}))
+		hc := &http.Client{
+			Jar:       testhelpers.NewEmptyCookieJar(t),
+			Transport: &http.Transport{},
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		}
+
+		_, oauthRes := makeOAuth2Request(t, reg, hc, c, url.Values{"redirect_uri": {c.RedirectURIs[0]}, "scope": {"openid"}})
+		assert.EqualValues(t, http.StatusFound, oauthRes.StatusCode)
+		loginChallengeRedirect, err := oauthRes.Location()
+		require.NoError(t, err)
+		defer oauthRes.Body.Close()
+
+		setCookieHeader := oauthRes.Header.Get("set-cookie")
+		assert.NotNil(t, setCookieHeader)
+		assert.Regexp(t, fmt.Sprintf("oauth2_authentication_csrf_%d_insecure=.*", murmur3.Sum32([]byte(c.OutfacingID))), setCookieHeader)
+
+		loginChallengeRes, err := hc.Get(loginChallengeRedirect.String())
+		require.NoError(t, err)
+		defer loginChallengeRes.Body.Close()
+		loginVerifierRedirect, err := loginChallengeRes.Location()
+
+		loginVerifierRes, err := hc.Get(loginVerifierRedirect.String())
+		require.NoError(t, err)
+		defer loginVerifierRes.Body.Close()
+
+		setCookieHeader = loginVerifierRes.Header.Values("set-cookie")[1]
+		assert.NotNil(t, setCookieHeader)
+		assert.Regexp(t, fmt.Sprintf("oauth2_consent_csrf_%d_insecure=.*", murmur3.Sum32([]byte(c.OutfacingID))), setCookieHeader)
 	})
 
 	t.Run("case=should pass and check if login context is set properly", func(t *testing.T) {

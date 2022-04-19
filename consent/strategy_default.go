@@ -23,6 +23,8 @@ package consent
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
+	"github.com/twmb/murmur3"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -63,8 +65,8 @@ const (
 	CookieAuthenticationName    = "oauth2_authentication_session"
 	CookieAuthenticationSIDName = "sid"
 
-	cookieAuthenticationCSRFName = "oauth2_authentication_csrf"
-	cookieConsentCSRFName        = "oauth2_consent_csrf"
+	cookieAuthenticationCSRFNamePrefix = "oauth2_authentication_csrf_"
+	cookieConsentCSRFNamePrefix        = "oauth2_consent_csrf_"
 )
 
 type DefaultStrategy struct {
@@ -258,6 +260,7 @@ func (s *DefaultStrategy) forwardAuthenticationRequest(w http.ResponseWriter, r 
 	}
 
 	// Set the session
+	cl := sanitizeClientFromRequest(ar)
 	if err := s.r.ConsentManager().CreateLoginRequest(
 		r.Context(),
 		&LoginRequest{
@@ -268,7 +271,7 @@ func (s *DefaultStrategy) forwardAuthenticationRequest(w http.ResponseWriter, r 
 			RequestedScope:    []string(ar.GetRequestedScopes()),
 			RequestedAudience: []string(ar.GetRequestedAudience()),
 			Subject:           subject,
-			Client:            sanitizeClientFromRequest(ar),
+			Client:            cl,
 			RequestURL:        iu.String(),
 			AuthenticatedAt:   sqlxx.NullTime(authenticatedAt),
 			RequestedAt:       time.Now().Truncate(time.Second).UTC(),
@@ -285,7 +288,8 @@ func (s *DefaultStrategy) forwardAuthenticationRequest(w http.ResponseWriter, r 
 		return errorsx.WithStack(err)
 	}
 
-	if err := createCsrfSession(w, r, s.r.CookieStore(), cookieAuthenticationCSRFName, csrf, s.c.TLS(config.PublicInterface).Enabled(), s.c.CookieSameSiteMode(), s.c.CookieSameSiteLegacyWorkaround()); err != nil {
+	cookieAuthenticationCSRFName := cookieAuthenticationCSRFNamePrefix + fmt.Sprint(murmur3.Sum32([]byte(cl.OutfacingID)))
+	if err := createCsrfSession(w, r, s.r.CookieStore(), cookieAuthenticationCSRFName, csrf, s.c.TLS(config.PublicInterface).Enabled(), s.c.CookieSameSiteMode(), s.c.CookieSameSiteLegacyWorkaround(), s.c.ConsentRequestMaxAge()); err != nil {
 		return errorsx.WithStack(err)
 	}
 
@@ -361,6 +365,7 @@ func (s *DefaultStrategy) verifyAuthentication(w http.ResponseWriter, r *http.Re
 		return nil, errorsx.WithStack(fosite.ErrRequestUnauthorized.WithHint("The login request has expired. Please try again."))
 	}
 
+	cookieAuthenticationCSRFName := cookieAuthenticationCSRFNamePrefix + fmt.Sprint(murmur3.Sum32([]byte(session.LoginRequest.Client.OutfacingID)))
 	if err := validateCsrfSession(r, s.r.CookieStore(), cookieAuthenticationCSRFName, session.LoginRequest.CSRF, s.c.CookieSameSiteLegacyWorkaround(), s.c.TLS(config.PublicInterface).Enabled()); err != nil {
 		return nil, err
 	}
@@ -548,6 +553,7 @@ func (s *DefaultStrategy) forwardConsentRequest(w http.ResponseWriter, r *http.R
 	challenge := strings.Replace(uuid.New(), "-", "", -1)
 	csrf := strings.Replace(uuid.New(), "-", "", -1)
 
+	cl := sanitizeClientFromRequest(ar)
 	if err := s.r.ConsentManager().CreateConsentRequest(
 		r.Context(),
 		&ConsentRequest{
@@ -560,7 +566,7 @@ func (s *DefaultStrategy) forwardConsentRequest(w http.ResponseWriter, r *http.R
 			RequestedScope:         []string(ar.GetRequestedScopes()),
 			RequestedAudience:      []string(ar.GetRequestedAudience()),
 			Subject:                as.Subject,
-			Client:                 sanitizeClientFromRequest(ar),
+			Client:                 cl,
 			RequestURL:             as.LoginRequest.RequestURL,
 			AuthenticatedAt:        as.AuthenticatedAt,
 			RequestedAt:            as.RequestedAt,
@@ -574,7 +580,8 @@ func (s *DefaultStrategy) forwardConsentRequest(w http.ResponseWriter, r *http.R
 		return errorsx.WithStack(err)
 	}
 
-	if err := createCsrfSession(w, r, s.r.CookieStore(), cookieConsentCSRFName, csrf, s.c.TLS(config.PublicInterface).Enabled(), s.c.CookieSameSiteMode(), s.c.CookieSameSiteLegacyWorkaround()); err != nil {
+	cookieConsentCSRFName := cookieConsentCSRFNamePrefix + fmt.Sprint(murmur3.Sum32([]byte(cl.OutfacingID)))
+	if err := createCsrfSession(w, r, s.r.CookieStore(), cookieConsentCSRFName, csrf, s.c.TLS(config.PublicInterface).Enabled(), s.c.CookieSameSiteMode(), s.c.CookieSameSiteLegacyWorkaround(), s.c.ConsentRequestMaxAge()); err != nil {
 		return errorsx.WithStack(err)
 	}
 
@@ -609,6 +616,7 @@ func (s *DefaultStrategy) verifyConsent(w http.ResponseWriter, r *http.Request, 
 		return nil, errorsx.WithStack(fosite.ErrServerError.WithHint("The authenticatedAt value was not set."))
 	}
 
+	cookieConsentCSRFName := cookieConsentCSRFNamePrefix + fmt.Sprint(murmur3.Sum32([]byte(session.ConsentRequest.Client.OutfacingID)))
 	if err := validateCsrfSession(r, s.r.CookieStore(), cookieConsentCSRFName, session.ConsentRequest.CSRF, s.c.CookieSameSiteLegacyWorkaround(), s.c.TLS(config.PublicInterface).Enabled()); err != nil {
 		return nil, err
 	}

@@ -61,6 +61,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/tidwall/gjson v1.9.4
 	github.com/toqueteos/webbrowser v1.2.0
+	github.com/twmb/murmur3 v1.1.6
 	github.com/urfave/negroni v1.0.0
 	go.uber.org/automaxprocs v1.3.0
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519

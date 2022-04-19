@@ -22,6 +22,7 @@ package consent
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/ory/x/errorsx"
 
@@ -63,7 +64,7 @@ func matchScopes(scopeStrategy fosite.ScopeStrategy, previousConsent []HandledCo
 	return nil
 }
 
-func createCsrfSession(w http.ResponseWriter, r *http.Request, store sessions.Store, name, csrf string, secure bool, sameSiteMode http.SameSite, sameSiteLegacyWorkaround bool) error {
+func createCsrfSession(w http.ResponseWriter, r *http.Request, store sessions.Store, name, csrf string, secure bool, sameSiteMode http.SameSite, sameSiteLegacyWorkaround bool, maxAge time.Duration) error {
 	// Errors can be ignored here, because we always get a session session back. Error typically means that the
 	// session doesn't exist yet.
 	session, _ := store.Get(r, CookieName(secure, name))
@@ -71,11 +72,12 @@ func createCsrfSession(w http.ResponseWriter, r *http.Request, store sessions.St
 	session.Options.HttpOnly = true
 	session.Options.Secure = secure
 	session.Options.SameSite = sameSiteMode
+	session.Options.MaxAge = int(maxAge.Seconds())
 	if err := session.Save(r, w); err != nil {
 		return errorsx.WithStack(err)
 	}
 	if sameSiteMode == http.SameSiteNoneMode && sameSiteLegacyWorkaround {
-		return createCsrfSession(w, r, store, legacyCsrfSessionName(name), csrf, secure, 0, false)
+		return createCsrfSession(w, r, store, legacyCsrfSessionName(name), csrf, secure, 0, false, maxAge)
 	}
 	return nil
 }

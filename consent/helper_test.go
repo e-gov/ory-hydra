@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
@@ -127,7 +128,7 @@ func TestValidateCsrfSession(t *testing.T) {
 		{
 			cookies: []cookie{
 				{
-					name:      cookieAuthenticationCSRFName,
+					name:      "oauth2_authentication_csrf",
 					csrfValue: "WRONG-CSRF-VALUE",
 					sameSite:  http.SameSiteDefaultMode,
 				},
@@ -139,7 +140,7 @@ func TestValidateCsrfSession(t *testing.T) {
 		{
 			cookies: []cookie{
 				{
-					name:      cookieAuthenticationCSRFName,
+					name:      "oauth2_authentication_csrf",
 					csrfValue: "WRONG-CSRF-VALUE",
 					sameSite:  http.SameSiteDefaultMode,
 				},
@@ -151,7 +152,7 @@ func TestValidateCsrfSession(t *testing.T) {
 		{
 			cookies: []cookie{
 				{
-					name:      cookieAuthenticationCSRFName,
+					name:      "oauth2_authentication_csrf",
 					csrfValue: "CSRF-VALUE",
 					sameSite:  http.SameSiteDefaultMode,
 				},
@@ -163,7 +164,7 @@ func TestValidateCsrfSession(t *testing.T) {
 		{
 			cookies: []cookie{
 				{
-					name:      cookieAuthenticationCSRFName,
+					name:      "oauth2_authentication_csrf",
 					csrfValue: "CSRF-VALUE",
 					sameSite:  http.SameSiteDefaultMode,
 				},
@@ -175,7 +176,7 @@ func TestValidateCsrfSession(t *testing.T) {
 		{
 			cookies: []cookie{
 				{
-					name:      legacyCsrfSessionName(cookieAuthenticationCSRFName),
+					name:      legacyCsrfSessionName("oauth2_authentication_csrf"),
 					csrfValue: "CSRF-VALUE",
 					sameSite:  http.SameSiteDefaultMode,
 				},
@@ -187,7 +188,7 @@ func TestValidateCsrfSession(t *testing.T) {
 		{
 			cookies: []cookie{
 				{
-					name:      legacyCsrfSessionName(cookieAuthenticationCSRFName),
+					name:      legacyCsrfSessionName("oauth2_authentication_csrf"),
 					csrfValue: "CSRF-VALUE",
 					sameSite:  http.SameSiteDefaultMode,
 				},
@@ -199,12 +200,12 @@ func TestValidateCsrfSession(t *testing.T) {
 		{
 			cookies: []cookie{
 				{
-					name:      cookieAuthenticationCSRFName,
+					name:      "oauth2_authentication_csrf",
 					csrfValue: "CSRF-VALUE",
 					sameSite:  http.SameSiteNoneMode,
 				},
 				{
-					name:      legacyCsrfSessionName(cookieAuthenticationCSRFName),
+					name:      legacyCsrfSessionName("oauth2_authentication_csrf"),
 					csrfValue: "CSRF-VALUE",
 					sameSite:  http.SameSiteDefaultMode,
 				},
@@ -216,12 +217,12 @@ func TestValidateCsrfSession(t *testing.T) {
 		{
 			cookies: []cookie{
 				{
-					name:      cookieAuthenticationCSRFName,
+					name:      "oauth2_authentication_csrf",
 					csrfValue: "CSRF-VALUE",
 					sameSite:  http.SameSiteNoneMode,
 				},
 				{
-					name:      legacyCsrfSessionName(cookieAuthenticationCSRFName),
+					name:      legacyCsrfSessionName("oauth2_authentication_csrf"),
 					csrfValue: "CSRF-VALUE",
 					sameSite:  http.SameSiteDefaultMode,
 				},
@@ -246,7 +247,7 @@ func TestValidateCsrfSession(t *testing.T) {
 				assert.NoError(t, err, "failed to save cookie %s", c.name)
 			}
 
-			err := validateCsrfSession(r, store, cookieAuthenticationCSRFName, tc.csrfValue, tc.sameSiteLegacyWorkaround, true)
+			err := validateCsrfSession(r, store, "oauth2_authentication_csrf", tc.csrfValue, tc.sameSiteLegacyWorkaround, true)
 			if tc.expectError {
 				assert.Error(t, err)
 			} else {
@@ -261,11 +262,13 @@ func TestCreateCsrfSession(t *testing.T) {
 		httpOnly bool
 		secure   bool
 		sameSite http.SameSite
+		maxAge   int
 	}
 	for _, tc := range []struct {
 		name                     string
 		secure                   bool
 		sameSite                 http.SameSite
+		maxAge                   time.Duration
 		sameSiteLegacyWorkaround bool
 		expectedCookies          map[string]cookie
 	}{
@@ -273,12 +276,14 @@ func TestCreateCsrfSession(t *testing.T) {
 			name:                     "csrf_default",
 			secure:                   true,
 			sameSite:                 http.SameSiteDefaultMode,
+			maxAge:                   10 * time.Second,
 			sameSiteLegacyWorkaround: false,
 			expectedCookies: map[string]cookie{
 				"csrf_default": {
 					httpOnly: true,
 					secure:   true,
 					sameSite: 0, // see https://golang.org/doc/go1.16#net/http
+					maxAge:   10,
 				},
 			},
 		},
@@ -286,12 +291,14 @@ func TestCreateCsrfSession(t *testing.T) {
 			name:                     "csrf_lax_insecure",
 			secure:                   false,
 			sameSite:                 http.SameSiteLaxMode,
+			maxAge:                   20 * time.Second,
 			sameSiteLegacyWorkaround: false,
 			expectedCookies: map[string]cookie{
 				"csrf_lax_insecure_insecure": {
 					httpOnly: true,
 					secure:   false,
 					sameSite: http.SameSiteLaxMode,
+					maxAge:   20,
 				},
 			},
 		},
@@ -299,12 +306,14 @@ func TestCreateCsrfSession(t *testing.T) {
 			name:                     "csrf_none",
 			secure:                   true,
 			sameSite:                 http.SameSiteNoneMode,
+			maxAge:                   30 * time.Second,
 			sameSiteLegacyWorkaround: false,
 			expectedCookies: map[string]cookie{
 				"csrf_none": {
 					httpOnly: true,
 					secure:   true,
 					sameSite: http.SameSiteNoneMode,
+					maxAge:   30,
 				},
 			},
 		},
@@ -312,17 +321,20 @@ func TestCreateCsrfSession(t *testing.T) {
 			name:                     "csrf_none_fallback",
 			secure:                   true,
 			sameSite:                 http.SameSiteNoneMode,
+			maxAge:                   40 * time.Second,
 			sameSiteLegacyWorkaround: true,
 			expectedCookies: map[string]cookie{
 				"csrf_none_fallback": {
 					httpOnly: true,
 					secure:   true,
 					sameSite: http.SameSiteNoneMode,
+					maxAge:   40,
 				},
 				"csrf_none_fallback_legacy": {
 					httpOnly: true,
 					secure:   true,
 					sameSite: 0,
+					maxAge:   40,
 				},
 			},
 		},
@@ -330,12 +342,14 @@ func TestCreateCsrfSession(t *testing.T) {
 			name:                     "csrf_strict_fallback_ignored",
 			secure:                   true,
 			sameSite:                 http.SameSiteStrictMode,
+			maxAge:                   50 * time.Second,
 			sameSiteLegacyWorkaround: true,
 			expectedCookies: map[string]cookie{
 				"csrf_strict_fallback_ignored": {
 					httpOnly: true,
 					secure:   true,
 					sameSite: http.SameSiteStrictMode,
+					maxAge:   50,
 				},
 			},
 		},
@@ -345,7 +359,7 @@ func TestCreateCsrfSession(t *testing.T) {
 			rr := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
 
-			err := createCsrfSession(rr, req, store, tc.name, "value", tc.secure, tc.sameSite, tc.sameSiteLegacyWorkaround)
+			err := createCsrfSession(rr, req, store, tc.name, "value", tc.secure, tc.sameSite, tc.sameSiteLegacyWorkaround, tc.maxAge)
 			assert.NoError(t, err)
 
 			cookies := make(map[string]cookie)
@@ -354,6 +368,7 @@ func TestCreateCsrfSession(t *testing.T) {
 					httpOnly: c.HttpOnly,
 					secure:   c.Secure,
 					sameSite: c.SameSite,
+					maxAge:   c.MaxAge,
 				}
 			}
 			assert.Equal(t, tc.expectedCookies, cookies)

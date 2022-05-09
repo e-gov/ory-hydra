@@ -382,6 +382,25 @@ func (p *Persister) FindGrantedAndRememberedConsentRequests(ctx context.Context,
 	})
 }
 
+func (p *Persister) FindSubjectsSessionGrantedConsentRequests(ctx context.Context, subject, sid string, limit, offset int) ([]consent.HandledConsentRequest, error) {
+	var rs []consent.HandledConsentRequest
+	c := p.Connection(ctx)
+	tn := consent.HandledConsentRequest{}.TableName()
+
+	if err := c.
+		RawQuery("SELECT DISTINCT rh.* FROM hydra_oauth2_consent_request_handled rh JOIN hydra_oauth2_consent_request r ON r.challenge = rh.challenge JOIN hydra_oauth2_consent_request r_active ON r_active.client_id = r.client_id AND r_active.subject = r.subject WHERE r.subject = ? AND r.skip = FALSE AND rh.error = '{}' AND r.login_session_id = ?", subject, sid).
+		Order(fmt.Sprintf("%s.requested_at DESC", tn)).
+		Paginate(offset/limit+1, limit).
+		All(&rs); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errorsx.WithStack(consent.ErrNoPreviousConsentFound)
+		}
+		return nil, sqlcon.HandleError(err)
+	}
+
+	return p.resolveHandledConsentRequests(ctx, rs)
+}
+
 func (p *Persister) FindSubjectsGrantedConsentRequests(ctx context.Context, subject string, limit, offset int) ([]consent.HandledConsentRequest, error) {
 	var rs []consent.HandledConsentRequest
 	c := p.Connection(ctx)

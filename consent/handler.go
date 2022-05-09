@@ -195,9 +195,18 @@ func (h *Handler) GetConsentSessions(w http.ResponseWriter, r *http.Request, ps 
 		h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrInvalidRequest.WithHint(`Query parameter 'subject' is not defined but should have been.`)))
 		return
 	}
+	loginSessionId := r.URL.Query().Get("login_session_id")
 
 	limit, offset := pagination.Parse(r, 100, 0, 500)
-	s, err := h.r.ConsentManager().FindSubjectsGrantedConsentRequests(r.Context(), subject, limit, offset)
+
+	var s []HandledConsentRequest
+	var err error
+	if len(loginSessionId) == 0 {
+		s, err = h.r.ConsentManager().FindSubjectsGrantedConsentRequests(r.Context(), subject, limit, offset)
+	} else {
+		s, err = h.r.ConsentManager().FindSubjectsSessionGrantedConsentRequests(r.Context(), subject, loginSessionId, limit, offset)
+	}
+
 	if errors.Is(err, ErrNoPreviousConsentFound) {
 		h.r.Writer().Write(w, r, []PreviousConsentSession{})
 		return

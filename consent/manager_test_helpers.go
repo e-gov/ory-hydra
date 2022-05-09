@@ -618,6 +618,59 @@ func ManagerTests(m Manager, clientManager client.Manager, fositeManager x.Fosit
 
 			for i, tc := range []struct {
 				subject    string
+				sid        string
+				challenges []string
+				clients    []string
+			}{
+				{
+					subject:    "subjectrv1",
+					sid:        "fk-login-session-rv1",
+					challenges: []string{"challengerv1"},
+					clients:    []string{"fk-client-rv1"},
+				},
+				{
+					subject:    "subjectrv2",
+					sid:        "fk-login-session-rv2",
+					challenges: []string{"challengerv2"},
+					clients:    []string{"fk-client-rv2"},
+				},
+				{
+					subject:    "subjectrv3",
+					sid:        "fk-login-session-rv3",
+					challenges: []string{},
+					clients:    []string{},
+				},
+			} {
+				t.Run(fmt.Sprintf("case=%d/subject=%s/session=%s", i, tc.subject, tc.sid), func(t *testing.T) {
+					consents1, err := m.FindSubjectsGrantedConsentRequests(context.Background(), tc.subject, 100, 0)
+					consents2, _ := m.FindSubjectsSessionGrantedConsentRequests(context.Background(), tc.subject, tc.sid, 100, 0)
+
+					if len(consents1) != 0 && len(consents2) == 0 {
+						fmt.Println("")
+					}
+
+					consents, _ := m.FindSubjectsSessionGrantedConsentRequests(context.Background(), tc.subject, tc.sid, 100, 0)
+					assert.Equal(t, len(tc.challenges), len(consents))
+
+					if len(tc.challenges) == 0 {
+						assert.EqualError(t, err, ErrNoPreviousConsentFound.Error())
+					} else {
+						require.NoError(t, err)
+						for _, consent := range consents {
+							assert.Contains(t, tc.challenges, consent.ID)
+							assert.Contains(t, tc.clients, consent.ConsentRequest.Client.OutfacingID)
+						}
+					}
+
+					n, err := m.CountSubjectsGrantedConsentRequests(context.Background(), tc.subject)
+					require.NoError(t, err)
+					assert.Equal(t, n, len(tc.challenges))
+
+				})
+			}
+
+			for i, tc := range []struct {
+				subject    string
 				challenges []string
 				clients    []string
 			}{

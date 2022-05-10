@@ -24,9 +24,10 @@ const (
 	KeyTLSCertPath             = "serve." + KeySuffixTLSCertPath
 	KeyTLSKeyPath              = "serve." + KeySuffixTLSKeyPath
 
-	KeyClientTLSCipherSuites = "client.tls.cipher_suites"
-	KeyClientTLSMinVer       = "client.tls.min_version"
-	KeyClientTLSMaxVer       = "client.tls.max_version"
+	KeyClientTLSInsecureSkipVerify = "client.tls.insecure_skip_verify"
+	KeyClientTLSCipherSuites       = "client.tls.cipher_suites"
+	KeyClientTLSMinVer             = "client.tls.min_version"
+	KeyClientTLSMaxVer             = "client.tls.max_version"
 )
 
 type TLSConfig interface {
@@ -57,6 +58,7 @@ func (p *Provider) TLS(iface ServeInterface) TLSConfig {
 
 func (p *Provider) TLSClientConfig() (*tls.Config, error) {
 	tlsClientConfig := new(tls.Config)
+	tlsClientConfig.InsecureSkipVerify = p.p.BoolF(KeyClientTLSInsecureSkipVerify, false)
 
 	if p.p.Exists(KeyClientTLSCipherSuites) {
 		keyCipherSuites := p.p.Strings(KeyClientTLSCipherSuites)

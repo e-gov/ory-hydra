@@ -457,6 +457,10 @@
       "additionalProperties": false,
       "description": "Configures http client TLS settings.",
       "properties": {
+        "insecure_skip_verify": {
+          "type": "boolean",
+          "description": "Controls whether a client verifies the server's certificate chain and host name."
+        },
         "min_version": {
           "type": "string",
           "description": "Minimum supported TLS version.",

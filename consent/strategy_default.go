@@ -750,6 +750,7 @@ func (s *DefaultStrategy) executeBackChannelLogout(ctx context.Context, r *http.
 		httpx.ResilientClientWithClient(&http.Client{
 			Timeout: time.Minute,
 			Transport: &http.Transport{
+				Proxy:           http.ProxyFromEnvironment,
 				TLSClientConfig: s.tlsClientConfig,
 			},
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {

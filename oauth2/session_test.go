@@ -38,7 +38,7 @@ func TestUnmarshalSession(t *testing.T) {
 				JTI:                                 "",
 				Issuer:                              "http://127.0.0.1:4444/",
 				Subject:                             "foo@bar.com",
-				Audience:                            []string{"auth-code-client"},
+				Audience:                            "auth-code-client",
 				Nonce:                               "mbxojlzlkefzmlecvrzfkmpm",
 				ExpiresAt:                           parseTime(t, "0001-01-01T00:00:00Z"),
 				IssuedAt:                            parseTime(t, "2022-08-25T09:21:04Z"),
@@ -48,9 +48,7 @@ func TestUnmarshalSession(t *testing.T) {
 				AuthenticationContextClassReference: "0",
 				AuthenticationMethodsReferences:     []string{},
 				CodeHash:                            "",
-				Extra: map[string]interface{}{
-					"sid": "177e1f44-a1e9-415c-bfa3-8b62280b182d",
-				},
+				Extra:                               map[string]interface{}{},
 			},
 			Headers: &jwt.Headers{Extra: map[string]interface{}{
 				"kid": "public:hydra.openid.id-token",

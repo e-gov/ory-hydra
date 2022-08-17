@@ -4,9 +4,7 @@
       "jti": "",
       "iss": "http://127.0.0.1:4444/",
       "sub": "foo@bar.com",
-      "aud": [
-        "auth-code-client"
-      ],
+      "aud": "auth-code-client",
       "nonce": "mbxojlzlkefzmlecvrzfkmpm",
       "exp": "0001-01-01T00:00:00Z",
       "iat": "2022-08-25T09:21:04Z",
@@ -16,9 +14,7 @@
       "acr": "0",
       "amr": [],
       "c_hash": "",
-      "ext": {
-        "sid": "177e1f44-a1e9-415c-bfa3-8b62280b182d"
-      }
+      "ext": {}
     },
     "headers": {
       "extra": {

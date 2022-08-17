@@ -6,17 +6,13 @@
         "jti": "",
         "iss": "http://localhost:4444",
         "sub": "foo",
-        "aud": [
-          "app-client"
-        ],
+        "aud": "app-client",
         "nonce": "",
         "at_hash": "",
         "acr": "1",
         "amr": null,
         "c_hash": "",
-        "ext": {
-          "sid": ""
-        }
+        "ext": {}
       },
       "headers": {
         "extra": {

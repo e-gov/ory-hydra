@@ -153,6 +153,8 @@ type WellKnown struct {
 	// JSON array containing a list of Proof Key for Code Exchange (PKCE) [RFC7636] code challenge methods supported
 	// by this authorization server.
 	CodeChallengeMethodsSupported []string `json:"code_challenge_methods_supported"`
+	ClaimTypesSupported []string `json:"claim_types_supported"`
+	UiLocalesSupported []string `json:"ui_locales_supported"`
 }
 
 // swagger:parameters deleteOAuth2Token

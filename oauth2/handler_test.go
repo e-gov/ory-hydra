@@ -439,6 +439,8 @@ func TestHandlerWellKnown(t *testing.T) {
 		TokenEndpointAuthMethodsSupported:      []string{"client_secret_post", "client_secret_basic", "private_key_jwt", "none"},
 		GrantTypesSupported:                    []string{"authorization_code", "implicit", "client_credentials", "refresh_token"},
 		ResponseModesSupported:                 []string{"query", "fragment"},
+		ClaimTypesSupported:                    []string{"normal"},
+		UiLocalesSupported:                     []string{"et", "en", "ru"},
 		IDTokenSigningAlgValuesSupported:       []string{"RS256"},
 		UserinfoSigningAlgValuesSupported:      []string{"none", "RS256"},
 		RequestParameterSupported:              true,

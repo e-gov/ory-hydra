@@ -243,6 +243,8 @@ func (h *Handler) WellKnownHandler(w http.ResponseWriter, r *http.Request) {
 		TokenEndpointAuthMethodsSupported:      []string{"client_secret_post", "client_secret_basic", "private_key_jwt", "none"},
 		IDTokenSigningAlgValuesSupported:       []string{"RS256"},
 		GrantTypesSupported:                    []string{"authorization_code", "implicit", "client_credentials", "refresh_token"},
+		ClaimTypesSupported:                    []string{"normal"},
+		UiLocalesSupported:                     []string{"et", "en", "ru"},
 		ResponseModesSupported:                 []string{"query", "fragment"},
 		UserinfoSigningAlgValuesSupported:      []string{"none", "RS256"},
 		RequestParameterSupported:              true,

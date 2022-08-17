@@ -2,6 +2,9 @@
   "authorization_endpoint": "http://hydra.localhost/oauth2/auth",
   "backchannel_logout_session_supported": true,
   "backchannel_logout_supported": true,
+  "claim_types_supported": [
+    "normal"
+  ],
   "claims_parameter_supported": false,
   "claims_supported": [
     "sub"
@@ -64,6 +67,11 @@
     "client_secret_basic",
     "private_key_jwt",
     "none"
+  ],
+  "ui_locales_supported": [
+    "et",
+    "en",
+    "ru"
   ],
   "userinfo_endpoint": "/userinfo",
   "userinfo_signed_response_alg": [

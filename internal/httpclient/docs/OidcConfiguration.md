@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 **AuthorizationEndpoint** | **string** | OAuth 2.0 Authorization Endpoint URL | 
 **BackchannelLogoutSessionSupported** | Pointer to **bool** | OpenID Connect Back-Channel Logout Session Required  Boolean value specifying whether the OP can pass a sid (session ID) Claim in the Logout Token to identify the RP session with the OP. If supported, the sid Claim is also included in ID Tokens issued by the OP | [optional] 
 **BackchannelLogoutSupported** | Pointer to **bool** | OpenID Connect Back-Channel Logout Supported  Boolean value specifying whether the OP supports back-channel logout, with true indicating support. | [optional] 
+**ClaimTypesSupported** | Pointer to **[]string** | OpenID Connect Supported Claim Types  JSON array containing a list of the Claim Types that the OpenID Provider supports. These Claim Types are described in Section 5.6 of OpenID Connect Core 1.0 [OpenID.Core]. Values defined by this specification are normal, aggregated, and distributed. If omitted, the implementation supports only normal Claims. | [optional] 
 **ClaimsParameterSupported** | Pointer to **bool** | OpenID Connect Claims Parameter Parameter Supported  Boolean value specifying whether the OP supports use of the claims parameter, with true indicating support. | [optional] 
 **ClaimsSupported** | Pointer to **[]string** | OpenID Connect Supported Claims  JSON array containing a list of the Claim Names of the Claims that the OpenID Provider MAY be able to supply values for. Note that for privacy or other reasons, this might not be an exhaustive list. | [optional] 
 **CodeChallengeMethodsSupported** | Pointer to **[]string** | OAuth 2.0 PKCE Supported Code Challenge Methods  JSON array containing a list of Proof Key for Code Exchange (PKCE) [RFC7636] code challenge methods supported by this authorization server. | [optional] 
@@ -30,6 +31,7 @@ Name | Type | Description | Notes
 **SubjectTypesSupported** | **[]string** | OpenID Connect Supported Subject Types  JSON array containing a list of the Subject Identifier types that this OP supports. Valid types include pairwise and public. | 
 **TokenEndpoint** | **string** | OAuth 2.0 Token Endpoint URL | 
 **TokenEndpointAuthMethodsSupported** | Pointer to **[]string** | OAuth 2.0 Supported Client Authentication Methods  JSON array containing a list of Client Authentication methods supported by this Token Endpoint. The options are client_secret_post, client_secret_basic, client_secret_jwt, and private_key_jwt, as described in Section 9 of OpenID Connect Core 1.0 | [optional] 
+**UiLocalesSupported** | Pointer to **[]string** | OpenID Connect Supported UI Locales  JSON array containing a list of the UI locales that this OP supports. | [optional] 
 **UserinfoEndpoint** | Pointer to **string** | OpenID Connect Userinfo URL  URL of the OP&#39;s UserInfo Endpoint. | [optional] 
 **UserinfoSignedResponseAlg** | **[]string** | OpenID Connect User Userinfo Signing Algorithm  Algorithm used to sign OpenID Connect Userinfo Responses. | 
 **UserinfoSigningAlgValuesSupported** | Pointer to **[]string** | OpenID Connect Supported Userinfo Signing Algorithm  JSON array containing a list of the JWS [JWS] signing algorithms (alg values) [JWA] supported by the UserInfo Endpoint to encode the Claims in a JWT [JWT]. | [optional] 
@@ -122,6 +124,31 @@ SetBackchannelLogoutSupported sets BackchannelLogoutSupported field to given val
 `func (o *OidcConfiguration) HasBackchannelLogoutSupported() bool`
 
 HasBackchannelLogoutSupported returns a boolean if a field has been set.
+
+### GetClaimTypesSupported
+
+`func (o *OidcConfiguration) GetClaimTypesSupported() []string`
+
+GetClaimTypesSupported returns the ClaimTypesSupported field if non-nil, zero value otherwise.
+
+### GetClaimTypesSupportedOk
+
+`func (o *OidcConfiguration) GetClaimTypesSupportedOk() (*[]string, bool)`
+
+GetClaimTypesSupportedOk returns a tuple with the ClaimTypesSupported field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetClaimTypesSupported
+
+`func (o *OidcConfiguration) SetClaimTypesSupported(v []string)`
+
+SetClaimTypesSupported sets ClaimTypesSupported field to given value.
+
+### HasClaimTypesSupported
+
+`func (o *OidcConfiguration) HasClaimTypesSupported() bool`
+
+HasClaimTypesSupported returns a boolean if a field has been set.
 
 ### GetClaimsParameterSupported
 
@@ -662,6 +689,31 @@ SetTokenEndpointAuthMethodsSupported sets TokenEndpointAuthMethodsSupported fiel
 `func (o *OidcConfiguration) HasTokenEndpointAuthMethodsSupported() bool`
 
 HasTokenEndpointAuthMethodsSupported returns a boolean if a field has been set.
+
+### GetUiLocalesSupported
+
+`func (o *OidcConfiguration) GetUiLocalesSupported() []string`
+
+GetUiLocalesSupported returns the UiLocalesSupported field if non-nil, zero value otherwise.
+
+### GetUiLocalesSupportedOk
+
+`func (o *OidcConfiguration) GetUiLocalesSupportedOk() (*[]string, bool)`
+
+GetUiLocalesSupportedOk returns a tuple with the UiLocalesSupported field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetUiLocalesSupported
+
+`func (o *OidcConfiguration) SetUiLocalesSupported(v []string)`
+
+SetUiLocalesSupported sets UiLocalesSupported field to given value.
+
+### HasUiLocalesSupported
+
+`func (o *OidcConfiguration) HasUiLocalesSupported() bool`
+
+HasUiLocalesSupported returns a boolean if a field has been set.
 
 ### GetUserinfoEndpoint
 

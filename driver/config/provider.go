@@ -235,7 +235,7 @@ func (p *DefaultProvider) SubjectTypesSupported(ctx context.Context, additionalS
 func (p *DefaultProvider) DefaultClientScope(ctx context.Context) []string {
 	return p.getProvider(ctx).StringsF(
 		KeyDefaultClientScope,
-		[]string{"offline_access", "offline", "openid"},
+		[]string{"openid"},
 	)
 }
 
@@ -451,7 +451,7 @@ func (p *DefaultProvider) OIDCDiscoverySupportedClaims(ctx context.Context) []st
 func (p *DefaultProvider) OIDCDiscoverySupportedScope(ctx context.Context) []string {
 	return stringslice.Unique(
 		append(
-			[]string{"offline_access", "offline", "openid"},
+			[]string{"openid"},
 			p.getProvider(ctx).Strings(KeyOIDCDiscoverySupportedScope)...,
 		),
 	)

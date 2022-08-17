@@ -663,8 +663,6 @@ func TestAuthCodeWithDefaultStrategy(t *testing.T) {
 
 		for _, f := range []string{
 			"sub",
-			"iss",
-			"aud",
 			"bar",
 			"auth_time",
 		} {

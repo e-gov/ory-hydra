@@ -311,6 +311,7 @@ func (h *Handler) UserinfoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	interim := ar.GetSession().(*Session).IDTokenClaims().ToMap()
+	interim["auth_time"] = interim["iat"]
 	delete(interim, "nonce")
 	delete(interim, "at_hash")
 	delete(interim, "c_hash")

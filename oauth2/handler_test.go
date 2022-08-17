@@ -437,7 +437,7 @@ func TestHandlerWellKnown(t *testing.T) {
 		ScopesSupported:                        conf.OIDCDiscoverySupportedScope(),
 		UserinfoEndpoint:                       conf.OIDCDiscoveryUserinfoEndpoint().String(),
 		TokenEndpointAuthMethodsSupported:      []string{"client_secret_post", "client_secret_basic", "private_key_jwt", "none"},
-		GrantTypesSupported:                    []string{"authorization_code", "implicit", "client_credentials", "refresh_token"},
+		GrantTypesSupported:                    []string{"authorization_code"},
 		ResponseModesSupported:                 []string{"query", "fragment"},
 		ClaimTypesSupported:                    []string{"normal"},
 		UiLocalesSupported:                     []string{"et", "en", "ru"},

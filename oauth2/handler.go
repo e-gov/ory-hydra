@@ -242,7 +242,7 @@ func (h *Handler) WellKnownHandler(w http.ResponseWriter, r *http.Request) {
 		UserinfoEndpoint:                       h.c.OIDCDiscoveryUserinfoEndpoint().String(),
 		TokenEndpointAuthMethodsSupported:      []string{"client_secret_post", "client_secret_basic", "private_key_jwt", "none"},
 		IDTokenSigningAlgValuesSupported:       []string{"RS256"},
-		GrantTypesSupported:                    []string{"authorization_code", "implicit", "client_credentials", "refresh_token"},
+		GrantTypesSupported:                    []string{"authorization_code"},
 		ClaimTypesSupported:                    []string{"normal"},
 		UiLocalesSupported:                     []string{"et", "en", "ru"},
 		ResponseModesSupported:                 []string{"query", "fragment"},

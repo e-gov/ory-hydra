@@ -240,7 +240,7 @@ func (h *Handler) WellKnownHandler(w http.ResponseWriter, r *http.Request) {
 		ClaimsSupported:                        h.c.OIDCDiscoverySupportedClaims(),
 		ScopesSupported:                        h.c.OIDCDiscoverySupportedScope(),
 		UserinfoEndpoint:                       h.c.OIDCDiscoveryUserinfoEndpoint().String(),
-		TokenEndpointAuthMethodsSupported:      []string{"client_secret_post", "client_secret_basic", "private_key_jwt", "none"},
+		TokenEndpointAuthMethodsSupported:      []string{"client_secret_basic"},
 		IDTokenSigningAlgValuesSupported:       []string{"RS256"},
 		GrantTypesSupported:                    []string{"authorization_code"},
 		ClaimTypesSupported:                    []string{"normal"},

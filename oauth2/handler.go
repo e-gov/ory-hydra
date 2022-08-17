@@ -299,7 +299,7 @@ type oidcConfiguration struct {
 	// OAuth 2.0 Supported Response Modes
 	//
 	// JSON array containing a list of the OAuth 2.0 response_mode values that this OP supports.
-	ResponseModesSupported []string `json:"response_modes_supported"`
+	ResponseModesSupported []string `json:"response_modes_supported,omitempty"`
 
 	// OpenID Connect Userinfo URL
 	//
@@ -353,7 +353,7 @@ type oidcConfiguration struct {
 	// OpenID Connect Request URI Parameter Supported
 	//
 	// Boolean value specifying whether the OP supports use of the request_uri parameter, with true indicating support.
-	RequestURIParameterSupported bool `json:"request_uri_parameter_supported"`
+	RequestURIParameterSupported bool `json:"request_uri_parameter_supported,omitempty"`
 
 	// OpenID Connect Requires Request URI Registration
 	//
@@ -364,7 +364,7 @@ type oidcConfiguration struct {
 	// OpenID Connect Claims Parameter Parameter Supported
 	//
 	// Boolean value specifying whether the OP supports use of the claims parameter, with true indicating support.
-	ClaimsParameterSupported bool `json:"claims_parameter_supported"`
+	ClaimsParameterSupported bool `json:"claims_parameter_supported,omitempty"`
 
 	// OAuth 2.0 Token Revocation URL
 	//
@@ -374,13 +374,13 @@ type oidcConfiguration struct {
 	// OpenID Connect Back-Channel Logout Supported
 	//
 	// Boolean value specifying whether the OP supports back-channel logout, with true indicating support.
-	BackChannelLogoutSupported bool `json:"backchannel_logout_supported"`
+	BackChannelLogoutSupported bool `json:"backchannel_logout_supported,omitempty"`
 
 	// OpenID Connect Back-Channel Logout Session Required
 	//
 	// Boolean value specifying whether the OP can pass a sid (session ID) Claim in the Logout Token to identify the RP
 	// session with the OP. If supported, the sid Claim is also included in ID Tokens issued by the OP
-	BackChannelLogoutSessionSupported bool `json:"backchannel_logout_session_supported"`
+	BackChannelLogoutSessionSupported bool `json:"backchannel_logout_session_supported,omitempty"`
 
 	// OpenID Connect Front-Channel Logout Supported
 	//
@@ -397,7 +397,7 @@ type oidcConfiguration struct {
 	// OpenID Connect End-Session Endpoint
 	//
 	// URL at the OP to which an RP can perform a redirect to request that the End-User be logged out at the OP.
-	EndSessionEndpoint string `json:"end_session_endpoint"`
+	EndSessionEndpoint string `json:"end_session_endpoint,omitempty"`
 
 	// OpenID Connect Supported Request Object Signing Algorithms
 	//
@@ -453,11 +453,6 @@ func (h *Handler) discoverOidcConfiguration(w http.ResponseWriter, r *http.Reque
 		IDTokenSigningAlgValuesSupported:       []string{key.Algorithm},
 		GrantTypesSupported:                    []string{"authorization_code"},
 		UiLocalesSupported:                     []string{"et", "en", "ru"},
-		ResponseModesSupported:                 []string{"query", "fragment"},
-		RequestURIParameterSupported:           true,
-		BackChannelLogoutSupported:             true,
-		BackChannelLogoutSessionSupported:      true,
-		EndSessionEndpoint:                     urlx.AppendPaths(h.c.IssuerURL(r.Context()), LogoutPath).String(),
 	})
 }
 

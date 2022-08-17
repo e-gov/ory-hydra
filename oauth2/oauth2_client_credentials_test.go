@@ -85,7 +85,7 @@ func TestClientCredentials(t *testing.T) {
 		check := func(res gjson.Result) {
 			assert.EqualValues(t, cl.GetID(), res.Get("client_id").String(), "%s", res.Raw)
 			assert.EqualValues(t, cl.GetID(), res.Get("sub").String(), "%s", res.Raw)
-			assert.EqualValues(t, reg.Config().IssuerURL(ctx).String(), res.Get("iss").String(), "%s", res.Raw)
+			assert.EqualValues(t, strings.TrimRight(reg.Config().IssuerURL(ctx).String(), "/"), res.Get("iss").String(), "%s", res.Raw)
 
 			assert.EqualValues(t, res.Get("nbf").Int(), res.Get("iat").Int(), "%s", res.Raw)
 			requirex.EqualTime(t, expectedExp, time.Unix(res.Get("exp").Int(), 0), time.Second)

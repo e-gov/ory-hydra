@@ -643,6 +643,12 @@ func (h *Handler) TokenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.r.Logger().
+		WithField("tara.session.oidc.state", accessRequest.GetSession().(*Session).IDTokenClaims().Get("state")).
+		WithField("tara.session.oidc.id_token", accessResponse.GetExtra("id_token")).
+		WithField("tara.session.oidc.scope", accessResponse.GetExtra("scope")).
+		Infoln("ID-Token response")
+
 	h.r.OAuth2Provider().WriteAccessResponse(w, accessRequest, accessResponse)
 }
 

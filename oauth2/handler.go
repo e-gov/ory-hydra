@@ -445,7 +445,7 @@ func (h *Handler) discoverOidcConfiguration(w http.ResponseWriter, r *http.Reque
 		RevocationEndpoint:                     urlx.AppendPaths(h.c.IssuerURL(r.Context()), RevocationPath).String(),
 		RegistrationEndpoint:                   h.c.OAuth2ClientRegistrationURL(r.Context()).String(),
 		SubjectTypes:                           h.c.SubjectTypesSupported(r.Context()),
-		ResponseTypes:                          []string{"code", "code id_token", "id_token", "token id_token", "token", "token id_token code"},
+		ResponseTypes:                          []string{"code"},
 		ClaimsSupported:                        h.c.OIDCDiscoverySupportedClaims(r.Context()),
 		ClaimTypesSupported:                    []string{"normal"},
 		ScopesSupported:                        h.c.OIDCDiscoverySupportedScope(r.Context()),

@@ -17,10 +17,7 @@
   "frontchannel_logout_session_supported": true,
   "frontchannel_logout_supported": true,
   "grant_types_supported": [
-    "authorization_code",
-    "implicit",
-    "client_credentials",
-    "refresh_token"
+    "authorization_code"
   ],
   "id_token_signed_response_alg": [
     "RS256"

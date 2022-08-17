@@ -236,7 +236,7 @@ func (h *Handler) WellKnownHandler(w http.ResponseWriter, r *http.Request) {
 		RevocationEndpoint:                     urlx.AppendPaths(h.c.IssuerURL(), RevocationPath).String(),
 		RegistrationEndpoint:                   h.c.OAuth2ClientRegistrationURL().String(),
 		SubjectTypes:                           h.c.SubjectTypesSupported(),
-		ResponseTypes:                          []string{"code", "code id_token", "id_token", "token id_token", "token", "token id_token code"},
+		ResponseTypes:                          []string{"code"},
 		ClaimsSupported:                        h.c.OIDCDiscoverySupportedClaims(),
 		ScopesSupported:                        h.c.OIDCDiscoverySupportedScope(),
 		UserinfoEndpoint:                       h.c.OIDCDiscoveryUserinfoEndpoint().String(),

@@ -248,7 +248,7 @@ func TestUserinfo(t *testing.T) {
 							DefaultSession: &openid.DefaultSession{
 								Claims: &jwt.IDTokenClaims{
 									Subject:  "another-alice",
-									Audience: []string{"something-else"},
+									Audience: "something-else",
 								},
 								Headers: new(jwt.Headers),
 								Subject: "alice",
@@ -283,7 +283,7 @@ func TestUserinfo(t *testing.T) {
 							DefaultSession: &openid.DefaultSession{
 								Claims: &jwt.IDTokenClaims{
 									Subject:  "alice",
-									Audience: []string{"foobar"},
+									Audience: "foobar",
 								},
 								Headers: new(jwt.Headers),
 								Subject: "alice",

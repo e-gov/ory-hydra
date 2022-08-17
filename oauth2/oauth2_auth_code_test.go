@@ -212,7 +212,6 @@ func TestAuthCodeWithDefaultStrategy(t *testing.T) {
 		assert.True(t, time.Now().Before(time.Unix(claims.Get("exp").Int(), 0)), "%s", claims)
 		assert.NotEmpty(t, claims.Get("jti").String(), "%s", claims)
 		assert.EqualValues(t, strings.TrimRight(reg.Config().IssuerURL().String(), "/"), claims.Get("iss").String(), "%s", claims)
-		assert.NotEmpty(t, claims.Get("sid").String(), "%s", claims)
 		assert.Equal(t, "1", claims.Get("acr").String(), "%s", claims)
 		require.Len(t, claims.Get("amr").Array(), 1, "%s", claims)
 		assert.EqualValues(t, "pwd", claims.Get("amr").Array()[0].String(), "%s", claims)
@@ -553,7 +552,6 @@ func TestAuthCodeWithDefaultStrategy(t *testing.T) {
 		for _, f := range []string{
 			"sub",
 			"bar",
-			"auth_time",
 		} {
 			assert.NotEmpty(t, uiClaims.Get(f).Raw, "%s: %s", f, uiClaims)
 			assert.EqualValues(t, idClaims.Get(f).Raw, uiClaims.Get(f).Raw, "%s\nuserinfo: %s\nidtoken: %s", f, uiClaims, idClaims)

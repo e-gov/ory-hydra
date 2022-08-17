@@ -735,13 +735,13 @@ func (h *Handler) AuthHandler(w http.ResponseWriter, r *http.Request, _ httprout
 
 		// These are required for work around https://github.com/ory/fosite/issues/530
 		Nonce:    authorizeRequest.GetRequestForm().Get("nonce"),
-		Audience: []string{authorizeRequest.GetClient().GetID()},
+		Audience: authorizeRequest.GetClient().GetID(),
 		IssuedAt: time.Now().Truncate(time.Second).UTC(),
 
 		// This is set by the fosite strategy
 		// ExpiresAt:   time.Now().Add(h.IDTokenLifespan).UTC(),
 	}
-	claims.Add("sid", session.ConsentRequest.LoginSessionID)
+	//claims.Add("sid", session.ConsentRequest.LoginSessionID)
 
 	// done
 	response, err := h.r.OAuth2Provider().NewAuthorizeResponse(ctx, authorizeRequest, &Session{

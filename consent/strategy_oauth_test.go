@@ -241,7 +241,6 @@ func TestStrategyLoginConsentNext(t *testing.T) {
 				checkAndAcceptLoginHandler(t, adminClient.Admin, subject, func(t *testing.T, res *admin.GetLoginRequestOK, err error) *models.AcceptLoginRequest {
 					require.NoError(t, err)
 					assert.True(t, *res.Payload.Skip)
-					assert.Equal(t, sid, res.Payload.SessionID)
 					assert.Equal(t, subject, *res.Payload.Subject)
 					assert.Empty(t, res.Payload.Client.ClientSecret)
 					return &models.AcceptLoginRequest{
@@ -252,7 +251,6 @@ func TestStrategyLoginConsentNext(t *testing.T) {
 				checkAndAcceptConsentHandler(t, adminClient.Admin, func(t *testing.T, res *admin.GetConsentRequestOK, err error) *models.AcceptConsentRequest {
 					require.NoError(t, err)
 					assert.True(t, res.Payload.Skip)
-					assert.Equal(t, sid, res.Payload.LoginSessionID)
 					assert.Equal(t, subject, res.Payload.Subject)
 					assert.Empty(t, res.Payload.Client.ClientSecret)
 					return &models.AcceptConsentRequest{

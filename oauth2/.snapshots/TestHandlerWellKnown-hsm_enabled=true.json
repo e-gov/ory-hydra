@@ -41,12 +41,7 @@
     "fragment"
   ],
   "response_types_supported": [
-    "code",
-    "code id_token",
-    "id_token",
-    "token id_token",
-    "token",
-    "token id_token code"
+    "code"
   ],
   "revocation_endpoint": "http://hydra.localhost/oauth2/revoke",
   "scopes_supported": [

@@ -317,23 +317,19 @@ func (h *Handler) UserinfoHandler(w http.ResponseWriter, r *http.Request) {
 	delete(interim, "exp")
 	delete(interim, "sid")
 	delete(interim, "jti")
+	delete(interim, "state")
+	delete(interim, "iat")
+	delete(interim, "iss")
+	delete(interim, "nbf")
+	delete(interim, "aud")
 
-	aud, ok := interim["aud"].([]string)
-	if !ok || len(aud) == 0 {
-		aud = []string{c.GetID()}
-	} else {
-		found := false
-		for _, a := range aud {
-			if a == c.GetID() {
-				found = true
-				break
-			}
+	if interim["profile_attributes"] != nil {
+		profileAttributes := interim["profile_attributes"].(map[string]interface{})
+		for key, element := range profileAttributes {
+			interim[key] = element
 		}
-		if !found {
-			aud = append(aud, c.GetID())
-		}
+		delete(interim, "profile_attributes")
 	}
-	interim["aud"] = aud
 
 	if c.UserinfoSignedResponseAlg == "RS256" {
 		interim["jti"] = uuid.New()

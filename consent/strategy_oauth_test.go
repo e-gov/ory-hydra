@@ -250,7 +250,6 @@ func TestStrategyLoginConsentNext(t *testing.T) {
 				checkAndAcceptLoginHandler(t, adminClient, subject, func(t *testing.T, res *hydra.OAuth2LoginRequest, err error) hydra.AcceptOAuth2LoginRequest {
 					require.NoError(t, err)
 					assert.True(t, res.Skip)
-					assert.Equal(t, sid, *res.SessionId)
 					assert.Equal(t, subject, res.Subject)
 					assert.Empty(t, pointerx.StringR(res.Client.ClientSecret))
 					return hydra.AcceptOAuth2LoginRequest{
@@ -261,7 +260,6 @@ func TestStrategyLoginConsentNext(t *testing.T) {
 				checkAndAcceptConsentHandler(t, adminClient, func(t *testing.T, res *hydra.OAuth2ConsentRequest, err error) hydra.AcceptOAuth2ConsentRequest {
 					require.NoError(t, err)
 					assert.True(t, *res.Skip)
-					assert.Equal(t, sid, *res.LoginSessionId)
 					assert.Equal(t, subject, *res.Subject)
 					assert.Empty(t, pointerx.StringR(res.Client.ClientSecret))
 					return hydra.AcceptOAuth2ConsentRequest{

@@ -90,7 +90,7 @@ func TestClientCredentials(t *testing.T) {
 		check := func(res gjson.Result) {
 			assert.EqualValues(t, cl.OutfacingID, res.Get("client_id").String(), "%s", res.Raw)
 			assert.EqualValues(t, cl.OutfacingID, res.Get("sub").String(), "%s", res.Raw)
-			assert.EqualValues(t, reg.Config().IssuerURL().String(), res.Get("iss").String(), "%s", res.Raw)
+			assert.EqualValues(t, strings.TrimRight(reg.Config().IssuerURL().String(), "/"), res.Get("iss").String(), "%s", res.Raw)
 
 			assert.EqualValues(t, res.Get("nbf").Int(), res.Get("iat").Int(), "%s", res.Raw)
 			assert.True(t, res.Get("exp").Int() >= res.Get("iat").Int()+int64(reg.Config().AccessTokenLifespan().Seconds()), "%s", res.Raw)

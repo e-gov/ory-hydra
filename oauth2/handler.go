@@ -229,7 +229,7 @@ func (h *Handler) LogoutHandler(w http.ResponseWriter, r *http.Request, ps httpr
 //       500: jsonError
 func (h *Handler) WellKnownHandler(w http.ResponseWriter, r *http.Request) {
 	h.r.Writer().Write(w, r, &WellKnown{
-		Issuer:                                 strings.TrimRight(h.c.IssuerURL().String(), "/") + "/",
+		Issuer:                                 strings.TrimRight(h.c.IssuerURL().String(), "/"),
 		AuthURL:                                h.c.OAuth2AuthURL().String(),
 		TokenURL:                               h.c.OAuth2TokenURL().String(),
 		JWKsURI:                                h.c.JWKSURL().String(),
@@ -497,7 +497,7 @@ func (h *Handler) IntrospectHandler(w http.ResponseWriter, r *http.Request, _ ht
 		Username:          session.GetUsername(),
 		Extra:             session.Extra,
 		Audience:          audience,
-		Issuer:            strings.TrimRight(h.c.IssuerURL().String(), "/") + "/",
+		Issuer:            strings.TrimRight(h.c.IssuerURL().String(), "/"),
 		ObfuscatedSubject: obfuscated,
 		TokenType:         resp.GetAccessTokenType(),
 		TokenUse:          string(resp.GetTokenUse()),
@@ -605,7 +605,7 @@ func (h *Handler) TokenHandler(w http.ResponseWriter, r *http.Request) {
 		session.Subject = accessRequest.GetClient().GetID()
 		session.ClientID = accessRequest.GetClient().GetID()
 		session.KID = accessTokenKeyID
-		session.DefaultSession.Claims.Issuer = strings.TrimRight(h.c.IssuerURL().String(), "/") + "/"
+		session.DefaultSession.Claims.Issuer = strings.TrimRight(h.c.IssuerURL().String(), "/")
 		session.DefaultSession.Claims.IssuedAt = time.Now().UTC()
 
 		var scopes = accessRequest.GetRequestedScopes()
@@ -728,7 +728,7 @@ func (h *Handler) AuthHandler(w http.ResponseWriter, r *http.Request, _ httprout
 	authorizeRequest.SetID(session.ID)
 	claims := &jwt.IDTokenClaims{
 		Subject: session.ConsentRequest.SubjectIdentifier,
-		Issuer:  strings.TrimRight(h.c.IssuerURL().String(), "/") + "/",
+		Issuer:  strings.TrimRight(h.c.IssuerURL().String(), "/"),
 
 		AuthTime:                            time.Time(session.AuthenticatedAt),
 		RequestedAt:                         session.RequestedAt,

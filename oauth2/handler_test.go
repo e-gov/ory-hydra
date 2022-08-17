@@ -425,7 +425,7 @@ func TestHandlerWellKnown(t *testing.T) {
 	defer res.Body.Close()
 
 	trueConfig := oauth2.WellKnown{
-		Issuer:                                 strings.TrimRight(conf.IssuerURL().String(), "/") + "/",
+		Issuer:                                 strings.TrimRight(conf.IssuerURL().String(), "/"),
 		AuthURL:                                conf.OAuth2AuthURL().String(),
 		TokenURL:                               conf.OAuth2TokenURL().String(),
 		JWKsURI:                                conf.JWKSURL().String(),

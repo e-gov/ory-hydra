@@ -312,6 +312,43 @@ func TestUserinfo(t *testing.T) {
 				assert.NotEmpty(t, claims.Claims["jti"])
 			},
 		},
+		{
+			setup: func(t *testing.T) {
+				issuedAt, err := time.Parse(time.RFC3339Nano, "2023-07-12T12:00:00Z")
+				require.NoError(t, err)
+				op.EXPECT().
+					IntrospectToken(gomock.Any(), gomock.Eq("access-token"), gomock.Eq(fosite.AccessToken), gomock.Any()).
+					DoAndReturn(func(_ context.Context, _ string, _ fosite.TokenType, session fosite.Session, _ ...string) (fosite.TokenType, fosite.AccessRequester, error) {
+						session = &oauth2.Session{
+							DefaultSession: &openid.DefaultSession{
+								Claims: &jwt.IDTokenClaims{
+									Subject:  "alice",
+									IssuedAt: issuedAt,
+								},
+								Headers: new(jwt.Headers),
+								Subject: "alice",
+							},
+							Extra: map[string]interface{}{},
+						}
+
+						return fosite.AccessToken, &fosite.AccessRequest{
+							Request: fosite.Request{
+								Client: &client.Client{
+									LegacyClientID:            "foobar",
+									UserinfoSignedResponseAlg: "none",
+								},
+								Session: session,
+							},
+						}, nil
+					})
+			},
+			expectStatusCode: http.StatusOK,
+			checkForSuccess: func(t *testing.T, body []byte) {
+				bodyString := string(body)
+				assert.True(t, strings.Contains(bodyString, `"sub":"alice"`), "%s", body)
+				assert.True(t, strings.Contains(bodyString, `"auth_time":1689163200`), "%s", body)
+			},
+		},
 	} {
 		t.Run(fmt.Sprintf("case=%d", k), func(t *testing.T) {
 			tc.setup(t)

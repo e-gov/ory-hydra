@@ -53,8 +53,6 @@
   ],
   "revocation_endpoint": "http://hydra.localhost/oauth2/revoke",
   "scopes_supported": [
-    "offline_access",
-    "offline",
     "openid"
   ],
   "subject_types_supported": [

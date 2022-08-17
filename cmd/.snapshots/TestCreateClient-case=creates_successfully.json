@@ -14,7 +14,7 @@
   "response_types": [
     "code"
   ],
-  "scope": "offline_access offline openid",
+  "scope": "openid",
   "skip_consent": false,
   "subject_type": "public",
   "token_endpoint_auth_method": "client_secret_basic",

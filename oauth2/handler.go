@@ -279,10 +279,22 @@ type oidcConfiguration struct {
 	// values for. Note that for privacy or other reasons, this might not be an exhaustive list.
 	ClaimsSupported []string `json:"claims_supported"`
 
+	// OpenID Connect Supported Claim Types
+	//
+	// JSON array containing a list of the Claim Types that the OpenID Provider supports. These Claim Types are
+	// described in Section 5.6 of OpenID Connect Core 1.0 [OpenID.Core]. Values defined by this specification are
+	// normal, aggregated, and distributed. If omitted, the implementation supports only normal Claims.
+	ClaimTypesSupported []string `json:"claim_types_supported"`
+
 	// OAuth 2.0 Supported Grant Types
 	//
 	// JSON array containing a list of the OAuth 2.0 Grant Type values that this OP supports.
 	GrantTypesSupported []string `json:"grant_types_supported"`
+
+	// OpenID Connect Supported UI Locales
+	//
+	// JSON array containing a list of the UI locales that this OP supports.
+	UiLocalesSupported []string `json:"ui_locales_supported"`
 
 	// OAuth 2.0 Supported Response Modes
 	//
@@ -435,6 +447,7 @@ func (h *Handler) discoverOidcConfiguration(w http.ResponseWriter, r *http.Reque
 		SubjectTypes:                           h.c.SubjectTypesSupported(r.Context()),
 		ResponseTypes:                          []string{"code", "code id_token", "id_token", "token id_token", "token", "token id_token code"},
 		ClaimsSupported:                        h.c.OIDCDiscoverySupportedClaims(r.Context()),
+		ClaimTypesSupported:                    []string{"normal"},
 		ScopesSupported:                        h.c.OIDCDiscoverySupportedScope(r.Context()),
 		UserinfoEndpoint:                       h.c.OIDCDiscoveryUserinfoEndpoint(r.Context()).String(),
 		TokenEndpointAuthMethodsSupported:      []string{"client_secret_post", "client_secret_basic", "private_key_jwt", "none"},
@@ -442,6 +455,7 @@ func (h *Handler) discoverOidcConfiguration(w http.ResponseWriter, r *http.Reque
 		IDTokenSignedResponseAlg:               []string{key.Algorithm},
 		UserinfoSignedResponseAlg:              []string{key.Algorithm},
 		GrantTypesSupported:                    []string{"authorization_code", "implicit", "client_credentials", "refresh_token"},
+		UiLocalesSupported:                     []string{"et", "en", "ru"},
 		ResponseModesSupported:                 []string{"query", "fragment"},
 		UserinfoSigningAlgValuesSupported:      []string{"none", key.Algorithm},
 		RequestParameterSupported:              true,

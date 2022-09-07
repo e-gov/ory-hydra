@@ -12,6 +12,7 @@ replace (
 )
 
 replace github.com/ory/hydra-client-go/v2 => ./internal/httpclient
+replace github.com/ory/fosite v0.44.0 => ../int-ory-fosite
 
 require (
 	github.com/ThalesIgnite/crypto11 v1.2.4

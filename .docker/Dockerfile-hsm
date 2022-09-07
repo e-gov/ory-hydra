@@ -2,16 +2,17 @@ FROM golang:1.18-alpine AS builder
 
 RUN apk --no-cache add --upgrade --latest build-base git gcc bash
 
-WORKDIR /go/src/github.com/ory/hydra
+COPY ./int-ory-hydra /go/src/int-ory-hydra
+COPY ./int-ory-fosite /go/src/int-ory-fosite
 
-COPY go.mod go.sum ./
+WORKDIR /go/src/int-ory-hydra
 
 ENV GO111MODULE on
 ENV CGO_ENABLED 1
 
 RUN go mod download
 
-COPY . .
+
 
 FROM builder as build-hydra
 RUN go build -tags=sqlite,hsm -o /usr/bin/hydra

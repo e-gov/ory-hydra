@@ -29,8 +29,6 @@ import (
 
 	"github.com/ory/x/errorsx"
 
-	"github.com/ory/x/stringslice"
-
 	"github.com/ory/hydra/x"
 
 	"github.com/julienschmidt/httprouter"
@@ -87,19 +85,12 @@ func (h *Handler) SetRoutes(admin *x.RouterAdmin, public *x.RouterPublic, corsMi
 //       200: JSONWebKeySet
 //       500: jsonError
 func (h *Handler) WellKnown(w http.ResponseWriter, r *http.Request) {
-	var jwks jose.JSONWebKeySet
-
-	for _, set := range stringslice.Unique(h.c.WellKnownKeys()) {
-		keys, err := h.r.KeyManager().GetKeySet(r.Context(), set)
-		if err != nil {
-			h.r.Writer().WriteError(w, r, err)
-			return
-		}
-		keys = ExcludePrivateKeys(keys)
-		jwks.Keys = append(jwks.Keys, keys.Keys...)
+	if keys, err := h.r.KeyManager().GetWellKnownKeys(r.Context()); err == nil {
+		h.r.Writer().Write(w, r, &keys)
+	} else {
+		h.r.Writer().WriteError(w, r, err)
+		return
 	}
-
-	h.r.Writer().Write(w, r, &jwks)
 }
 
 // swagger:route GET /keys/{set}/{kid} admin getJsonWebKey

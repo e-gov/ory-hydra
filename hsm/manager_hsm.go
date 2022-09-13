@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/ory/hydra/driver/config"
+	"github.com/ory/x/stringslice"
 
 	"github.com/pkg/errors"
 
@@ -35,7 +36,8 @@ type KeyManager struct {
 	jwk.Manager
 	sync.RWMutex
 	Context
-	KeySetPrefix string
+	config      *config.Provider
+	keySetCache map[string]jose.JSONWebKeySet
 }
 
 var ErrPreGeneratedKeys = &fosite.RFC6749Error{
@@ -46,8 +48,9 @@ var ErrPreGeneratedKeys = &fosite.RFC6749Error{
 
 func NewKeyManager(hsm Context, config *config.Provider) *KeyManager {
 	return &KeyManager{
-		Context:      hsm,
-		KeySetPrefix: config.HsmKeySetPrefix(),
+		Context:     hsm,
+		config:      config,
+		keySetCache: make(map[string]jose.JSONWebKeySet),
 	}
 }
 
@@ -61,6 +64,7 @@ func (m *KeyManager) GenerateAndPersistKeySet(_ context.Context, set, kid, alg, 
 	if err != nil {
 		return nil, err
 	}
+	m.evictKeySet(set)
 
 	if len(kid) == 0 {
 		kid = uuid.New()
@@ -77,19 +81,19 @@ func (m *KeyManager) GenerateAndPersistKeySet(_ context.Context, set, kid, alg, 
 		if err != nil {
 			return nil, err
 		}
-		return createKeySet(key, kid, alg, use)
+		return createKeySet(key, kid, alg, use), nil
 	case alg == "ES256":
 		key, err := m.GenerateECDSAKeyPairWithAttributes(publicAttrSet, privateAttrSet, elliptic.P256())
 		if err != nil {
 			return nil, err
 		}
-		return createKeySet(key, kid, alg, use)
+		return createKeySet(key, kid, alg, use), nil
 	case alg == "ES512":
 		key, err := m.GenerateECDSAKeyPairWithAttributes(publicAttrSet, privateAttrSet, elliptic.P521())
 		if err != nil {
 			return nil, err
 		}
-		return createKeySet(key, kid, alg, use)
+		return createKeySet(key, kid, alg, use), nil
 
 	// NOTE:
 	//	- HS256, HS512 not supported. Makes sense only if shared HSM is used between Hydra and authenticating client.
@@ -117,12 +121,12 @@ func (m *KeyManager) GetKey(_ context.Context, set, kid string) (*jose.JSONWebKe
 		return nil, errors.WithStack(x.ErrNotFound)
 	}
 
-	id, alg, use, err := getKeySetAttributes(m, keyPair, []byte(kid))
+	_, alg, use, err := getKeySetAttributes(m, keyPair, []byte(kid))
 	if err != nil {
 		return nil, err
 	}
 
-	return createKeySet(keyPair, id, alg, use)
+	return createKeySet(keyPair, kid, alg, use), nil
 }
 
 func (m *KeyManager) GetKeySet(_ context.Context, set string) (*jose.JSONWebKeySet, error) {
@@ -154,6 +158,24 @@ func (m *KeyManager) GetKeySet(_ context.Context, set string) (*jose.JSONWebKeyS
 	}, nil
 }
 
+func (m *KeyManager) GetWellKnownKeys(ctx context.Context) (*jose.JSONWebKeySet, error) {
+	var wellKnownKeys []jose.JSONWebKey
+	for _, set := range stringslice.Unique(m.config.WellKnownKeys()) {
+		if cachedSet, ok := m.keySetCache[set]; ok {
+			wellKnownKeys = append(wellKnownKeys, cachedSet.Keys...)
+		} else if keys, err := m.GetKeySet(ctx, set); err == nil {
+			keys = jwk.ExcludePrivateKeys(keys)
+			wellKnownKeys = append(wellKnownKeys, keys.Keys...)
+			m.keySetCache[set] = *keys
+		} else {
+			return nil, err
+		}
+	}
+	return &jose.JSONWebKeySet{
+		Keys: wellKnownKeys,
+	}, nil
+}
+
 func (m *KeyManager) DeleteKey(_ context.Context, set, kid string) error {
 	m.Lock()
 	defer m.Unlock()
@@ -173,6 +195,9 @@ func (m *KeyManager) DeleteKey(_ context.Context, set, kid string) error {
 	} else {
 		return errors.WithStack(x.ErrNotFound)
 	}
+
+	m.evictKeySet(set)
+
 	return nil
 }
 
@@ -197,6 +222,9 @@ func (m *KeyManager) DeleteKeySet(_ context.Context, set string) error {
 			return err
 		}
 	}
+
+	m.evictKeySet(set)
+
 	return nil
 }
 
@@ -299,10 +327,10 @@ func (m *KeyManager) deleteExistingKeySet(set string) error {
 	return nil
 }
 
-func createKeySet(key crypto11.Signer, kid, alg, use string) (*jose.JSONWebKeySet, error) {
+func createKeySet(key crypto11.Signer, kid, alg, use string) *jose.JSONWebKeySet {
 	return &jose.JSONWebKeySet{
 		Keys: createKeys(key, kid, alg, use),
-	}, nil
+	}
 }
 
 func createKeys(key crypto11.Signer, kid, alg, use string) []jose.JSONWebKey {
@@ -326,5 +354,11 @@ func createKeys(key crypto11.Signer, kid, alg, use string) []jose.JSONWebKey {
 }
 
 func (m *KeyManager) prefixKeySet(set string) string {
-	return fmt.Sprintf("%s%s", m.KeySetPrefix, set)
+	return fmt.Sprintf("%s%s", m.config.HsmKeySetPrefix(), set)
+}
+
+func (m *KeyManager) evictKeySet(set string) {
+	if _, ok := m.keySetCache[set]; ok {
+		delete(m.keySetCache, set)
+	}
 }

@@ -873,6 +873,70 @@ func TestKeyManager_UpdateKeySet(t *testing.T) {
 	assert.ErrorIs(t, err, hsm.ErrPreGeneratedKeys)
 }
 
+func TestKeyManager_GetWellKnownKeySet(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	hsmContext := NewMockContext(ctrl)
+	defer ctrl.Finish()
+	l := logrusx.New("", "")
+	c := config.MustNew(context.Background(), l, configx.SkipValidation(), configx.WithValue(config.KeyDevelopmentMode, true))
+	rsaKey1, err := rsa.GenerateKey(rand.Reader, 512)
+	require.NoError(t, err)
+	rsaKey2, err := rsa.GenerateKey(rand.Reader, 512)
+	require.NoError(t, err)
+	openIDConnectKey := NewMockSignerDecrypter(ctrl)
+	openIDConnectKey.EXPECT().Public().Return(&rsaKey2.PublicKey).AnyTimes()
+	oAuth2JWTKey := NewMockSignerDecrypter(ctrl)
+	oAuth2JWTKey.EXPECT().Public().Return(&rsaKey1.PublicKey).AnyTimes()
+	var openIDConnectKeyId = uuid.New()
+	var oAuth2JWTKeyId = uuid.New()
+	expectedKeySet := &jose.JSONWebKeySet{Keys: []jose.JSONWebKey{{
+		Algorithm:                   "RS256",
+		Use:                         "sig",
+		Key:                         openIDConnectKey.Public(),
+		KeyID:                       openIDConnectKeyId,
+		Certificates:                []*x509.Certificate{},
+		CertificateThumbprintSHA1:   []uint8{},
+		CertificateThumbprintSHA256: []uint8{},
+	},
+		{
+			Algorithm:                   "RS256",
+			Use:                         "sig",
+			Key:                         oAuth2JWTKey.Public(),
+			KeyID:                       oAuth2JWTKeyId,
+			Certificates:                []*x509.Certificate{},
+			CertificateThumbprintSHA1:   []uint8{},
+			CertificateThumbprintSHA256: []uint8{},
+		}}}
+	m := hsm.NewKeyManager(hsmContext, c)
+
+	t.Run("case=GetWellKnownKeySet cache miss", func(t *testing.T) {
+		hsmContext.EXPECT().FindKeyPairs(gomock.Nil(), gomock.Eq([]byte(x.OpenIDConnectKeyName))).Return([]crypto11.Signer{openIDConnectKey}, nil)
+		hsmContext.EXPECT().GetAttribute(gomock.Eq(openIDConnectKey), gomock.Eq(crypto11.CkaId)).Return(pkcs11.NewAttribute(pkcs11.CKA_ID, []byte(openIDConnectKeyId)), nil)
+		hsmContext.EXPECT().GetAttribute(gomock.Eq(openIDConnectKey), gomock.Eq(crypto11.CkaDecrypt)).Return(nil, nil)
+
+		hsmContext.EXPECT().FindKeyPairs(gomock.Nil(), gomock.Eq([]byte(x.OAuth2JWTKeyName))).Return([]crypto11.Signer{oAuth2JWTKey}, nil)
+		hsmContext.EXPECT().GetAttribute(gomock.Eq(oAuth2JWTKey), gomock.Eq(crypto11.CkaId)).Return(pkcs11.NewAttribute(pkcs11.CKA_ID, []byte(oAuth2JWTKeyId)), nil)
+		hsmContext.EXPECT().GetAttribute(gomock.Eq(oAuth2JWTKey), gomock.Eq(crypto11.CkaDecrypt)).Return(nil, nil)
+
+		got, err := m.GetWellKnownKeys(context.TODO())
+
+		assert.NoError(t, err)
+		assert.Len(t, got.Keys, 2)
+		if !reflect.DeepEqual(got, expectedKeySet) {
+			t.Errorf("GetKey() got = %v, want %v", got, expectedKeySet)
+		}
+	})
+	t.Run("case=GetWellKnownKeySet cache hit", func(t *testing.T) {
+		got, err := m.GetWellKnownKeys(context.TODO())
+
+		assert.NoError(t, err)
+		assert.Len(t, got.Keys, 2)
+		if !reflect.DeepEqual(got, expectedKeySet) {
+			t.Errorf("GetKey() got = %v, want %v", got, expectedKeySet)
+		}
+	})
+}
+
 func expectedKeyAttributes(t *testing.T, set, kid string) (crypto11.AttributeSet, crypto11.AttributeSet) {
 	privateAttrSet, err := crypto11.NewAttributeSetWithIDAndLabel([]byte(kid), []byte(set))
 	require.NoError(t, err)

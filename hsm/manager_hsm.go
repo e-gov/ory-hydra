@@ -18,6 +18,7 @@ import (
 
 	"github.com/ory/hydra/v2/driver/config"
 	"github.com/ory/x/otelx"
+	"github.com/ory/x/stringslice"
 
 	"github.com/pkg/errors"
 
@@ -42,7 +43,8 @@ type KeyManager struct {
 	jwk.Manager
 	sync.RWMutex
 	Context
-	c config.DefaultProvider
+	c           config.DefaultProvider
+	keySetCache map[string]jose.JSONWebKeySet
 }
 
 var ErrPreGeneratedKeys = &fosite.RFC6749Error{
@@ -53,8 +55,9 @@ var ErrPreGeneratedKeys = &fosite.RFC6749Error{
 
 func NewKeyManager(hsm Context, config *config.DefaultProvider) *KeyManager {
 	return &KeyManager{
-		Context: hsm,
-		c:       *config,
+		Context:     hsm,
+		c:           *config,
+		keySetCache: make(map[string]jose.JSONWebKeySet),
 	}
 }
 
@@ -78,6 +81,7 @@ func (m *KeyManager) GenerateAndPersistKeySet(ctx context.Context, set, kid, alg
 	if err != nil {
 		return nil, err
 	}
+	m.evictKeySet(set)
 
 	if len(kid) == 0 {
 		kid = uuid.New()
@@ -94,19 +98,19 @@ func (m *KeyManager) GenerateAndPersistKeySet(ctx context.Context, set, kid, alg
 		if err != nil {
 			return nil, err
 		}
-		return createKeySet(key, kid, alg, use)
+		return createKeySet(key, kid, alg, use), nil
 	case alg == "ES256":
 		key, err := m.GenerateECDSAKeyPairWithAttributes(publicAttrSet, privateAttrSet, elliptic.P256())
 		if err != nil {
 			return nil, err
 		}
-		return createKeySet(key, kid, alg, use)
+		return createKeySet(key, kid, alg, use), nil
 	case alg == "ES512":
 		key, err := m.GenerateECDSAKeyPairWithAttributes(publicAttrSet, privateAttrSet, elliptic.P521())
 		if err != nil {
 			return nil, err
 		}
-		return createKeySet(key, kid, alg, use)
+		return createKeySet(key, kid, alg, use), nil
 
 	// NOTE:
 	//	- HS256, HS512 not supported. Makes sense only if shared HSM is used between Hydra and authenticating client.
@@ -142,12 +146,12 @@ func (m *KeyManager) GetKey(ctx context.Context, set, kid string) (*jose.JSONWeb
 		return nil, errors.WithStack(x.ErrNotFound)
 	}
 
-	id, alg, use, err := m.getKeySetAttributes(ctx, keyPair, []byte(kid))
+	_, alg, use, err := m.getKeySetAttributes(ctx, keyPair, []byte(kid))
 	if err != nil {
 		return nil, err
 	}
 
-	return createKeySet(keyPair, id, alg, use)
+	return createKeySet(keyPair, kid, alg, use), nil
 }
 
 func (m *KeyManager) GetKeySet(ctx context.Context, set string) (*jose.JSONWebKeySet, error) {
@@ -186,6 +190,22 @@ func (m *KeyManager) GetKeySet(ctx context.Context, set string) (*jose.JSONWebKe
 	}, nil
 }
 
+func (m *KeyManager) GetWellKnownKeys(ctx context.Context) (*jose.JSONWebKeySet, error) {
+	var jwks jose.JSONWebKeySet
+	for _, set := range stringslice.Unique(m.c.WellKnownKeys(ctx)) {
+		if cachedSet, ok := m.keySetCache[set]; ok {
+			jwks.Keys = append(jwks.Keys, cachedSet.Keys...)
+		} else if keys, err := m.GetKeySet(ctx, set); err == nil {
+			keys = jwk.ExcludePrivateKeys(keys)
+			jwks.Keys = append(jwks.Keys, keys.Keys...)
+			m.keySetCache[set] = *keys
+		} else if !errors.Is(err, x.ErrNotFound) {
+			return nil, err
+		}
+	}
+	return &jwks, nil
+}
+
 func (m *KeyManager) DeleteKey(ctx context.Context, set, kid string) error {
 	ctx, span := otel.GetTracerProvider().Tracer(tracingComponent).Start(ctx, "hsm.DeleteKey")
 	defer span.End()
@@ -194,7 +214,6 @@ func (m *KeyManager) DeleteKey(ctx context.Context, set, kid string) error {
 		"kid": kid,
 	}
 	span.SetAttributes(otelx.StringAttrs(attrs)...)
-
 	m.Lock()
 	defer m.Unlock()
 
@@ -213,6 +232,9 @@ func (m *KeyManager) DeleteKey(ctx context.Context, set, kid string) error {
 	} else {
 		return errors.WithStack(x.ErrNotFound)
 	}
+
+	m.evictKeySet(set)
+
 	return nil
 }
 
@@ -244,6 +266,9 @@ func (m *KeyManager) DeleteKeySet(ctx context.Context, set string) error {
 			return err
 		}
 	}
+
+	m.evictKeySet(set)
+
 	return nil
 }
 
@@ -347,10 +372,10 @@ func (m *KeyManager) deleteExistingKeySet(set string) error {
 	return nil
 }
 
-func createKeySet(key crypto11.Signer, kid, alg, use string) (*jose.JSONWebKeySet, error) {
+func createKeySet(key crypto11.Signer, kid, alg, use string) *jose.JSONWebKeySet {
 	return &jose.JSONWebKeySet{
 		Keys: createKeys(key, kid, alg, use),
-	}, nil
+	}
 }
 
 func createKeys(key crypto11.Signer, kid, alg, use string) []jose.JSONWebKey {
@@ -367,4 +392,10 @@ func createKeys(key crypto11.Signer, kid, alg, use string) []jose.JSONWebKey {
 
 func (m *KeyManager) prefixKeySet(set string) string {
 	return fmt.Sprintf("%s%s", m.c.HSMKeySetPrefix(), set)
+}
+
+func (m *KeyManager) evictKeySet(set string) {
+	if _, ok := m.keySetCache[set]; ok {
+		delete(m.keySetCache, set)
+	}
 }

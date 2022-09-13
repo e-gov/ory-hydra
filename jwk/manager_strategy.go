@@ -63,6 +63,17 @@ func (m ManagerStrategy) GetKeySet(ctx context.Context, set string) (*jose.JSONW
 	}
 }
 
+func (m ManagerStrategy) GetWellKnownKeys(ctx context.Context) (*jose.JSONWebKeySet, error) {
+	keySet, err := m.hardwareKeyManager.GetWellKnownKeys(ctx)
+	if err != nil && !errors.Is(err, x.ErrNotFound) {
+		return nil, err
+	} else if keySet != nil {
+		return keySet, nil
+	} else {
+		return m.softwareKeyManager.GetWellKnownKeys(ctx)
+	}
+}
+
 func (m ManagerStrategy) DeleteKey(ctx context.Context, set, kid string) error {
 	err := m.hardwareKeyManager.DeleteKey(ctx, set, kid)
 	if err != nil && !errors.Is(err, x.ErrNotFound) {

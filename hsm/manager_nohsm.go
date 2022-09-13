@@ -50,6 +50,10 @@ func (m *KeyManager) GetKeySet(_ context.Context, set string) (*jose.JSONWebKeyS
 	return nil, errors.WithStack(ErrOpSysNotSupported)
 }
 
+func (m *KeyManager) GetWellKnownKeys(_ context.Context) (*jose.JSONWebKeySet, error) {
+	return nil, errors.WithStack(ErrOpSysNotSupported)
+}
+
 func (m *KeyManager) DeleteKey(_ context.Context, set, kid string) error {
 	return errors.WithStack(ErrOpSysNotSupported)
 }

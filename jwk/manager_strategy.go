@@ -123,6 +123,16 @@ func (m ManagerStrategy) GetKeySet(ctx context.Context, set string) (*jose.JSONW
 	}
 }
 
+func (m ManagerStrategy) GetWellKnownKeys(ctx context.Context) (*jose.JSONWebKeySet, error) {
+	if keySet, err := m.hardwareKeyManager.GetWellKnownKeys(ctx); err != nil {
+		return nil, err
+	} else if keySet != nil && len(keySet.Keys) != 0 {
+		return keySet, nil
+	} else {
+		return m.softwareKeyManager.GetWellKnownKeys(ctx)
+	}
+}
+
 func (m ManagerStrategy) DeleteKey(ctx context.Context, set, kid string) error {
 	ctx, span := otel.GetTracerProvider().Tracer(tracingComponent).Start(ctx, "jwk.GenerateAndPersistKeySet")
 	defer span.End()

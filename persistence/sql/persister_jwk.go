@@ -6,6 +6,7 @@ package sql
 import (
 	"context"
 	"encoding/json"
+	"github.com/ory/x/stringslice"
 
 	"github.com/gobuffalo/pop/v6"
 	"gopkg.in/square/go-jose.v2"
@@ -183,6 +184,17 @@ func (p *Persister) GetKeySet(ctx context.Context, set string) (*jose.JSONWebKey
 	}
 
 	return keys, nil
+}
+
+func (p *Persister) GetWellKnownKeys(ctx context.Context) (*jose.JSONWebKeySet, error) {
+	var jwks jose.JSONWebKeySet
+	for _, set := range stringslice.Unique(p.config.WellKnownKeys(ctx)) {
+		if keys, err := p.GetKeySet(ctx, set); err == nil {
+			keys = jwk.ExcludePrivateKeys(keys)
+			jwks.Keys = append(jwks.Keys, keys.Keys...)
+		}
+	}
+	return &jwks, nil
 }
 
 func (p *Persister) DeleteKey(ctx context.Context, set, kid string) error {

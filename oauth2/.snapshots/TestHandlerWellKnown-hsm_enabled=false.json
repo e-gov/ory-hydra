@@ -6,10 +6,6 @@
   "claims_supported": [
     "sub"
   ],
-  "code_challenge_methods_supported": [
-    "plain",
-    "S256"
-  ],
   "grant_types_supported": [
     "authorization_code"
   ],

@@ -256,7 +256,7 @@ func (h *Handler) WellKnownHandler(w http.ResponseWriter, r *http.Request) {
 		//FrontChannelLogoutSessionSupported:     true,
 		//EndSessionEndpoint:                     urlx.AppendPaths(h.c.IssuerURL(), LogoutPath).String(),
 		//RequestObjectSigningAlgValuesSupported: []string{"RS256", "none"},
-		CodeChallengeMethodsSupported:          []string{"plain", "S256"},
+		//CodeChallengeMethodsSupported:          []string{"plain", "S256"},
 	})
 }
 

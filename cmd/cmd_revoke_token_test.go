@@ -22,9 +22,9 @@ func TestRevokeToken(t *testing.T) {
 	public, _, reg := setupRoutes(t, c)
 	require.NoError(t, c.Flags().Set(cmdx.FlagEndpoint, public.URL))
 
-	expected := createClientCredentialsClient(t, reg)
+	expected, plainTextSecret := createClientCredentialsClient(t, reg)
 	cc := clientcredentials.Config{
-		ClientID: expected.GetID(), ClientSecret: expected.Secret,
+		ClientID: expected.GetID(), ClientSecret: plainTextSecret,
 		TokenURL: public.URL + "/oauth2/token",
 	}
 
@@ -39,7 +39,7 @@ func TestRevokeToken(t *testing.T) {
 		token, err := cc.Token(context.Background())
 		require.NoError(t, err)
 
-		actual := gjson.Parse(cmdx.ExecNoErr(t, c, "--client-id", expected.GetID(), "--client-secret", expected.Secret, token.AccessToken))
+		actual := gjson.Parse(cmdx.ExecNoErr(t, c, "--client-id", expected.GetID(), "--client-secret", plainTextSecret, token.AccessToken))
 		assert.Equal(t, token.AccessToken, actual.String())
 	})
 

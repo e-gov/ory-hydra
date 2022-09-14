@@ -22,10 +22,10 @@ func TestIntrospectToken(t *testing.T) {
 	public, admin, reg := setupRoutes(t, c)
 	require.NoError(t, c.Flags().Set(cmdx.FlagEndpoint, admin.URL))
 
-	expected := createClientCredentialsClient(t, reg)
+	expected, plainTextSecret := createClientCredentialsClient(t, reg)
 	cc := clientcredentials.Config{
 		ClientID:     expected.GetID(),
-		ClientSecret: expected.Secret,
+		ClientSecret: plainTextSecret,
 		TokenURL:     public.URL + "/oauth2/token",
 		Scopes:       []string{},
 	}

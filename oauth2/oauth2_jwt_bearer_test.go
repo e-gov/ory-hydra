@@ -45,9 +45,11 @@ func TestJWTBearer(t *testing.T) {
 	reg.Config().MustSet(ctx, config.KeyAccessTokenStrategy, "jwt")
 	_, admin := testhelpers.NewOAuth2Server(ctx, t, reg)
 
-	secret := uuid.New().String()
+	plainTextSecret := uuid.New().String()
+	hashedSecret, err := internal.HashClientSecret(plainTextSecret)
+	require.NoError(t, err)
 	client := &hc.Client{
-		Secret:     secret,
+		Secret:     hashedSecret,
 		GrantTypes: []string{"client_credentials", "urn:ietf:params:oauth:grant-type:jwt-bearer"},
 		Scope:      "offline_access",
 	}
@@ -56,7 +58,7 @@ func TestJWTBearer(t *testing.T) {
 	newConf := func(client *hc.Client) *clientcredentials.Config {
 		return &clientcredentials.Config{
 			ClientID:       client.GetID(),
-			ClientSecret:   secret,
+			ClientSecret:   plainTextSecret,
 			TokenURL:       reg.Config().OAuth2TokenURL(ctx).String(),
 			Scopes:         strings.Split(client.Scope, " "),
 			EndpointParams: url.Values{"audience": client.Audience},
@@ -125,7 +127,7 @@ func TestJWTBearer(t *testing.T) {
 
 	t.Run("case=unable to request grant if not set", func(t *testing.T) {
 		client := &hc.Client{
-			Secret:     secret,
+			Secret:     hashedSecret,
 			GrantTypes: []string{"client_credentials"},
 			Scope:      "offline_access",
 		}
@@ -389,7 +391,7 @@ func TestJWTBearer(t *testing.T) {
 				require.NoError(t, err)
 
 				client := &hc.Client{
-					Secret:                  secret,
+					Secret:                  hashedSecret,
 					GrantTypes:              []string{"urn:ietf:params:oauth:grant-type:jwt-bearer"},
 					Scope:                   "offline_access",
 					TokenEndpointAuthMethod: "client_secret_post",

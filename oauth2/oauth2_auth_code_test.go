@@ -23,7 +23,10 @@ package oauth2_test
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -88,9 +91,11 @@ func TestAuthCodeWithDefaultStrategy(t *testing.T) {
 
 	newOAuth2Client := func(t *testing.T, cb string) (*hc.Client, *oauth2.Config) {
 		secret := uuid.New()
+		hashedSecret, err := hashClientSecret(secret)
+		require.NoError(t, err)
 		c := &hc.Client{
 			OutfacingID:   uuid.New(),
-			Secret:        secret,
+			Secret:        hashedSecret,
 			RedirectURIs:  []string{cb},
 			ResponseTypes: []string{"id_token", "code", "token"},
 			GrantTypes:    []string{"implicit", "refresh_token", "authorization_code", "password", "client_credentials"},
@@ -607,9 +612,13 @@ func TestAuthCodeWithMockStrategy(t *testing.T) {
 			})
 			var mutex sync.Mutex
 
+			var secret = "secret"
+			hashedSecret, err := hashClientSecret(secret)
+			require.NoError(t, err)
+
 			require.NoError(t, reg.ClientManager().CreateClient(context.TODO(), &hc.Client{
 				OutfacingID:   "app-client",
-				Secret:        "secret",
+				Secret:        hashedSecret,
 				RedirectURIs:  []string{ts.URL + "/callback"},
 				ResponseTypes: []string{"id_token", "code", "token"},
 				GrantTypes:    []string{"implicit", "refresh_token", "authorization_code", "password", "client_credentials"},
@@ -618,7 +627,7 @@ func TestAuthCodeWithMockStrategy(t *testing.T) {
 
 			oauthConfig := &oauth2.Config{
 				ClientID:     "app-client",
-				ClientSecret: "secret",
+				ClientSecret: secret,
 				Endpoint: oauth2.Endpoint{
 					AuthURL:  ts.URL + "/oauth2/auth",
 					TokenURL: ts.URL + "/oauth2/token",
@@ -1065,4 +1074,15 @@ func testRefresh(t *testing.T, token *oauth2.Token, u string, sleep bool) (*http
 	req.SetBasicAuth(oauthClientConfig.ClientID, oauthClientConfig.ClientSecret)
 
 	return http.DefaultClient.Do(req)
+}
+
+func hashClientSecret(clientSecret string) (string, error) {
+	var err error
+	hashedClientSecret := sha256.New()
+	_, err = hashedClientSecret.Write([]byte(clientSecret))
+	if err != nil {
+		return "", errors.New("failed to create client secret hash")
+	}
+	sha256Hash := hex.EncodeToString(hashedClientSecret.Sum(nil))
+	return sha256Hash, nil
 }

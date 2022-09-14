@@ -22,6 +22,9 @@ package consent_test
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"github.com/pkg/errors"
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
@@ -93,7 +96,9 @@ func makeOAuth2Request(t *testing.T, reg driver.Registry, hc *http.Client, oc *c
 
 func createClient(t *testing.T, reg driver.Registry, c *client.Client) *client.Client {
 	secret := uuid.New().String()
-	c.Secret = secret
+	hashedSecret, err := hashClientSecret(secret)
+	require.NoError(t, err)
+	c.Secret = hashedSecret
 	c.Scope = "openid offline"
 	c.OutfacingID = uuid.New().String()
 	require.NoError(t, reg.ClientManager().CreateClient(context.Background(), c))
@@ -127,4 +132,15 @@ func genIDToken(t *testing.T, reg driver.Registry, c jwtgo.MapClaims) string {
 	r, _, err := reg.OpenIDJWTStrategy().Generate(context.TODO(), c, jwt.NewHeaders())
 	require.NoError(t, err)
 	return r
+}
+
+func hashClientSecret(clientSecret string) (string, error) {
+	var err error
+	hashedClientSecret := sha256.New()
+	_, err = hashedClientSecret.Write([]byte(clientSecret))
+	if err != nil {
+		return "", errors.New("failed to create client secret hash")
+	}
+	sha256Hash := hex.EncodeToString(hashedClientSecret.Sum(nil))
+	return sha256Hash, nil
 }

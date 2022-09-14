@@ -50,9 +50,11 @@ func TestClientCredentials(t *testing.T) {
 
 	var newClient = func(t *testing.T) (*hc.Client, clientcredentials.Config) {
 		secret := uuid.New().String()
+		hashedSecret, err := hashClientSecret(secret)
+		require.NoError(t, err)
 		c := &hc.Client{
 			OutfacingID:   uuid.New().String(),
-			Secret:        secret,
+			Secret:        hashedSecret,
 			RedirectURIs:  []string{public.URL + "/callback"},
 			ResponseTypes: []string{"token"},
 			GrantTypes:    []string{"client_credentials"},

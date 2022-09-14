@@ -21,8 +21,10 @@
 package cmd
 
 import (
+	"crypto/sha256"
 	"crypto/tls"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -115,7 +117,7 @@ func TestExecute(t *testing.T) {
 				return false
 			},
 		},
-		{args: []string{"clients", "create", "--skip-tls-verify", "--endpoint", backend, "--id", "foobarbaz", "--secret", "foobar", "-g", "client_credentials"}},
+		{args: []string{"clients", "create", "--skip-tls-verify", "--endpoint", backend, "--id", "foobarbaz", "--secret", hashClientSecret("foobar"), "-g", "client_credentials"}},
 		{args: []string{"clients", "get", "--skip-tls-verify", "--endpoint", backend, "foobarbaz"}},
 		{args: []string{"clients", "create", "--skip-tls-verify", "--endpoint", backend, "--id", "public-foo"}},
 		{args: []string{"clients", "create", "--skip-tls-verify", "--endpoint", backend, "--id", "confidential-foo", "--pgp-key", base64EncodedPGPPublicKey(t), "--grant-types", "client_credentials", "--response-types", "token"}},
@@ -178,4 +180,16 @@ func base64EncodedPGPPublicKey(t *testing.T) string {
 		t.Fatal(err)
 	}
 	return base64.StdEncoding.EncodeToString(gpgPublicKey)
+}
+
+// Unlike similar hashClientSecret() methods in some other files, this one returns an empty string in case of error,
+// just for easier use in this specific use case.
+func hashClientSecret(clientSecret string) string {
+	var err error
+	hashedClientSecret := sha256.New()
+	_, err = hashedClientSecret.Write([]byte(clientSecret))
+	if err != nil {
+		return ""
+	}
+	return hex.EncodeToString(hashedClientSecret.Sum(nil))
 }

@@ -20,9 +20,9 @@ func TestPerformClientCredentialsGrant(t *testing.T) {
 	public, _, reg := setupRoutes(t, c)
 	require.NoError(t, c.Flags().Set(cmdx.FlagEndpoint, public.URL))
 
-	expected := createClientCredentialsClient(t, reg)
+	expected, plainTextSecret := createClientCredentialsClient(t, reg)
 	t.Run("case=exchanges for access token", func(t *testing.T) {
-		result := cmdx.ExecNoErr(t, c, "--client-id", expected.ID.String(), "--client-secret", expected.Secret)
+		result := cmdx.ExecNoErr(t, c, "--client-id", expected.ID.String(), "--client-secret", plainTextSecret)
 		actual := gjson.Parse(result)
 		assert.Equal(t, "bearer", actual.Get("token_type").String(), result)
 		assert.NotEmpty(t, actual.Get("access_token").String(), result)

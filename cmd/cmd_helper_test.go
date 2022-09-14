@@ -65,12 +65,15 @@ var snapshotExcludedClientFields = []snapshotx.ExceptOpt{
 	snapshotx.ExceptNestedKeys("updated_at"),
 }
 
-func createClientCredentialsClient(t *testing.T, reg driver.Registry) *client.Client {
+func createClientCredentialsClient(t *testing.T, reg driver.Registry) (*client.Client, string) {
+	plainTextSecret := uuid.Must(uuid.NewV4()).String()
+	hashedSecret, err := internal.HashClientSecret(plainTextSecret)
+	require.NoError(t, err)
 	return createClient(t, reg, &client.Client{
 		GrantTypes:              []string{"client_credentials"},
 		TokenEndpointAuthMethod: "client_secret_basic",
-		Secret:                  uuid.Must(uuid.NewV4()).String(),
-	})
+		Secret:                  hashedSecret,
+	}), plainTextSecret
 }
 
 func createClient(t *testing.T, reg driver.Registry, c *client.Client) *client.Client {

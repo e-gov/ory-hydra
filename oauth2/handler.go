@@ -411,7 +411,7 @@ type oidcConfiguration struct {
 	//
 	// JSON array containing a list of Proof Key for Code Exchange (PKCE) [RFC7636] code challenge methods supported
 	// by this authorization server.
-	CodeChallengeMethodsSupported []string `json:"code_challenge_methods_supported"`
+	CodeChallengeMethodsSupported []string `json:"code_challenge_methods_supported,omitempty"`
 }
 
 // swagger:route GET /.well-known/openid-configuration oidc discoverOidcConfiguration
@@ -458,7 +458,6 @@ func (h *Handler) discoverOidcConfiguration(w http.ResponseWriter, r *http.Reque
 		BackChannelLogoutSupported:             true,
 		BackChannelLogoutSessionSupported:      true,
 		EndSessionEndpoint:                     urlx.AppendPaths(h.c.IssuerURL(r.Context()), LogoutPath).String(),
-		CodeChallengeMethodsSupported:          []string{"plain", "S256"},
 	})
 }
 

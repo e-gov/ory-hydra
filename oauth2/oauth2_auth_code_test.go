@@ -82,8 +82,10 @@ func TestAuthCodeWithDefaultStrategy(t *testing.T) {
 
 	newOAuth2Client := func(t *testing.T, cb string) (*hc.Client, *oauth2.Config) {
 		secret := uuid.New()
+		hashedSecret, err := internal.HashClientSecret(secret)
+		require.NoError(t, err)
 		c := &hc.Client{
-			Secret:        secret,
+			Secret:        hashedSecret,
 			RedirectURIs:  []string{cb},
 			ResponseTypes: []string{"id_token", "code", "token"},
 			GrantTypes:    []string{"implicit", "refresh_token", "authorization_code", "password", "client_credentials"},
@@ -910,9 +912,13 @@ func TestAuthCodeWithMockStrategy(t *testing.T) {
 			})
 			var mutex sync.Mutex
 
+			var secret = "secret"
+			hashedSecret, err := internal.HashClientSecret(secret)
+			require.NoError(t, err)
+
 			require.NoError(t, reg.ClientManager().CreateClient(context.TODO(), &hc.Client{
 				LegacyClientID: "app-client",
-				Secret:         "secret",
+				Secret:         hashedSecret,
 				RedirectURIs:   []string{ts.URL + "/callback"},
 				ResponseTypes:  []string{"id_token", "code", "token"},
 				GrantTypes:     []string{"implicit", "refresh_token", "authorization_code", "password", "client_credentials"},
@@ -921,7 +927,7 @@ func TestAuthCodeWithMockStrategy(t *testing.T) {
 
 			oauthConfig := &oauth2.Config{
 				ClientID:     "app-client",
-				ClientSecret: "secret",
+				ClientSecret: secret,
 				Endpoint: oauth2.Endpoint{
 					AuthURL:  ts.URL + "/oauth2/auth",
 					TokenURL: ts.URL + "/oauth2/token",

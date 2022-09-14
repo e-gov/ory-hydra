@@ -18,7 +18,7 @@ func TestDeleteAccessTokensCmd(t *testing.T) {
 	c := cmd.NewDeleteAccessTokensCmd()
 
 	reg := setup(t, c)
-	expected := createClientCredentialsClient(t, reg)
+	expected, _ := createClientCredentialsClient(t, reg)
 	t.Run("case=deletes tokens", func(t *testing.T) {
 		stdout := cmdx.ExecNoErr(t, c, expected.GetID())
 		assert.Equal(t, fmt.Sprintf(`"%s"`, expected.GetID()), strings.TrimSpace(stdout))

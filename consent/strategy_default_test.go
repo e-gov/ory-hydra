@@ -10,6 +10,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/ory/hydra/v2/internal"
+
 	hydra "github.com/ory/hydra-client-go/v2"
 
 	"github.com/stretchr/testify/require"
@@ -78,7 +80,9 @@ func makeOAuth2Request(t *testing.T, reg driver.Registry, hc *http.Client, oc *c
 
 func createClient(t *testing.T, reg driver.Registry, c *client.Client) *client.Client {
 	secret := uuid.New().String()
-	c.Secret = secret
+	hashedSecret, err := internal.HashClientSecret(secret)
+	require.NoError(t, err)
+	c.Secret = hashedSecret
 	c.Scope = "openid offline"
 	c.LegacyClientID = uuid.New().String()
 	require.NoError(t, reg.ClientManager().CreateClient(context.Background(), c))

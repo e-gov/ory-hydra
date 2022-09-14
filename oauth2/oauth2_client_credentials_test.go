@@ -40,12 +40,11 @@ func TestClientCredentials(t *testing.T) {
 	reg.Config().MustSet(ctx, config.KeyAccessTokenStrategy, "opaque")
 	public, admin := testhelpers.NewOAuth2Server(ctx, t, reg)
 
-	var newCustomClient = func(t *testing.T, c *hc.Client) (*hc.Client, clientcredentials.Config) {
-		unhashedSecret := c.Secret
+	var newCustomClient = func(t *testing.T, c *hc.Client, plainTextSecret string) (*hc.Client, clientcredentials.Config) {
 		require.NoError(t, reg.ClientManager().CreateClient(ctx, c))
 		return c, clientcredentials.Config{
 			ClientID:       c.GetID(),
-			ClientSecret:   unhashedSecret,
+			ClientSecret:   plainTextSecret,
 			TokenURL:       reg.Config().OAuth2TokenURL(ctx).String(),
 			Scopes:         strings.Split(c.Scope, " "),
 			EndpointParams: url.Values{"audience": c.Audience},
@@ -53,14 +52,17 @@ func TestClientCredentials(t *testing.T) {
 	}
 
 	var newClient = func(t *testing.T) (*hc.Client, clientcredentials.Config) {
+		plainTextSecret := uuid.New().String()
+		hashedSecret, err := internal.HashClientSecret(plainTextSecret)
+		require.NoError(t, err)
 		cc, config := newCustomClient(t, &hc.Client{
-			Secret:        uuid.New().String(),
+			Secret:        hashedSecret,
 			RedirectURIs:  []string{public.URL + "/callback"},
 			ResponseTypes: []string{"token"},
 			GrantTypes:    []string{"client_credentials"},
 			Scope:         "foobar",
 			Audience:      []string{"https://api.ory.sh/"},
-		})
+		}, plainTextSecret)
 		return cc, config
 	}
 
@@ -209,15 +211,17 @@ func TestClientCredentials(t *testing.T) {
 			return func(t *testing.T) {
 				reg.Config().MustSet(ctx, config.KeyAccessTokenStrategy, strategy)
 
-				secret := uuid.New().String()
+				plainTextSecret := uuid.New().String()
+				hashedSecret, err := internal.HashClientSecret(plainTextSecret)
+				require.NoError(t, err)
 				cl, conf := newCustomClient(t, &hc.Client{
-					Secret:        secret,
+					Secret:        hashedSecret,
 					RedirectURIs:  []string{public.URL + "/callback"},
 					ResponseTypes: []string{"token"},
 					GrantTypes:    []string{"client_credentials"},
 					Scope:         "foobar",
 					Audience:      []string{"https://api.ory.sh/"},
-				})
+				}, plainTextSecret)
 				testhelpers.UpdateClientTokenLifespans(t, &goauth2.Config{ClientID: cl.GetID(), ClientSecret: conf.ClientSecret}, cl.GetID(), testhelpers.TestLifespans, admin)
 				getAndInspectToken(t, cl, conf, strategy, time.Now().Add(testhelpers.TestLifespans.ClientCredentialsGrantAccessTokenLifespan.Duration), false)
 			}
@@ -292,15 +296,17 @@ func TestClientCredentials(t *testing.T) {
 
 				defer reg.Config().MustSet(ctx, config.KeyTokenHookURL, nil)
 
-				secret := uuid.New().String()
+				plainTextSecret := uuid.New().String()
+				hashedSecret, err := internal.HashClientSecret(plainTextSecret)
+				require.NoError(t, err)
 				cl, conf := newCustomClient(t, &hc.Client{
-					Secret:        secret,
+					Secret:        hashedSecret,
 					RedirectURIs:  []string{public.URL + "/callback"},
 					ResponseTypes: []string{"token"},
 					GrantTypes:    []string{"client_credentials"},
 					Scope:         scope,
 					Audience:      audience,
-				})
+				}, plainTextSecret)
 				getAndInspectToken(t, cl, conf, strategy, time.Now().Add(reg.Config().GetAccessTokenLifespan(ctx)), true)
 			}
 		}

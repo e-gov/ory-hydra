@@ -134,7 +134,7 @@ func (p *Persister) GetKeySet(ctx context.Context, set string) (*jose.JSONWebKey
 	var js []jwk.SQLData
 	if err := p.Connection(ctx).
 		Where("sid = ?", set).
-		Order("created_at DESC").
+		Order("created_at").
 		All(&js); err != nil {
 		return nil, sqlcon.HandleError(err)
 	}

@@ -86,7 +86,7 @@ func TestRS256JWTStrategy(t *testing.T) {
 		assert.Equal(t, "bar", kidBar)
 	} else {
 		assert.Equal(t, "public:foo", kidFoo)
-		assert.Equal(t, "public:bar", kidBar)
+		assert.Equal(t, "public:foo", kidBar)
 	}
 }
 

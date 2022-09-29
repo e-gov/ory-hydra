@@ -108,7 +108,7 @@ func TestHelperManagerKey(m Manager, algo string, keys *jose.JSONWebKeySet, suff
 
 		keys, err = m.GetKeySet(context.TODO(), algo+"faz")
 		require.NoError(t, err)
-		assert.EqualValues(t, "new-key-id:"+suffix, First(keys.Keys).KeyID)
+		assert.EqualValues(t, "new-key-id:"+suffix, Last(keys.Keys).KeyID)
 
 		beforeDeleteKeysCount := len(keys.Keys)
 		err = m.DeleteKey(context.TODO(), algo+"faz", "public:"+suffix)

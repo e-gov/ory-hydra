@@ -88,6 +88,13 @@ func First(keys []jose.JSONWebKey) *jose.JSONWebKey {
 	return &keys[0]
 }
 
+func Last(keys []jose.JSONWebKey) *jose.JSONWebKey {
+	if len(keys) == 0 {
+		return nil
+	}
+	return &keys[len(keys) - 1]
+}
+
 func FindPublicKey(set *jose.JSONWebKeySet) (key *jose.JSONWebKey, err error) {
 	keys := ExcludePrivateKeys(set)
 	if len(keys.Keys) == 0 {

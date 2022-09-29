@@ -193,6 +193,61 @@ func TestHelperManagerGenerateAndPersistKeySet(m Manager, alg string, parallel b
 	}
 }
 
+func TestHelperManagerGetKeySetOrder(m Manager, alg string, parallel bool) func(t *testing.T) {
+	return func(t *testing.T) {
+		if parallel {
+			t.Parallel()
+		}
+		_, err := m.GetKeySet(context.TODO(), "foo")
+		require.Error(t, err)
+
+		keys1, err := m.GenerateAndPersistKeySet(context.TODO(), "foo", "bar-1", alg, "sig")
+		require.NoError(t, err)
+		genPub1, err := FindPublicKey(keys1)
+		require.NoError(t, err)
+		require.NotEmpty(t, genPub1)
+		genPriv1, err := FindPrivateKey(keys1)
+		require.NoError(t, err)
+
+		keys2, err := m.GenerateAndPersistKeySet(context.TODO(), "foo", "bar-2", alg, "sig")
+		require.NoError(t, err)
+		genPub2, err := FindPublicKey(keys2)
+		require.NoError(t, err)
+		require.NotEmpty(t, genPub2)
+		genPriv2, err := FindPrivateKey(keys2)
+		require.NoError(t, err)
+
+		got1, err := m.GetKeySet(context.TODO(), "foo")
+		require.NoError(t, err)
+		gotPub1, err := FindPublicKey(got1)
+		require.NoError(t, err)
+		require.NotEmpty(t, gotPub1)
+		gotPriv1, err := FindPrivateKey(got1)
+		require.NoError(t, err)
+		assertx.EqualAsJSON(t, canonicalizeKeyThumbprints(genPub1), canonicalizeKeyThumbprints(gotPub1))
+		assert.EqualValues(t, genPriv1.KeyID, gotPriv1.KeyID)
+
+		err = m.DeleteKey(context.TODO(), "foo", "bar-1")
+		require.NoError(t, err)
+
+		got2, err := m.GetKeySet(context.TODO(), "foo")
+		require.NoError(t, err)
+		gotPub2, err := FindPublicKey(got2)
+		require.NoError(t, err)
+		require.NotEmpty(t, gotPub2)
+		gotPriv2, err := FindPrivateKey(got2)
+		require.NoError(t, err)
+		assertx.EqualAsJSON(t, canonicalizeKeyThumbprints(genPub2), canonicalizeKeyThumbprints(gotPub2))
+		assert.EqualValues(t, genPriv2.KeyID, gotPriv2.KeyID)
+
+		err = m.DeleteKeySet(context.TODO(), "foo")
+		require.NoError(t, err)
+
+		_, err = m.GetKeySet(context.TODO(), "foo")
+		require.Error(t, err)
+	}
+}
+
 func TestHelperManagerNIDIsolationKeySet(t1 Manager, t2 Manager, alg string) func(t *testing.T) {
 	return func(t *testing.T) {
 		_, err := t1.GetKeySet(context.TODO(), "foo")

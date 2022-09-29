@@ -94,6 +94,10 @@ func testRegistry(t *testing.T, ctx context.Context, k string, t1 driver.Registr
 						t.Run("TestManagerGenerateAndPersistKeySet", jwk.TestHelperManagerGenerateAndPersistKeySet(t1.KeyManager(), tc.alg, parallel))
 						t.Run("TestManagerGenerateAndPersistKeySet", jwk.TestHelperManagerGenerateAndPersistKeySet(t2.KeyManager(), tc.alg, parallel))
 					})
+					t.Run("Parallel", func(t *testing.T) {
+						t.Run("TestHelperManagerGetKeySetOrder", jwk.TestHelperManagerGetKeySetOrder(t1.KeyManager(), tc.alg, parallel))
+						t.Run("TestHelperManagerGetKeySetOrder", jwk.TestHelperManagerGetKeySetOrder(t2.KeyManager(), tc.alg, parallel))
+					})
 				}
 			})
 		}

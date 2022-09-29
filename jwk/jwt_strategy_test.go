@@ -48,6 +48,9 @@ func TestJWTStrategy(t *testing.T) {
 			_, err = m.GenerateAndPersistKeySet(context.Background(), "foo-set", "bar", alg, "sig")
 			require.NoError(t, err)
 
+			err = m.DeleteKey(context.Background(), "foo-set", "foo")
+			require.NoError(t, err)
+
 			a, b, err = s.Generate(context.Background(), jwt.MapClaims{"foo": "bar"}, &jwt.Headers{})
 			require.NoError(t, err)
 			assert.NotEmpty(t, a)

@@ -150,9 +150,24 @@ func (s *DefaultStrategy) requestAuthentication(w http.ResponseWriter, r *http.R
 		return s.forwardAuthenticationRequest(w, r, ar, "", time.Time{}, nil)
 	}
 
+	idTokenHint := ar.GetRequestForm().Get("id_token_hint")
+
 	session, err := s.authenticationSession(w, r)
 	if errors.Is(err, ErrNoAuthenticationSessionFound) {
-		return s.forwardAuthenticationRequest(w, r, ar, "", time.Time{}, nil)
+		if idTokenHint != "" && stringslice.Has(prompt, "none") {
+			hintSid, err := s.getSessionIdFromIDTokenHint(r.Context(), idTokenHint)
+			if err != nil {
+				return s.forwardAuthenticationRequest(w, r, ar, "", time.Time{}, nil)
+			}
+			session, err = s.r.ConsentManager().GetRememberedLoginSession(r.Context(), hintSid)
+			if errors.Is(err, ErrNoAuthenticationSessionFound) {
+				return s.forwardAuthenticationRequest(w, r, ar, "", time.Time{}, nil)
+			} else if err != nil {
+				return err
+			}
+		} else {
+			return s.forwardAuthenticationRequest(w, r, ar, "", time.Time{}, nil)
+		}
 	} else if err != nil {
 		return err
 	}
@@ -173,7 +188,6 @@ func (s *DefaultStrategy) requestAuthentication(w http.ResponseWriter, r *http.R
 		return s.forwardAuthenticationRequest(w, r, ar, "", time.Time{}, nil)
 	}
 
-	idTokenHint := ar.GetRequestForm().Get("id_token_hint")
 	if idTokenHint == "" {
 		return s.forwardAuthenticationRequest(w, r, ar, session.Subject, time.Time(session.AuthenticatedAt), session)
 	}
@@ -209,6 +223,20 @@ func (s *DefaultStrategy) getSubjectFromIDTokenHint(ctx context.Context, idToken
 	sub, _ := claims["sub"].(string)
 	if sub == "" {
 		return "", errorsx.WithStack(fosite.ErrInvalidRequest.WithHint("Failed to validate OpenID Connect request because provided id token from id_token_hint does not have a subject."))
+	}
+
+	return sub, nil
+}
+
+func (s *DefaultStrategy) getSessionIdFromIDTokenHint(ctx context.Context, idTokenHint string) (string, error) {
+	claims, err := s.getIDTokenHintClaims(ctx, idTokenHint)
+	if err != nil {
+		return "", err
+	}
+
+	sub, _ := claims["sid"].(string)
+	if sub == "" {
+		return "", errorsx.WithStack(fosite.ErrInvalidRequest.WithHint("Failed to validate OpenID Connect request because provided id token from id_token_hint does not have a session id."))
 	}
 
 	return sub, nil

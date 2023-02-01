@@ -141,6 +141,11 @@ func (s *DefaultStrategy) authenticationSession(w http.ResponseWriter, r *http.R
 		return nil, err
 	}
 
+	maxAge := time.Time(session.MaxAge)
+	if !maxAge.IsZero() && time.Now().UTC().Unix() > maxAge.Unix() {
+		return nil, errorsx.WithStack(ErrNoAuthenticationSessionFound)
+	}
+
 	return session, nil
 }
 
@@ -442,7 +447,7 @@ func (s *DefaultStrategy) verifyAuthentication(w http.ResponseWriter, r *http.Re
 			return nil, errorsx.WithStack(fosite.ErrServerError.WithHint("Expected the handled login request to contain a valid authenticated_at value but it was zero. This is a bug which should be reported to https://github.com/ory/hydra."))
 		}
 
-		if err := s.r.ConsentManager().ConfirmLoginSession(r.Context(), sessionID, time.Time(session.AuthenticatedAt), session.Subject, session.Remember); err != nil {
+		if err := s.r.ConsentManager().ConfirmLoginSession(r.Context(), sessionID, time.Time(session.AuthenticatedAt), session.Subject, session.Remember, session.RememberFor); err != nil {
 			return nil, err
 		}
 	}
@@ -465,8 +470,12 @@ func (s *DefaultStrategy) verifyAuthentication(w http.ResponseWriter, r *http.Re
 	// Not a skipped login and the user asked to remember its session, store a cookie
 	cookie, _ := s.r.CookieStore().Get(r, CookieName(s.c.TLS(config.PublicInterface).Enabled(), CookieAuthenticationName))
 	cookie.Values[CookieAuthenticationSIDName] = sessionID
-	if session.RememberFor >= 0 {
-		cookie.Options.MaxAge = session.RememberFor
+	if session.LoginRequest.Skip && session.RefreshRememberFor {
+		cookie.Options.MaxAge = 0 // Do not change - always session scoped.
+		// Max age is validated after requesting cookie from cookie store
+		if err := s.r.ConsentManager().ExtendLoginSession(r.Context(), sessionID, session.RememberFor); err != nil {
+			return nil, err
+		}
 	}
 	cookie.Options.HttpOnly = true
 	cookie.Options.SameSite = s.c.CookieSameSiteMode()

@@ -310,7 +310,7 @@ func ManagerTests(m Manager, clientManager client.Manager, fositeManager x.Fosit
 					require.EqualError(t, err, x.ErrNotFound.Error())
 
 					updatedAuth := time.Time(tc.s.AuthenticatedAt).Add(time.Second)
-					require.NoError(t, m.ConfirmLoginSession(context.Background(), tc.s.ID, updatedAuth, tc.s.Subject, true))
+					require.NoError(t, m.ConfirmLoginSession(context.Background(), tc.s.ID, updatedAuth, tc.s.Subject, true, 0))
 
 					got, err := m.GetRememberedLoginSession(context.Background(), tc.s.ID)
 					require.NoError(t, err)
@@ -320,7 +320,7 @@ func ManagerTests(m Manager, clientManager client.Manager, fositeManager x.Fosit
 
 					time.Sleep(time.Second) // Make sure AuthAt does not equal...
 					updatedAuth2 := time.Now().Truncate(time.Second).UTC()
-					require.NoError(t, m.ConfirmLoginSession(context.Background(), tc.s.ID, updatedAuth2, "some-other-subject", true))
+					require.NoError(t, m.ConfirmLoginSession(context.Background(), tc.s.ID, updatedAuth2, "some-other-subject", true, 0))
 
 					got2, err := m.GetRememberedLoginSession(context.Background(), tc.s.ID)
 					require.NoError(t, err)

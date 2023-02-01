@@ -59,6 +59,7 @@ type LoginSession struct {
 	AuthenticatedAt sqlxx.NullTime `db:"authenticated_at"`
 	Subject         string         `db:"subject"`
 	Remember        bool           `db:"remember"`
+	MaxAge          sqlxx.NullTime `db:"max_age"`
 }
 
 func (_ LoginSession) TableName() string {

@@ -45,7 +45,8 @@ type Manager interface {
 	CreateLoginSession(ctx context.Context, session *LoginSession) error
 	DeleteLoginSession(ctx context.Context, id string) error
 	RevokeSubjectLoginSession(ctx context.Context, user string) error
-	ConfirmLoginSession(ctx context.Context, id string, authTime time.Time, subject string, remember bool) error
+	ConfirmLoginSession(ctx context.Context, id string, authTime time.Time, subject string, remember bool, rememberFor int) error
+	ExtendLoginSession(ctx context.Context, id string, rememberFor int) error
 
 	CreateLoginRequest(ctx context.Context, req *LoginRequest) error
 	GetLoginRequest(ctx context.Context, challenge string) (*LoginRequest, error)

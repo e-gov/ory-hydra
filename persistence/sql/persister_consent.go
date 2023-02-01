@@ -460,7 +460,11 @@ func (p *Persister) GetRememberedLoginSession(ctx context.Context, id string) (*
 	return &s, nil
 }
 
-func (p *Persister) ConfirmLoginSession(ctx context.Context, id string, authenticatedAt time.Time, subject string, remember bool) error {
+func (p *Persister) ConfirmLoginSession(ctx context.Context, id string, authenticatedAt time.Time, subject string, remember bool, rememberFor int) error {
+	var maxAge time.Time
+	if remember && rememberFor > 0 {
+		maxAge = time.Now().UTC().Add(time.Duration(rememberFor) * time.Second)
+	}
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.ConfirmLoginSession")
 	defer span.End()
 
@@ -468,8 +472,21 @@ func (p *Persister) ConfirmLoginSession(ctx context.Context, id string, authenti
 		AuthenticatedAt: sqlxx.NullTime(authenticatedAt),
 		Subject:         subject,
 		Remember:        remember,
-	}, "authenticated_at", "subject", "remember")
+		MaxAge:          sqlxx.NullTime(maxAge),
+	}, "authenticated_at", "subject", "remember", "max_age")
 	return sqlcon.HandleError(err)
+}
+
+func (p *Persister) ExtendLoginSession(ctx context.Context, id string, rememberFor int) error {
+	var maxAge time.Time
+	if rememberFor > 0 {
+		maxAge = time.Now().UTC().Add(time.Duration(rememberFor) * time.Second)
+	}
+	return sqlcon.HandleError(
+		p.Connection(ctx).UpdateColumns(&consent.LoginSession{
+			ID:     id,
+			MaxAge: sqlxx.NullTime(maxAge),
+		}, "max_age"))
 }
 
 func (p *Persister) CreateLoginSession(ctx context.Context, session *consent.LoginSession) error {

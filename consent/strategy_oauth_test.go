@@ -440,7 +440,7 @@ func TestStrategyLoginConsentNext(t *testing.T) {
 			setCookieHeader := loginVerifierRes.Header.Get("set-cookie")
 			assert.NotNil(t, setCookieHeader)
 			if extendSessionLifespan {
-				assert.Regexp(t, fmt.Sprintf("ory_hydra_session_dev=.*; Path=/; Expires=.*Max-Age=%d; HttpOnly; SameSite=Lax", rememberFor), setCookieHeader)
+				assert.Regexp(t, "ory_hydra_session_dev=.*; Path=/; HttpOnly; SameSite=Lax", setCookieHeader)
 			} else {
 				assert.NotContains(t, setCookieHeader, "ory_hydra_session_dev")
 			}

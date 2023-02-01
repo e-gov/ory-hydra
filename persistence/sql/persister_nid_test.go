@@ -185,12 +185,12 @@ func (s *PersisterTestSuite) TestConfirmLoginSession() {
 			expected := &consent.LoginSession{}
 			require.NoError(t, r.Persister().Connection(context.Background()).Find(expected, ls.ID))
 
-			require.NoError(t, r.Persister().ConfirmLoginSession(s.t2, expected.ID, time.Now(), expected.Subject, !expected.Remember))
+			require.NoError(t, r.Persister().ConfirmLoginSession(s.t2, expected.ID, time.Now(), expected.Subject, !expected.Remember, 0))
 			actual := &consent.LoginSession{}
 			require.NoError(t, r.Persister().Connection(context.Background()).Find(actual, ls.ID))
 			require.Equal(t, expected, actual)
 
-			require.NoError(t, r.Persister().ConfirmLoginSession(s.t1, expected.ID, time.Now(), expected.Subject, !expected.Remember))
+			require.NoError(t, r.Persister().ConfirmLoginSession(s.t1, expected.ID, time.Now(), expected.Subject, !expected.Remember, 0))
 			require.NoError(t, r.Persister().Connection(context.Background()).Find(actual, ls.ID))
 			require.NotEqual(t, expected, actual)
 		})

@@ -375,6 +375,43 @@ func (p *Persister) DeleteLoginSession(ctx context.Context, id string) error {
 		))
 }
 
+// Find HandledConsentRequest with same clauses that ExtendConsentRequest uses.
+func (p *Persister) FindSessionGrantedConsentRequest(ctx context.Context, scopeStrategy fosite.ScopeStrategy, cr *consent.ConsentRequest) ([]consent.HandledConsentRequest, error) {
+	rs := make([]consent.HandledConsentRequest, 0)
+	return rs, p.transaction(ctx, func(ctx context.Context, c *pop.Connection) error {
+		tn := consent.HandledConsentRequest{}.TableName()
+
+		var sessionHcr consent.HandledConsentRequest
+		if err := c.
+			Where(fmt.Sprintf("r.subject = ? AND r.client_id = ? AND r.login_session_id = ? AND r.skip=FALSE AND (%s.error='{}' AND %s.remember=TRUE)", tn, tn), cr.Subject, cr.ClientID, cr.LoginSessionID.String()).
+			Join("hydra_oauth2_consent_request AS r", fmt.Sprintf("%s.challenge = r.challenge", tn)).
+			Order(fmt.Sprintf("%s.requested_at DESC", tn)).
+			Limit(1).
+			First(&sessionHcr); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return errorsx.WithStack(consent.ErrNoPreviousConsentFound)
+			}
+			return sqlcon.HandleError(err)
+		}
+
+		var err error
+		rs, err = p.resolveHandledConsentRequests(ctx, []consent.HandledConsentRequest{sessionHcr})
+		if err != nil {
+			return err
+		}
+
+		for _, v := range rs {
+			for _, scope := range cr.RequestedScope {
+				if !scopeStrategy(v.GrantedScope, scope) {
+					return errorsx.WithStack(consent.ErrNoPreviousConsentFound)
+				}
+			}
+		}
+
+		return nil
+	})
+}
+
 func (p *Persister) FindGrantedAndRememberedConsentRequests(ctx context.Context, client, subject string) ([]consent.HandledConsentRequest, error) {
 	rs := make([]consent.HandledConsentRequest, 0)
 

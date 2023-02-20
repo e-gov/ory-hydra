@@ -38,13 +38,17 @@ import (
 )
 
 type Session struct {
-	*openid.DefaultSession `json:"id_token"`
-	Extra                  map[string]interface{} `json:"extra"`
-	KID                    string                 `json:"kid"`
-	ClientID               string                 `json:"client_id"`
-	ConsentChallenge       string                 `json:"consent_challenge"`
-	ExcludeNotBeforeClaim  bool                   `json:"exclude_not_before_claim"`
-	AllowedTopLevelClaims  []string               `json:"allowed_top_level_claims"`
+	*openid.DefaultSession    `json:"id_token"`
+	Extra                     map[string]interface{} `json:"extra"`
+	KID                       string                 `json:"kid"`
+	ClientID                  string                 `json:"client_id"`
+	ConsentChallenge          string                 `json:"consent_challenge"`
+	ExcludeNotBeforeClaim     bool                   `json:"exclude_not_before_claim"`
+	AllowedTopLevelClaims     []string               `json:"allowed_top_level_claims"`
+	RefreshRememberFor        bool                   `json:"refresh_remember_for"`
+	RememberFor               int                    `json:"remember_for"`
+	RefreshConsentRememberFor bool                   `json:"refresh_consent_remember_for"`
+	ConsentRememberFor        int                    `json:"consent_remember_for"`
 }
 
 func NewSession(subject string) *Session {

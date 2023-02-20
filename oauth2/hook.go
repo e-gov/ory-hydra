@@ -146,6 +146,10 @@ func RefreshTokenHook(config *config.Provider) AccessRequestHook {
 
 		// Overwrite existing session data (extra claims).
 		session.Extra = respBody.Session.AccessToken
+		session.RefreshRememberFor = respBody.Session.RefreshRememberFor
+		session.RememberFor = respBody.Session.RememberFor
+		session.RefreshConsentRememberFor = respBody.Session.RefreshConsentRememberFor
+		session.ConsentRememberFor = respBody.Session.ConsentRememberFor
 		idTokenClaims := session.IDTokenClaims()
 		idTokenClaims.Extra = respBody.Session.IDToken
 

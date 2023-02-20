@@ -50,6 +50,7 @@ type Manager interface {
 	RevokeSubjectClientLoginSessionConsentSession(ctx context.Context, user, client, loginSessionId string) error
 
 	VerifyAndInvalidateConsentRequest(ctx context.Context, verifier string) (*HandledConsentRequest, error)
+	FindSessionGrantedConsentRequest(ctx context.Context, scopeStrategy fosite.ScopeStrategy, cr *ConsentRequest) ([]HandledConsentRequest, error)
 	FindGrantedAndRememberedConsentRequests(ctx context.Context, client, user string) ([]HandledConsentRequest, error)
 	FindSubjectsGrantedConsentRequests(ctx context.Context, user string, limit, offset int) ([]HandledConsentRequest, error)
 	CountSubjectsGrantedConsentRequests(ctx context.Context, user string) (int, error)

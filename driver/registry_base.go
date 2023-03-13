@@ -293,6 +293,7 @@ func (m *RegistryBase) oAuth2Config() *compose.Config {
 		HashCost:                             m.C.BCryptCost(),
 		ScopeStrategy:                        m.ScopeStrategy(),
 		SendDebugMessagesToClients:           m.C.ShareOAuth2Debug(),
+		RefreshTokenScopes:                   []string{},
 		UseLegacyErrorFormat:                 m.C.OAuth2LegacyErrors(),
 		EnforcePKCE:                          m.C.PKCEEnforced(),
 		EnforcePKCEForPublicClients:          m.C.EnforcePKCEForPublicClients(),

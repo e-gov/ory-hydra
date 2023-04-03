@@ -80,9 +80,6 @@ func NewHandler(r InternalRegistry, c *config.Provider) *Handler {
 	return &Handler{r: r, c: c}
 }
 
-var ErrNoPreviousConsentFound = errors.New("no previous OAuth 2.0 Consent could be found for this access request")
-var ErrNoAuthenticationSessionFound = errors.New("no previous login session was found")
-
 func (h *Handler) SetRoutes(admin *x.RouterAdmin, public *x.RouterPublic, corsMiddleware func(http.Handler) http.Handler) {
 	public.Handler("OPTIONS", TokenPath, corsMiddleware(http.HandlerFunc(h.handleOptions)))
 	public.Handler("POST", TokenPath, corsMiddleware(http.HandlerFunc(h.TokenHandler)))
@@ -627,6 +624,67 @@ func (h *Handler) TokenHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	session, sessionOk := accessRequest.GetSession().(*Session)
+	sid, sidOk := session.DefaultSession.Claims.Extra["sid"].(string)
+
+	isRefreshTokenRequest := accessRequest.GetRequestForm().Has("refresh_token")
+	cr := consent.ConsentRequest{
+		Subject:        session.GetSubject(),
+		ClientID:       accessRequest.GetClient().GetID(),
+		LoginSessionID: sqlxx.NullString(sid),
+	}
+
+	if isRefreshTokenRequest {
+		// ========================================================================
+		// Same checks as in consent/strategy_default.go authenticationSession
+		loginSession, err := h.r.ConsentManager().GetRememberedLoginSession(r.Context(), sid)
+		if errors.Is(err, x.ErrNotFound) {
+			h.r.Logger().
+				WithRequest(r).
+				WithField("sid", sid).
+				Info("Authentication session not found.")
+			h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrInvalidRequest.WithHint("Authentication session not found or expired.")))
+			return
+		} else if err != nil {
+			h.r.Logger().
+				WithRequest(r).
+				WithField("sid", sid).
+				WithError(err).
+				Error("Failed to query authentication session.")
+			h.r.Writer().WriteError(w, r, errorsx.WithStack(err))
+			return
+		}
+
+		maxAge := time.Time(loginSession.MaxAge)
+		if !maxAge.IsZero() && time.Now().UTC().Unix() > maxAge.Unix() {
+			h.r.Logger().
+				WithRequest(r).
+				WithField("sid", sid).
+				Info("Authentication session expired.")
+			h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrInvalidRequest.WithHint("Authentication session not found or expired.")))
+			return
+		}
+		// ========================================================================
+
+		_, err = h.r.ConsentManager().FindSessionGrantedConsentRequest(r.Context(), h.r.ScopeStrategy(), &cr)
+		if errors.Is(err, consent.ErrNoPreviousConsentFound) {
+			h.r.Logger().
+				WithRequest(r).
+				WithField("sid", sid).
+				Info("Consent not found or expired.")
+			h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrInvalidRequest.WithHint("Authentication session not found or expired.")))
+			return
+		} else if err != nil {
+			h.r.Logger().
+				WithRequest(r).
+				WithField("sid", sid).
+				WithError(err).
+				Error("Failed to query consent.")
+			h.r.Writer().WriteError(w, r, errorsx.WithStack(err))
+			return
+		}
+	}
+
 	for _, hook := range h.r.AccessRequestHooks() {
 		if err := hook(ctx, accessRequest); err != nil {
 			h.logOrAudit(err, r)
@@ -635,104 +693,29 @@ func (h *Handler) TokenHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	session, ok := accessRequest.GetSession().(*Session)
-	sid, sidOk := session.DefaultSession.Claims.Extra["sid"].(string)
-
-	if ok && session.RefreshRememberFor {
-		if sidOk && len(sid) != 0 {
-
-			// ========================================================================
-			// Same checks as in consent/strategy_default.go authenticationSession
-
-			loginSession, err := h.r.ConsentManager().GetRememberedLoginSession(r.Context(), sid)
-			if errors.Is(err, x.ErrNotFound) {
-				h.r.Logger().
-					WithRequest(r).
-					WithField("sid", sid).
-					Info("Authentication session not found.")
-				h.r.Writer().WriteError(w, r, errorsx.WithStack(ErrNoAuthenticationSessionFound))
-				return
-			} else if err != nil {
-				h.r.Logger().
-					WithRequest(r).
-					WithField("sid", sid).
-					WithError(err).
-					Error("Failed to query authentication session.")
-				h.r.Writer().WriteError(w, r, errorsx.WithStack(err))
-				return
-			}
+	if sessionOk && session.RefreshRememberFor && sidOk && len(sid) != 0 {
+		err = h.r.ConsentManager().ExtendLoginSession(ctx, sid, session.RememberFor)
+		if err != nil {
 			h.r.Logger().
 				WithRequest(r).
 				WithField("sid", sid).
-				Info("Authentication session is valid for extending.")
-
-			maxAge := time.Time(loginSession.MaxAge)
-			if !maxAge.IsZero() && time.Now().UTC().Unix() > maxAge.Unix() {
-				h.r.Logger().
-					WithRequest(r).
-					WithField("sid", sid).
-					Info("Authentication session expired.")
-				h.r.Writer().WriteError(w, r, errorsx.WithStack(ErrNoAuthenticationSessionFound))
-				return
-			}
-
-			// ========================================================================
-
-			err = h.r.ConsentManager().ExtendLoginSession(ctx, sid, session.RememberFor)
-			if err != nil {
-				h.r.Logger().
-					WithRequest(r).
-					WithField("sid", sid).
-					WithError(err).
-					Error("Failed to extend authentication session.")
-				h.r.Writer().WriteError(w, r, errorsx.WithStack(err))
-				return
-			}
+				WithError(err).
+				Error("Failed to extend authentication session.")
+			h.r.Writer().WriteError(w, r, errorsx.WithStack(err))
+			return
 		}
 	}
 
-	if ok && session.RefreshConsentRememberFor {
-		if sidOk && len(sid) != 0 {
-
-			cr := consent.ConsentRequest{
-				Subject:        session.GetSubject(),
-				ClientID:       accessRequest.GetClient().GetID(),
-				LoginSessionID: sqlxx.NullString(sid),
-			}
-
-			var hcrs []consent.HandledConsentRequest
-			hcrs, err = h.r.ConsentManager().FindSessionGrantedConsentRequest(r.Context(), h.r.ScopeStrategy(), &cr)
-			if err != nil {
-				h.r.Logger().
-					WithRequest(r).
-					WithField("sid", sid).
-					WithError(err).
-					Error("Failed to query consent.")
-				h.r.Writer().WriteError(w, r, errorsx.WithStack(err))
-				return
-			} else if len(hcrs) == 0 {
-				h.r.Logger().
-					WithRequest(r).
-					WithField("sid", sid).
-					Info("Consent not found or expired.")
-				h.r.Writer().WriteError(w, r, errorsx.WithStack(ErrNoPreviousConsentFound))
-				return
-			}
+	if sessionOk && session.RefreshConsentRememberFor && sidOk && len(sid) != 0 {
+		err = h.r.ConsentManager().ExtendConsentRequest(r.Context(), h.r.ScopeStrategy(), &cr, session.ConsentRememberFor)
+		if err != nil {
 			h.r.Logger().
 				WithRequest(r).
 				WithField("sid", sid).
-				Info("Consent is valid for extending.")
-
-			err = h.r.ConsentManager().ExtendConsentRequest(r.Context(), h.r.ScopeStrategy(), &cr, session.ConsentRememberFor)
-			if err != nil {
-				h.r.Logger().
-					WithRequest(r).
-					WithField("sid", sid).
-					WithError(err).
-					Error("Failed to extend consent.")
-				h.r.Writer().WriteError(w, r, errorsx.WithStack(err))
-				return
-			}
+				WithError(err).
+				Error("Failed to extend consent.")
+			h.r.Writer().WriteError(w, r, errorsx.WithStack(err))
+			return
 		}
 	}
 

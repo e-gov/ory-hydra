@@ -274,7 +274,7 @@ type PreviousConsentSession struct {
 
 	ConsentRequest  *ConsentRequest     `json:"consent_request" db:"-"`
 	Error           *RequestDeniedError `json:"-" db:"error"`
-	RequestedAt     time.Time           `json:"-" db:"requested_at"`
+	RequestedAt     time.Time           `json:"requested_at" db:"requested_at"`
 	AuthenticatedAt sqlxx.NullTime      `json:"-" db:"authenticated_at"`
 
 	SessionIDToken     sqlxx.MapStringInterface `db:"session_id_token" json:"-"`

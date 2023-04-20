@@ -456,6 +456,26 @@ func (p *Persister) FindSubjectsGrantedConsentRequests(ctx context.Context, subj
 	return p.resolveHandledConsentRequests(ctx, rs)
 }
 
+func (p *Persister) FindSubjectsSessionGrantedConsentRequests(ctx context.Context, subject, loginSessionId string, limit, offset int) ([]consent.HandledConsentRequest, error) {
+	var rs []consent.HandledConsentRequest
+	c := p.Connection(ctx)
+	tn := consent.HandledConsentRequest{}.TableName()
+
+	if err := c.
+		Where(fmt.Sprintf("r.subject = ? AND r.login_session_id = ? AND r.skip=FALSE AND %s.error='{}'", tn), subject, loginSessionId).
+		Join("hydra_oauth2_consent_request AS r", fmt.Sprintf("%s.challenge = r.challenge", tn)).
+		Order(fmt.Sprintf("%s.requested_at DESC", tn)).
+		Paginate(offset/limit+1, limit).
+		All(&rs); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errorsx.WithStack(consent.ErrNoPreviousConsentFound)
+		}
+		return nil, sqlcon.HandleError(err)
+	}
+
+	return p.resolveHandledConsentRequests(ctx, rs)
+}
+
 func (p *Persister) CountSubjectsGrantedConsentRequests(ctx context.Context, subject string) (int, error) {
 	tn := consent.HandledConsentRequest{}.TableName()
 

@@ -1437,6 +1437,13 @@
             "required": true
           },
           {
+            "type": "string",
+            "description": "The login session id to list the consent sessions for.",
+            "name": "login_session_id",
+            "in": "query",
+            "required": true
+          },
+          {
             "type": "integer",
             "format": "int64",
             "description": "The maximum amount of consent sessions to be returned, upper bound is 500 sessions.",

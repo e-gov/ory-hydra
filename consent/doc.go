@@ -68,6 +68,11 @@ type swaggerListSubjectConsentSessionsPayload struct {
 	// required: true
 	Subject string `json:"subject"`
 
+	// The login session id to list the consent sessions for.
+	// in: query
+	// required: false
+	LoginSessionId string `json:"login_session_id"`
+
 	// The maximum amount of consent sessions to be returned, upper bound is 500 sessions.
 	// in: query
 	Limit int `json:"limit"`

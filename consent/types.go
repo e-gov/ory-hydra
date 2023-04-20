@@ -702,11 +702,11 @@ type ConsentRequestSessionData struct {
 	// UserInfo map[string]interface{} `json:"userinfo"`
 
 	// Extends session remember for if true
-	RefreshRememberFor bool `json:"refresh_remember_for"`
-	RememberFor        int  `json:"remember_for"`
+	RefreshRememberFor bool `json:"refresh_remember_for,omitempty"`
+	RememberFor        int  `json:"remember_for,omitempty"`
 	// Extends consent remember for if true
-	RefreshConsentRememberFor bool `json:"refresh_consent_remember_for"`
-	ConsentRememberFor        int  `json:"consent_remember_for"`
+	RefreshConsentRememberFor bool `json:"refresh_consent_remember_for,omitempty"`
+	ConsentRememberFor        int  `json:"consent_remember_for,omitempty"`
 }
 
 func NewConsentRequestSessionData() *ConsentRequestSessionData {

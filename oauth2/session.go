@@ -45,10 +45,10 @@ type Session struct {
 	ConsentChallenge          string                 `json:"consent_challenge"`
 	ExcludeNotBeforeClaim     bool                   `json:"exclude_not_before_claim"`
 	AllowedTopLevelClaims     []string               `json:"allowed_top_level_claims"`
-	RefreshRememberFor        bool                   `json:"refresh_remember_for"`
-	RememberFor               int                    `json:"remember_for"`
-	RefreshConsentRememberFor bool                   `json:"refresh_consent_remember_for"`
-	ConsentRememberFor        int                    `json:"consent_remember_for"`
+	RefreshRememberFor        bool                   `json:"-"`
+	RememberFor               int                    `json:"-"`
+	RefreshConsentRememberFor bool                   `json:"-"`
+	ConsentRememberFor        int                    `json:"-"`
 }
 
 func NewSession(subject string) *Session {

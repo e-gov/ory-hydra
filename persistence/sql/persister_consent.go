@@ -589,12 +589,12 @@ nid = ?`, flow.FlowStateConsentUsed, flow.FlowStateConsentUnused,
 		}
 
 		var err error
-		rs, err = p.filterExpiredConsentRequests(ctx, []consent.AcceptOAuth2ConsentRequest{*f.GetHandledConsentRequest()})
+		rs, err = p.filterExpiredConsentRequests(ctx, []consent.AcceptOAuth2ConsentRequest{*f.GetHandledConsentRequest()}, false)
 		return err
 	})
 }
 
-func (p *Persister) FindSubjectsGrantedConsentRequests(ctx context.Context, subject string, limit, offset int) ([]consent.AcceptOAuth2ConsentRequest, error) {
+func (p *Persister) FindSubjectsGrantedConsentRequests(ctx context.Context, subject string, includeExpired bool, limit, offset int) ([]consent.AcceptOAuth2ConsentRequest, error) {
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.FindSubjectsGrantedConsentRequests")
 	defer span.End()
 
@@ -625,10 +625,10 @@ nid = ?`, flow.FlowStateConsentUsed, flow.FlowStateConsentUnused,
 		rs = append(rs, *f.GetHandledConsentRequest())
 	}
 
-	return p.filterExpiredConsentRequests(ctx, rs)
+	return p.filterExpiredConsentRequests(ctx, rs, includeExpired)
 }
 
-func (p *Persister) FindSubjectsSessionGrantedConsentRequests(ctx context.Context, subject, sid string, limit, offset int) ([]consent.AcceptOAuth2ConsentRequest, error) {
+func (p *Persister) FindSubjectsSessionGrantedConsentRequests(ctx context.Context, subject, sid string, includeExpired bool, limit, offset int) ([]consent.AcceptOAuth2ConsentRequest, error) {
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.FindSubjectsSessionGrantedConsentRequests")
 	defer span.End()
 
@@ -660,7 +660,7 @@ nid = ?`, flow.FlowStateConsentUsed, flow.FlowStateConsentUnused,
 		rs = append(rs, *f.GetHandledConsentRequest())
 	}
 
-	return p.filterExpiredConsentRequests(ctx, rs)
+	return p.filterExpiredConsentRequests(ctx, rs, includeExpired)
 }
 
 func (p *Persister) CountSubjectsGrantedConsentRequests(ctx context.Context, subject string) (int, error) {
@@ -681,13 +681,13 @@ nid = ?`, flow.FlowStateConsentUsed, flow.FlowStateConsentUnused,
 	return n, sqlcon.HandleError(err)
 }
 
-func (p *Persister) filterExpiredConsentRequests(ctx context.Context, requests []consent.AcceptOAuth2ConsentRequest) ([]consent.AcceptOAuth2ConsentRequest, error) {
+func (p *Persister) filterExpiredConsentRequests(ctx context.Context, requests []consent.AcceptOAuth2ConsentRequest, includeExpired bool) ([]consent.AcceptOAuth2ConsentRequest, error) {
 	_, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.filterExpiredConsentRequests")
 	defer span.End()
 
 	var result []consent.AcceptOAuth2ConsentRequest
 	for _, v := range requests {
-		if v.RememberFor > 0 && v.RequestedAt.Add(time.Duration(v.RememberFor)*time.Second).Before(time.Now().UTC()) {
+		if !includeExpired && v.RememberFor > 0 && v.RequestedAt.Add(time.Duration(v.RememberFor)*time.Second).Before(time.Now().UTC()) {
 			continue
 		}
 		result = append(result, v)

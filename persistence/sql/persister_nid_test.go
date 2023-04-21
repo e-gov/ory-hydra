@@ -796,11 +796,11 @@ func (s *PersisterTestSuite) TestFindSubjectsGrantedConsentRequests() {
 			_, err := r.Persister().HandleConsentRequest(s.t1, hcr)
 			require.NoError(t, err)
 
-			actual, err := r.Persister().FindSubjectsGrantedConsentRequests(s.t2, f.Subject, 100, 0)
+			actual, err := r.Persister().FindSubjectsGrantedConsentRequests(s.t2, f.Subject, false, 100, 0)
 			require.Error(t, err)
 			require.Equal(t, 0, len(actual))
 
-			actual, err = r.Persister().FindSubjectsGrantedConsentRequests(s.t1, f.Subject, 100, 0)
+			actual, err = r.Persister().FindSubjectsGrantedConsentRequests(s.t1, f.Subject, false, 100, 0)
 			require.NoError(t, err)
 			require.Equal(t, 1, len(actual))
 		})

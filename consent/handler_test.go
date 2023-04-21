@@ -631,7 +631,7 @@ func TestExtendConsentRequest(t *testing.T) {
 		require.NoError(t, err)
 		require.EqualValues(t, 200, resp.StatusCode)
 
-		crs, err := reg.ConsentManager().FindSubjectsGrantedConsentRequests(context.Background(), "subject-1", 100, 0)
+		crs, err := reg.ConsentManager().FindSubjectsGrantedConsentRequests(context.Background(), "subject-1", false, 100, 0)
 		require.NoError(t, err)
 		require.NotNil(t, crs)
 		require.EqualValues(t, 1, len(crs))

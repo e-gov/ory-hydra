@@ -1210,6 +1210,12 @@
             "description": "The login session id to list the consent sessions for.",
             "name": "login_session_id",
             "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "Option to return expired consent sessions.",
+            "name": "include_expired",
+            "in": "query"
           }
         ],
         "responses": {

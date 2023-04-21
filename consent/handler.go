@@ -284,6 +284,12 @@ type listOAuth2ConsentSessions struct {
 	// in: query
 	// required: false
 	LoginSessionId string `json:"login_session_id"`
+
+	// Option to return expired consent sessions.
+	//
+	// in: query
+	// required: false
+	IncludeExpired bool `json:"include_expired"`
 }
 
 // swagger:route GET /admin/oauth2/auth/sessions/consent oAuth2 listOAuth2ConsentSessions
@@ -312,15 +318,19 @@ func (h *Handler) listOAuth2ConsentSessions(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	loginSessionId := r.URL.Query().Get("login_session_id")
+	includeExpired := false
+	if r.URL.Query().Get("include_expired") == "true" {
+		includeExpired = true
+	}
 
 	page, itemsPerPage := x.ParsePagination(r)
 
 	var s []AcceptOAuth2ConsentRequest
 	var err error
 	if len(loginSessionId) == 0 {
-		s, err = h.r.ConsentManager().FindSubjectsGrantedConsentRequests(r.Context(), subject, itemsPerPage, itemsPerPage*page)
+		s, err = h.r.ConsentManager().FindSubjectsGrantedConsentRequests(r.Context(), subject, includeExpired, itemsPerPage, itemsPerPage*page)
 	} else {
-		s, err = h.r.ConsentManager().FindSubjectsSessionGrantedConsentRequests(r.Context(), subject, loginSessionId, itemsPerPage, itemsPerPage*page)
+		s, err = h.r.ConsentManager().FindSubjectsSessionGrantedConsentRequests(r.Context(), subject, loginSessionId, includeExpired, itemsPerPage, itemsPerPage*page)
 	}
 	if errors.Is(err, ErrNoPreviousConsentFound) {
 		h.r.Writer().Write(w, r, []OAuth2ConsentSession{})

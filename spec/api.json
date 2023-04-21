@@ -2876,6 +2876,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "description": "Option to return expired consent sessions.",
+            "in": "query",
+            "name": "include_expired",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {

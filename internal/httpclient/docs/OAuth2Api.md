@@ -1056,7 +1056,7 @@ No authorization required
 
 ## ListOAuth2ConsentSessions
 
-> []OAuth2ConsentSession ListOAuth2ConsentSessions(ctx).Subject(subject).PageSize(pageSize).PageToken(pageToken).LoginSessionId(loginSessionId).Execute()
+> []OAuth2ConsentSession ListOAuth2ConsentSessions(ctx).Subject(subject).PageSize(pageSize).PageToken(pageToken).LoginSessionId(loginSessionId).IncludeExpired(includeExpired).Execute()
 
 List OAuth 2.0 Consent Sessions of a Subject
 
@@ -1079,10 +1079,11 @@ func main() {
     pageSize := int64(789) // int64 | Items per Page  This is the number of items per page to return. For details on pagination please head over to the [pagination documentation](https://www.ory.sh/docs/ecosystem/api-design#pagination). (optional) (default to 250)
     pageToken := "pageToken_example" // string | Next Page Token  The next page token. For details on pagination please head over to the [pagination documentation](https://www.ory.sh/docs/ecosystem/api-design#pagination). (optional) (default to "1")
     loginSessionId := "loginSessionId_example" // string | The login session id to list the consent sessions for. (optional)
+    includeExpired := true // bool | Option to return expired consent sessions. (optional)
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.OAuth2Api.ListOAuth2ConsentSessions(context.Background()).Subject(subject).PageSize(pageSize).PageToken(pageToken).LoginSessionId(loginSessionId).Execute()
+    resp, r, err := apiClient.OAuth2Api.ListOAuth2ConsentSessions(context.Background()).Subject(subject).PageSize(pageSize).PageToken(pageToken).LoginSessionId(loginSessionId).IncludeExpired(includeExpired).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `OAuth2Api.ListOAuth2ConsentSessions``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -1107,6 +1108,7 @@ Name | Type | Description  | Notes
  **pageSize** | **int64** | Items per Page  This is the number of items per page to return. For details on pagination please head over to the [pagination documentation](https://www.ory.sh/docs/ecosystem/api-design#pagination). | [default to 250]
  **pageToken** | **string** | Next Page Token  The next page token. For details on pagination please head over to the [pagination documentation](https://www.ory.sh/docs/ecosystem/api-design#pagination). | [default to &quot;1&quot;]
  **loginSessionId** | **string** | The login session id to list the consent sessions for. | 
+ **includeExpired** | **bool** | Option to return expired consent sessions. | 
 
 ### Return type
 

@@ -1131,6 +1131,14 @@ paths:
         schema:
           type: string
         style: form
+      - description: Option to return expired consent sessions.
+        explode: true
+        in: query
+        name: include_expired
+        required: false
+        schema:
+          type: boolean
+        style: form
       responses:
         "200":
           content:

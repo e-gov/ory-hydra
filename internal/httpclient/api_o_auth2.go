@@ -1921,6 +1921,7 @@ type ApiListOAuth2ConsentSessionsRequest struct {
 	pageSize       *int64
 	pageToken      *string
 	loginSessionId *string
+	includeExpired *bool
 }
 
 // The subject to list the consent sessions for.
@@ -1944,6 +1945,12 @@ func (r ApiListOAuth2ConsentSessionsRequest) PageToken(pageToken string) ApiList
 // The login session id to list the consent sessions for.
 func (r ApiListOAuth2ConsentSessionsRequest) LoginSessionId(loginSessionId string) ApiListOAuth2ConsentSessionsRequest {
 	r.loginSessionId = &loginSessionId
+	return r
+}
+
+// Option to return expired consent sessions.
+func (r ApiListOAuth2ConsentSessionsRequest) IncludeExpired(includeExpired bool) ApiListOAuth2ConsentSessionsRequest {
+	r.includeExpired = &includeExpired
 	return r
 }
 
@@ -2002,6 +2009,9 @@ func (a *OAuth2ApiService) ListOAuth2ConsentSessionsExecute(r ApiListOAuth2Conse
 	localVarQueryParams.Add("subject", parameterToString(*r.subject, ""))
 	if r.loginSessionId != nil {
 		localVarQueryParams.Add("login_session_id", parameterToString(*r.loginSessionId, ""))
+	}
+	if r.includeExpired != nil {
+		localVarQueryParams.Add("include_expired", parameterToString(*r.includeExpired, ""))
 	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}

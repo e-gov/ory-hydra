@@ -68,6 +68,10 @@ type swaggerListSubjectConsentSessionsPayload struct {
 	// required: true
 	Subject string `json:"subject"`
 
+	// in: query
+	// required: false
+	IncludeExpred bool `json:"include_expired"`
+
 	// The login session id to list the consent sessions for.
 	// in: query
 	// required: false

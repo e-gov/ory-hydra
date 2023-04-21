@@ -1437,6 +1437,11 @@
             "required": true
           },
           {
+            "type": "boolean",
+            "name": "include_expired",
+            "in": "query"
+          },
+          {
             "type": "string",
             "description": "The login session id to list the consent sessions for.",
             "name": "login_session_id",
@@ -3904,3 +3909,4 @@
   "x-forwarded-proto": "string",
   "x-request-id": "string"
 }
+

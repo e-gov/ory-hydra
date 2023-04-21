@@ -395,7 +395,7 @@ func (p *Persister) FindSessionGrantedConsentRequest(ctx context.Context, scopeS
 		}
 
 		var err error
-		rs, err = p.resolveHandledConsentRequests(ctx, []consent.HandledConsentRequest{sessionHcr})
+		rs, err = p.resolveHandledConsentRequests(ctx, []consent.HandledConsentRequest{sessionHcr}, false)
 		if err != nil {
 			return err
 		}
@@ -431,12 +431,12 @@ func (p *Persister) FindGrantedAndRememberedConsentRequests(ctx context.Context,
 		}
 
 		var err error
-		rs, err = p.resolveHandledConsentRequests(ctx, []consent.HandledConsentRequest{cr})
+		rs, err = p.resolveHandledConsentRequests(ctx, []consent.HandledConsentRequest{cr}, false)
 		return err
 	})
 }
 
-func (p *Persister) FindSubjectsGrantedConsentRequests(ctx context.Context, subject string, limit, offset int) ([]consent.HandledConsentRequest, error) {
+func (p *Persister) FindSubjectsGrantedConsentRequests(ctx context.Context, subject string, includeExpired bool, limit, offset int) ([]consent.HandledConsentRequest, error) {
 	var rs []consent.HandledConsentRequest
 	c := p.Connection(ctx)
 	tn := consent.HandledConsentRequest{}.TableName()
@@ -453,10 +453,10 @@ func (p *Persister) FindSubjectsGrantedConsentRequests(ctx context.Context, subj
 		return nil, sqlcon.HandleError(err)
 	}
 
-	return p.resolveHandledConsentRequests(ctx, rs)
+	return p.resolveHandledConsentRequests(ctx, rs, includeExpired)
 }
 
-func (p *Persister) FindSubjectsSessionGrantedConsentRequests(ctx context.Context, subject, loginSessionId string, limit, offset int) ([]consent.HandledConsentRequest, error) {
+func (p *Persister) FindSubjectsSessionGrantedConsentRequests(ctx context.Context, subject, loginSessionId string, includeExpired bool, limit, offset int) ([]consent.HandledConsentRequest, error) {
 	var rs []consent.HandledConsentRequest
 	c := p.Connection(ctx)
 	tn := consent.HandledConsentRequest{}.TableName()
@@ -473,7 +473,7 @@ func (p *Persister) FindSubjectsSessionGrantedConsentRequests(ctx context.Contex
 		return nil, sqlcon.HandleError(err)
 	}
 
-	return p.resolveHandledConsentRequests(ctx, rs)
+	return p.resolveHandledConsentRequests(ctx, rs, includeExpired)
 }
 
 func (p *Persister) CountSubjectsGrantedConsentRequests(ctx context.Context, subject string) (int, error) {
@@ -486,7 +486,7 @@ func (p *Persister) CountSubjectsGrantedConsentRequests(ctx context.Context, sub
 	return n, sqlcon.HandleError(err)
 }
 
-func (p *Persister) resolveHandledConsentRequests(ctx context.Context, requests []consent.HandledConsentRequest) ([]consent.HandledConsentRequest, error) {
+func (p *Persister) resolveHandledConsentRequests(ctx context.Context, requests []consent.HandledConsentRequest, includeExpired bool) ([]consent.HandledConsentRequest, error) {
 	var result []consent.HandledConsentRequest
 
 	for _, v := range requests {
@@ -501,7 +501,7 @@ func (p *Persister) resolveHandledConsentRequests(ctx context.Context, requests 
 		if err := v.AfterFind(p.Connection(ctx)); err != nil {
 			return nil, err
 		}
-		if v.RememberFor > 0 && v.RequestedAt.Add(time.Duration(v.RememberFor)*time.Second).Before(time.Now().UTC()) {
+		if !includeExpired && v.RememberFor > 0 && v.RequestedAt.Add(time.Duration(v.RememberFor)*time.Second).Before(time.Now().UTC()) {
 			continue
 		}
 

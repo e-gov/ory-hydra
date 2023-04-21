@@ -242,13 +242,18 @@ func (h *Handler) GetConsentSessions(w http.ResponseWriter, r *http.Request, ps 
 	}
 	loginSessionId := r.URL.Query().Get("login_session_id")
 
+	includeExpired := false
+	if r.URL.Query().Get("include_expired") == "true" {
+		includeExpired = true
+	}
+
 	limit, offset := pagination.Parse(r, 100, 0, 500)
 	var s []HandledConsentRequest
 	var err error
 	if len(loginSessionId) == 0 {
-		s, err = h.r.ConsentManager().FindSubjectsGrantedConsentRequests(r.Context(), subject, limit, offset)
+		s, err = h.r.ConsentManager().FindSubjectsGrantedConsentRequests(r.Context(), subject, includeExpired, limit, offset)
 	} else {
-		s, err = h.r.ConsentManager().FindSubjectsSessionGrantedConsentRequests(r.Context(), subject, loginSessionId, limit, offset)
+		s, err = h.r.ConsentManager().FindSubjectsSessionGrantedConsentRequests(r.Context(), subject, loginSessionId, includeExpired, limit, offset)
 	}
 	if errors.Is(err, ErrNoPreviousConsentFound) {
 		h.r.Writer().Write(w, r, []PreviousConsentSession{})

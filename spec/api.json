@@ -2904,6 +2904,72 @@
         "tags": [
           "oAuth2"
         ]
+      },
+      "put": {
+        "description": "This endpoint expires a subject's granted consent sessions for a specific OAuth 2.0 Client and invalidates all\nassociated OAuth 2.0 Access Tokens.",
+        "operationId": "expireOAuth2ConsentSessions",
+        "parameters": [
+          {
+            "description": "OAuth 2.0 Consent Subject\n\nThe subject whose consent sessions should be deleted.",
+            "in": "query",
+            "name": "subject",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "OAuth 2.0 Client ID\n\nIf set, deletes only those consent sessions that have been granted to the specified OAuth 2.0 Client ID.",
+            "in": "query",
+            "name": "client",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "If set, deletes only those consent sessions by the Subject that have been granted to the specified session id. Can be combined with client or all parameter.",
+            "in": "query",
+            "name": "LoginSessionId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Revoke All Consent Sessions\n\nIf set to `true` deletes all consent sessions by the Subject that have been granted.",
+            "in": "query",
+            "name": "all",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "If set to `?trigger_back_channel_logout=true`, performs back channel logout for matching clients",
+            "in": "query",
+            "name": "trigger_back_channel_logout",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/emptyResponse"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorOAuth2"
+                }
+              }
+            },
+            "description": "errorOAuth2"
+          }
+        },
+        "summary": "Expires Consent Sessions of a Subject for a Specific OAuth 2.0 Client",
+        "tags": [
+          "oAuth2"
+        ]
       }
     },
     "/admin/oauth2/auth/sessions/login": {

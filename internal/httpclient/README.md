@@ -96,6 +96,7 @@ Class | Method | HTTP request | Description
 *OAuth2Api* | [**DeleteOAuth2Client**](docs/OAuth2Api.md#deleteoauth2client) | **Delete** /admin/clients/{id} | Delete OAuth 2.0 Client
 *OAuth2Api* | [**DeleteOAuth2Token**](docs/OAuth2Api.md#deleteoauth2token) | **Delete** /admin/oauth2/tokens | Delete OAuth 2.0 Access Tokens from specific OAuth 2.0 Client
 *OAuth2Api* | [**DeleteTrustedOAuth2JwtGrantIssuer**](docs/OAuth2Api.md#deletetrustedoauth2jwtgrantissuer) | **Delete** /admin/trust/grants/jwt-bearer/issuers/{id} | Delete Trusted OAuth2 JWT Bearer Grant Type Issuer
+*OAuth2Api* | [**ExpireOAuth2ConsentSessions**](docs/OAuth2Api.md#expireoauth2consentsessions) | **Put** /admin/oauth2/auth/sessions/consent | Expires Consent Sessions of a Subject for a Specific OAuth 2.0 Client
 *OAuth2Api* | [**GetOAuth2Client**](docs/OAuth2Api.md#getoauth2client) | **Get** /admin/clients/{id} | Get an OAuth 2.0 Client
 *OAuth2Api* | [**GetOAuth2ConsentRequest**](docs/OAuth2Api.md#getoauth2consentrequest) | **Get** /admin/oauth2/auth/requests/consent | Get OAuth 2.0 Consent Request
 *OAuth2Api* | [**GetOAuth2LoginRequest**](docs/OAuth2Api.md#getoauth2loginrequest) | **Get** /admin/oauth2/auth/requests/login | Get OAuth 2.0 Login Request

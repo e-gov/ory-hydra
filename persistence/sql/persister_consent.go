@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	strategy "github.com/ory/hydra/v2/persistence/sql/consent"
+
 	"github.com/gobuffalo/pop/v6"
 
 	"github.com/ory/x/sqlxx"
@@ -28,35 +30,35 @@ import (
 
 var _ consent.Manager = &Persister{}
 
-func (p *Persister) RevokeSubjectConsentSession(ctx context.Context, user string) error {
+func (p *Persister) RevokeSubjectConsentSession(ctx context.Context, user string, revocationStrategy strategy.ConsentSessionRevocationStrategy) error {
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.RevokeSubjectConsentSession")
 	defer span.End()
 
-	return p.transaction(ctx, p.revokeConsentSession("consent_challenge_id IS NOT NULL AND subject = ?", user))
+	return p.transaction(ctx, p.revokeConsentSession(revocationStrategy, "consent_challenge_id IS NOT NULL AND subject = ?", user))
 }
 
-func (p *Persister) RevokeSubjectClientConsentSession(ctx context.Context, user, client string) error {
+func (p *Persister) RevokeSubjectClientConsentSession(ctx context.Context, user, client string, revocationStrategy strategy.ConsentSessionRevocationStrategy) error {
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.RevokeSubjectClientConsentSession")
 	defer span.End()
 
-	return p.transaction(ctx, p.revokeConsentSession("consent_challenge_id IS NOT NULL AND subject = ? AND client_id = ?", user, client))
+	return p.transaction(ctx, p.revokeConsentSession(revocationStrategy, "consent_challenge_id IS NOT NULL AND subject = ? AND client_id = ?", user, client))
 }
 
-func (p *Persister) RevokeLoginSessionConsentSession(ctx context.Context, loginSessionId string) error {
+func (p *Persister) RevokeLoginSessionConsentSession(ctx context.Context, loginSessionId string, revocationStrategy strategy.ConsentSessionRevocationStrategy) error {
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.RevokeLoginSessionConsentSession")
 	defer span.End()
 
-	return p.transaction(ctx, p.revokeConsentSession("consent_challenge_id IS NOT NULL AND login_session_id = ?", loginSessionId))
+	return p.transaction(ctx, p.revokeConsentSession(revocationStrategy, "consent_challenge_id IS NOT NULL AND login_session_id = ?", loginSessionId))
 }
 
-func (p *Persister) RevokeSubjectClientLoginSessionConsentSession(ctx context.Context, user, client, loginSessionId string) error {
+func (p *Persister) RevokeSubjectClientLoginSessionConsentSession(ctx context.Context, user, client, loginSessionId string, revocationStrategy strategy.ConsentSessionRevocationStrategy) error {
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.RevokeSubjectClientLoginSessionConsentSession")
 	defer span.End()
 
-	return p.transaction(ctx, p.revokeConsentSession("consent_challenge_id IS NOT NULL AND subject = ? AND client_id = ? AND login_session_id = ?", user, client, loginSessionId))
+	return p.transaction(ctx, p.revokeConsentSession(revocationStrategy, "consent_challenge_id IS NOT NULL AND subject = ? AND client_id = ? AND login_session_id = ?", user, client, loginSessionId))
 }
 
-func (p *Persister) revokeConsentSession(whereStmt string, whereArgs ...interface{}) func(context.Context, *pop.Connection) error {
+func (p *Persister) revokeConsentSession(revocationStrategy strategy.ConsentSessionRevocationStrategy, whereStmt string, whereArgs ...interface{}) func(context.Context, *pop.Connection) error {
 	return func(ctx context.Context, c *pop.Connection) error {
 		fs := make([]*flow.Flow, 0)
 		if err := p.QueryWithNetwork(ctx).
@@ -84,7 +86,7 @@ func (p *Persister) revokeConsentSession(whereStmt string, whereArgs ...interfac
 				return err
 			}
 
-			localCount, err := c.RawQuery("DELETE FROM hydra_oauth2_flow WHERE consent_challenge_id = ? AND nid = ?", f.ConsentChallengeID, p.NetworkID(ctx)).ExecWithCount()
+			localCount, err := revocationStrategy.Execute(c, f.ConsentChallengeID, p.NetworkID(ctx))
 			if err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
 					return errorsx.WithStack(x.ErrNotFound)

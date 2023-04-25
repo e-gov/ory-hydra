@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	strategy "github.com/ory/hydra/v2/persistence/sql/consent"
+
 	"github.com/ory/x/uuidx"
 
 	"github.com/ory/x/assertx"
@@ -1735,9 +1737,9 @@ func (s *PersisterTestSuite) TestRevokeSubjectClientConsentSession() {
 
 			actual := flow.Flow{}
 
-			require.Error(t, r.Persister().RevokeSubjectClientConsentSession(s.t2, "sub", client.LegacyClientID))
+			require.Error(t, r.Persister().RevokeSubjectClientConsentSession(s.t2, "sub", client.LegacyClientID, &strategy.ConsentSessionDeleteStrategy{}))
 			require.NoError(t, r.Persister().Connection(context.Background()).Find(&actual, f.ID))
-			require.NoError(t, r.Persister().RevokeSubjectClientConsentSession(s.t1, "sub", client.LegacyClientID))
+			require.NoError(t, r.Persister().RevokeSubjectClientConsentSession(s.t1, "sub", client.LegacyClientID, &strategy.ConsentSessionDeleteStrategy{}))
 			require.Error(t, r.Persister().Connection(context.Background()).Find(&actual, f.ID))
 		})
 	}

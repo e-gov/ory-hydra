@@ -863,6 +863,153 @@ func (a *OAuth2ApiService) DeleteTrustedOAuth2JwtGrantIssuerExecute(r ApiDeleteT
 	return localVarHTTPResponse, nil
 }
 
+type ApiExpireOAuth2ConsentSessionsRequest struct {
+	ctx                      context.Context
+	ApiService               *OAuth2ApiService
+	subject                  *string
+	client                   *string
+	loginSessionId           *string
+	all                      *bool
+	triggerBackChannelLogout *bool
+}
+
+// OAuth 2.0 Consent Subject  The subject whose consent sessions should be deleted.
+func (r ApiExpireOAuth2ConsentSessionsRequest) Subject(subject string) ApiExpireOAuth2ConsentSessionsRequest {
+	r.subject = &subject
+	return r
+}
+
+// OAuth 2.0 Client ID  If set, deletes only those consent sessions that have been granted to the specified OAuth 2.0 Client ID.
+func (r ApiExpireOAuth2ConsentSessionsRequest) Client(client string) ApiExpireOAuth2ConsentSessionsRequest {
+	r.client = &client
+	return r
+}
+
+// If set, deletes only those consent sessions by the Subject that have been granted to the specified session id. Can be combined with client or all parameter.
+func (r ApiExpireOAuth2ConsentSessionsRequest) LoginSessionId(loginSessionId string) ApiExpireOAuth2ConsentSessionsRequest {
+	r.loginSessionId = &loginSessionId
+	return r
+}
+
+// Revoke All Consent Sessions  If set to &#x60;true&#x60; deletes all consent sessions by the Subject that have been granted.
+func (r ApiExpireOAuth2ConsentSessionsRequest) All(all bool) ApiExpireOAuth2ConsentSessionsRequest {
+	r.all = &all
+	return r
+}
+
+// If set to &#x60;?trigger_back_channel_logout&#x3D;true&#x60;, performs back channel logout for matching clients
+func (r ApiExpireOAuth2ConsentSessionsRequest) TriggerBackChannelLogout(triggerBackChannelLogout bool) ApiExpireOAuth2ConsentSessionsRequest {
+	r.triggerBackChannelLogout = &triggerBackChannelLogout
+	return r
+}
+
+func (r ApiExpireOAuth2ConsentSessionsRequest) Execute() (*http.Response, error) {
+	return r.ApiService.ExpireOAuth2ConsentSessionsExecute(r)
+}
+
+/*
+ExpireOAuth2ConsentSessions Expires Consent Sessions of a Subject for a Specific OAuth 2.0 Client
+
+This endpoint expires a subject's granted consent sessions for a specific OAuth 2.0 Client and invalidates all
+associated OAuth 2.0 Access Tokens.
+
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiExpireOAuth2ConsentSessionsRequest
+*/
+func (a *OAuth2ApiService) ExpireOAuth2ConsentSessions(ctx context.Context) ApiExpireOAuth2ConsentSessionsRequest {
+	return ApiExpireOAuth2ConsentSessionsRequest{
+		ApiService: a,
+		ctx:        ctx,
+	}
+}
+
+// Execute executes the request
+func (a *OAuth2ApiService) ExpireOAuth2ConsentSessionsExecute(r ApiExpireOAuth2ConsentSessionsRequest) (*http.Response, error) {
+	var (
+		localVarHTTPMethod = http.MethodPut
+		localVarPostBody   interface{}
+		formFiles          []formFile
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "OAuth2ApiService.ExpireOAuth2ConsentSessions")
+	if err != nil {
+		return nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/admin/oauth2/auth/sessions/consent"
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+	if r.subject == nil {
+		return nil, reportError("subject is required and must be specified")
+	}
+
+	localVarQueryParams.Add("subject", parameterToString(*r.subject, ""))
+	if r.client != nil {
+		localVarQueryParams.Add("client", parameterToString(*r.client, ""))
+	}
+	if r.loginSessionId != nil {
+		localVarQueryParams.Add("LoginSessionId", parameterToString(*r.loginSessionId, ""))
+	}
+	if r.all != nil {
+		localVarQueryParams.Add("all", parameterToString(*r.all, ""))
+	}
+	if r.triggerBackChannelLogout != nil {
+		localVarQueryParams.Add("trigger_back_channel_logout", parameterToString(*r.triggerBackChannelLogout, ""))
+	}
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"application/json"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarHTTPResponse, err
+	}
+
+	localVarBody, err := ioutil.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = ioutil.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		var v ErrorOAuth2
+		err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+		if err != nil {
+			newErr.error = err.Error()
+			return localVarHTTPResponse, newErr
+		}
+		newErr.model = v
+		return localVarHTTPResponse, newErr
+	}
+
+	return localVarHTTPResponse, nil
+}
+
 type ApiGetOAuth2ClientRequest struct {
 	ctx        context.Context
 	ApiService *OAuth2ApiService

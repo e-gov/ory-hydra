@@ -5,8 +5,10 @@ package consent
 
 import (
 	"context"
-	"github.com/ory/fosite"
 	"time"
+
+	"github.com/ory/fosite"
+	strategy "github.com/ory/hydra/v2/persistence/sql/consent"
 
 	"github.com/gofrs/uuid"
 
@@ -29,10 +31,10 @@ type Manager interface {
 	GetConsentRequest(ctx context.Context, challenge string) (*OAuth2ConsentRequest, error)
 	HandleConsentRequest(ctx context.Context, r *AcceptOAuth2ConsentRequest) (*OAuth2ConsentRequest, error)
 	ExtendConsentRequest(ctx context.Context, scopeStrategy fosite.ScopeStrategy, req *OAuth2ConsentRequest, extendBy int) error
-	RevokeSubjectConsentSession(ctx context.Context, user string) error
-	RevokeSubjectClientConsentSession(ctx context.Context, user, client string) error
-	RevokeLoginSessionConsentSession(ctx context.Context, loginSessionId string) error
-	RevokeSubjectClientLoginSessionConsentSession(ctx context.Context, user, client, loginSessionId string) error
+	RevokeSubjectConsentSession(ctx context.Context, user string, revocationStrategy strategy.ConsentSessionRevocationStrategy) error
+	RevokeSubjectClientConsentSession(ctx context.Context, user, client string, revocationStrategy strategy.ConsentSessionRevocationStrategy) error
+	RevokeLoginSessionConsentSession(ctx context.Context, loginSessionId string, revocationStrategy strategy.ConsentSessionRevocationStrategy) error
+	RevokeSubjectClientLoginSessionConsentSession(ctx context.Context, user, client, loginSessionId string, revocationStrategy strategy.ConsentSessionRevocationStrategy) error
 
 	VerifyAndInvalidateConsentRequest(ctx context.Context, verifier string) (*AcceptOAuth2ConsentRequest, error)
 	FindSessionGrantedConsentRequest(ctx context.Context, scopeStrategy fosite.ScopeStrategy, cr *OAuth2ConsentRequest) (*AcceptOAuth2ConsentRequest, error)

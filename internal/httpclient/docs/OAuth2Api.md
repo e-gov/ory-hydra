@@ -11,6 +11,7 @@ Method | HTTP request | Description
 [**DeleteOAuth2Client**](OAuth2Api.md#DeleteOAuth2Client) | **Delete** /admin/clients/{id} | Delete OAuth 2.0 Client
 [**DeleteOAuth2Token**](OAuth2Api.md#DeleteOAuth2Token) | **Delete** /admin/oauth2/tokens | Delete OAuth 2.0 Access Tokens from specific OAuth 2.0 Client
 [**DeleteTrustedOAuth2JwtGrantIssuer**](OAuth2Api.md#DeleteTrustedOAuth2JwtGrantIssuer) | **Delete** /admin/trust/grants/jwt-bearer/issuers/{id} | Delete Trusted OAuth2 JWT Bearer Grant Type Issuer
+[**ExpireOAuth2ConsentSessions**](OAuth2Api.md#ExpireOAuth2ConsentSessions) | **Put** /admin/oauth2/auth/sessions/consent | Expires Consent Sessions of a Subject for a Specific OAuth 2.0 Client
 [**GetOAuth2Client**](OAuth2Api.md#GetOAuth2Client) | **Get** /admin/clients/{id} | Get an OAuth 2.0 Client
 [**GetOAuth2ConsentRequest**](OAuth2Api.md#GetOAuth2ConsentRequest) | **Get** /admin/oauth2/auth/requests/consent | Get OAuth 2.0 Consent Request
 [**GetOAuth2LoginRequest**](OAuth2Api.md#GetOAuth2LoginRequest) | **Get** /admin/oauth2/auth/requests/login | Get OAuth 2.0 Login Request
@@ -484,6 +485,78 @@ Other parameters are passed through a pointer to a apiDeleteTrustedOAuth2JwtGran
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 
+
+### Return type
+
+ (empty response body)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
+[[Back to Model list]](../README.md#documentation-for-models)
+[[Back to README]](../README.md)
+
+
+## ExpireOAuth2ConsentSessions
+
+> ExpireOAuth2ConsentSessions(ctx).Subject(subject).Client(client).LoginSessionId(loginSessionId).All(all).TriggerBackChannelLogout(triggerBackChannelLogout).Execute()
+
+Expires Consent Sessions of a Subject for a Specific OAuth 2.0 Client
+
+
+
+### Example
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    openapiclient "./openapi"
+)
+
+func main() {
+    subject := "subject_example" // string | OAuth 2.0 Consent Subject  The subject whose consent sessions should be deleted.
+    client := "client_example" // string | OAuth 2.0 Client ID  If set, deletes only those consent sessions that have been granted to the specified OAuth 2.0 Client ID. (optional)
+    loginSessionId := "loginSessionId_example" // string | If set, deletes only those consent sessions by the Subject that have been granted to the specified session id. Can be combined with client or all parameter. (optional)
+    all := true // bool | Revoke All Consent Sessions  If set to `true` deletes all consent sessions by the Subject that have been granted. (optional)
+    triggerBackChannelLogout := true // bool | If set to `?trigger_back_channel_logout=true`, performs back channel logout for matching clients (optional)
+
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    resp, r, err := apiClient.OAuth2Api.ExpireOAuth2ConsentSessions(context.Background()).Subject(subject).Client(client).LoginSessionId(loginSessionId).All(all).TriggerBackChannelLogout(triggerBackChannelLogout).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `OAuth2Api.ExpireOAuth2ConsentSessions``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+}
+```
+
+### Path Parameters
+
+
+
+### Other Parameters
+
+Other parameters are passed through a pointer to a apiExpireOAuth2ConsentSessionsRequest struct via the builder pattern
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **subject** | **string** | OAuth 2.0 Consent Subject  The subject whose consent sessions should be deleted. | 
+ **client** | **string** | OAuth 2.0 Client ID  If set, deletes only those consent sessions that have been granted to the specified OAuth 2.0 Client ID. | 
+ **loginSessionId** | **string** | If set, deletes only those consent sessions by the Subject that have been granted to the specified session id. Can be combined with client or all parameter. | 
+ **all** | **bool** | Revoke All Consent Sessions  If set to &#x60;true&#x60; deletes all consent sessions by the Subject that have been granted. | 
+ **triggerBackChannelLogout** | **bool** | If set to &#x60;?trigger_back_channel_logout&#x3D;true&#x60;, performs back channel logout for matching clients | 
 
 ### Return type
 

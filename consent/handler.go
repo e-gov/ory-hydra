@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"time"
 
+	strategy "github.com/ory/hydra/v2/persistence/sql/consent"
+
 	"github.com/ory/x/pagination/tokenpagination"
 
 	"github.com/ory/x/httprouterx"
@@ -59,6 +61,7 @@ func (h *Handler) SetRoutes(admin *httprouterx.RouterAdmin) {
 	admin.DELETE(SessionsPath+"/login", h.revokeOAuth2LoginSessions)
 	admin.GET(SessionsPath+"/consent", h.listOAuth2ConsentSessions)
 	admin.DELETE(SessionsPath+"/consent", h.revokeOAuth2ConsentSessions)
+	admin.PUT(SessionsPath+"/consent", h.expireOAuth2ConsentSessions)
 
 	admin.GET(LogoutPath, h.getOAuth2LogoutRequest)
 	admin.PUT(LogoutPath+"/accept", h.acceptOAuth2LogoutRequest)
@@ -132,6 +135,91 @@ func (h *Handler) revokeOAuth2ConsentSessions(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	if err := h.handleConsentSession(r, client, subject, loginSessionId, triggerBackChannelLogout, allClients, &strategy.ConsentSessionDeleteStrategy{}); err != nil {
+		h.r.Writer().WriteError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// Expire OAuth 2.0 Consent Session Parameters
+//
+// swagger:parameters expireOAuth2ConsentSessions
+type expireOAuth2ConsentSessions struct {
+	// OAuth 2.0 Consent Subject
+	//
+	// The subject whose consent sessions should be deleted.
+	//
+	// in: query
+	// required: true
+	Subject string `json:"subject"`
+
+	// OAuth 2.0 Client ID
+	//
+	// If set, deletes only those consent sessions that have been granted to the specified OAuth 2.0 Client ID.
+	//
+	// in: query
+	Client string `json:"client"`
+
+	// If set, deletes only those consent sessions by the Subject that have been granted to the specified session id. Can be combined with client or all parameter.
+	//
+	// in: query
+	LoginSessionId string
+
+	// Revoke All Consent Sessions
+	//
+	// If set to `true` deletes all consent sessions by the Subject that have been granted.
+	//
+	// in: query
+	All bool `json:"all"`
+
+	// If set to `?trigger_back_channel_logout=true`, performs back channel logout for matching clients
+	//
+	// in: query
+	TriggerBackChannelLogout bool `json:"trigger_back_channel_logout"`
+}
+
+// swagger:route PUT /admin/oauth2/auth/sessions/consent oAuth2 expireOAuth2ConsentSessions
+//
+// # Expires Consent Sessions of a Subject for a Specific OAuth 2.0 Client
+//
+// This endpoint expires a subject's granted consent sessions for a specific OAuth 2.0 Client and invalidates all
+// associated OAuth 2.0 Access Tokens.
+//
+//	Consumes:
+//	- application/json
+//
+//	Produces:
+//	- application/json
+//
+//	Schemes: http, https
+//
+//	Responses:
+//	  204: emptyResponse
+//	  default: errorOAuth2
+func (h *Handler) expireOAuth2ConsentSessions(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	subject := r.URL.Query().Get("subject")
+	client := r.URL.Query().Get("client")
+	loginSessionId := r.URL.Query().Get("login_session_id")
+	triggerBackChannelLogout := r.URL.Query().Get("trigger_backchannel_logout")
+
+	allClients := r.URL.Query().Get("all") == "true"
+	if subject == "" {
+		h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrInvalidRequest.WithHint(`Query parameter 'subject' is not defined but should have been.`)))
+		return
+	}
+
+	if err := h.handleConsentSession(r, client, subject, loginSessionId, triggerBackChannelLogout, allClients, &strategy.ConsentSessionExpireStrategy{}); err != nil {
+		h.r.Writer().WriteError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) handleConsentSession(r *http.Request, client string, subject string, loginSessionId string, triggerBackChannelLogout string, allClients bool, revocationStrategy strategy.ConsentSessionRevocationStrategy) error {
+
 	switch {
 	case len(client) > 0:
 		if len(loginSessionId) > 0 {
@@ -140,19 +228,17 @@ func (h *Handler) revokeOAuth2ConsentSessions(w http.ResponseWriter, r *http.Req
 					h.r.Logger().WithError(err).Warn("Unable to execute back channel logout")
 				}
 			}
-			if err := h.r.ConsentManager().RevokeSubjectClientLoginSessionConsentSession(r.Context(), subject, client, loginSessionId); err != nil && !errors.Is(err, x.ErrNotFound) {
-				h.r.Writer().WriteError(w, r, err)
-				return
+			if err := h.r.ConsentManager().RevokeSubjectClientLoginSessionConsentSession(r.Context(), subject, client, loginSessionId, revocationStrategy); err != nil && !errors.Is(err, x.ErrNotFound) {
+				return err
 			}
 		} else {
 			if triggerBackChannelLogout == "true" {
-				if err :=  h.r.ConsentStrategy().ExecuteBackChannelLogoutByClient(r.Context(), r, subject, client) ; err != nil {
+				if err := h.r.ConsentStrategy().ExecuteBackChannelLogoutByClient(r.Context(), r, subject, client); err != nil {
 					h.r.Logger().WithError(err).Warn("Unable to execute back channel logout")
 				}
 			}
-			if err := h.r.ConsentManager().RevokeSubjectClientConsentSession(r.Context(), subject, client); err != nil && !errors.Is(err, x.ErrNotFound) {
-				h.r.Writer().WriteError(w, r, err)
-				return
+			if err := h.r.ConsentManager().RevokeSubjectClientConsentSession(r.Context(), subject, client, revocationStrategy); err != nil && !errors.Is(err, x.ErrNotFound) {
+				return err
 			}
 		}
 	case allClients:
@@ -162,9 +248,8 @@ func (h *Handler) revokeOAuth2ConsentSessions(w http.ResponseWriter, r *http.Req
 					h.r.Logger().WithError(err).Warn("Unable to execute back channel logout")
 				}
 			}
-			if err := h.r.ConsentManager().RevokeLoginSessionConsentSession(r.Context(), loginSessionId); err != nil && !errors.Is(err, x.ErrNotFound) {
-				h.r.Writer().WriteError(w, r, err)
-				return
+			if err := h.r.ConsentManager().RevokeLoginSessionConsentSession(r.Context(), loginSessionId, revocationStrategy); err != nil && !errors.Is(err, x.ErrNotFound) {
+				return err
 			}
 		} else {
 			if triggerBackChannelLogout == "true" {
@@ -172,17 +257,14 @@ func (h *Handler) revokeOAuth2ConsentSessions(w http.ResponseWriter, r *http.Req
 					h.r.Logger().WithError(err).Warn("Unable to execute back channel logout")
 				}
 			}
-			if err := h.r.ConsentManager().RevokeSubjectConsentSession(r.Context(), subject); err != nil && !errors.Is(err, x.ErrNotFound) {
-				h.r.Writer().WriteError(w, r, err)
-				return
+			if err := h.r.ConsentManager().RevokeSubjectConsentSession(r.Context(), subject, revocationStrategy); err != nil && !errors.Is(err, x.ErrNotFound) {
+				return err
 			}
 		}
 	default:
-		h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrInvalidRequest.WithHint(`Query parameter both 'client' and 'all' is not defined but one of them should have been.`)))
-		return
+		return errorsx.WithStack(fosite.ErrInvalidRequest.WithHint(`Query parameter both 'client' and 'all' is not defined but one of them should have been.`))
 	}
-
-	w.WriteHeader(http.StatusNoContent)
+	return nil
 }
 
 // List OAuth 2.0 Consent Session Parameters

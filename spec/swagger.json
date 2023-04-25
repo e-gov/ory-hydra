@@ -1227,6 +1227,68 @@
           }
         }
       },
+      "put": {
+        "description": "This endpoint expires a subject's granted consent sessions for a specific OAuth 2.0 Client and invalidates all\nassociated OAuth 2.0 Access Tokens.",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "schemes": [
+          "http",
+          "https"
+        ],
+        "tags": [
+          "oAuth2"
+        ],
+        "summary": "Expires Consent Sessions of a Subject for a Specific OAuth 2.0 Client",
+        "operationId": "expireOAuth2ConsentSessions",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "OAuth 2.0 Consent Subject\n\nThe subject whose consent sessions should be deleted.",
+            "name": "subject",
+            "in": "query",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "OAuth 2.0 Client ID\n\nIf set, deletes only those consent sessions that have been granted to the specified OAuth 2.0 Client ID.",
+            "name": "client",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "If set, deletes only those consent sessions by the Subject that have been granted to the specified session id. Can be combined with client or all parameter.",
+            "name": "LoginSessionId",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "Revoke All Consent Sessions\n\nIf set to `true` deletes all consent sessions by the Subject that have been granted.",
+            "name": "all",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "If set to `?trigger_back_channel_logout=true`, performs back channel logout for matching clients",
+            "name": "trigger_back_channel_logout",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/responses/emptyResponse"
+          },
+          "default": {
+            "description": "errorOAuth2",
+            "schema": {
+              "$ref": "#/definitions/errorOAuth2"
+            }
+          }
+        }
+      },
       "delete": {
         "description": "This endpoint revokes a subject's granted consent sessions and invalidates all\nassociated OAuth 2.0 Access Tokens. You may also only revoke sessions for a specific OAuth 2.0 Client ID.",
         "consumes": [

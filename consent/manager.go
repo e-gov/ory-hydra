@@ -22,6 +22,7 @@ package consent
 
 import (
 	"context"
+	strategy "github.com/ory/hydra/persistence/sql/consent"
 	"time"
 
 	"github.com/ory/fosite"
@@ -44,10 +45,10 @@ type Manager interface {
 	GetConsentRequest(ctx context.Context, challenge string) (*ConsentRequest, error)
 	HandleConsentRequest(ctx context.Context, challenge string, r *HandledConsentRequest) (*ConsentRequest, error)
 	ExtendConsentRequest(ctx context.Context, scopeStrategy fosite.ScopeStrategy, cr *ConsentRequest, extendBy int) error
-	RevokeSubjectConsentSession(ctx context.Context, user string) error
-	RevokeLoginSessionConsentSession(ctx context.Context, loginSessionId string) error
-	RevokeSubjectClientConsentSession(ctx context.Context, user, client string) error
-	RevokeSubjectClientLoginSessionConsentSession(ctx context.Context, user, client, loginSessionId string) error
+	RevokeSubjectConsentSession(ctx context.Context, user string, revocationStrategy strategy.ConsentSessionRevocationStrategy) error
+	RevokeLoginSessionConsentSession(ctx context.Context, loginSessionId string, revocationStrategy strategy.ConsentSessionRevocationStrategy) error
+	RevokeSubjectClientConsentSession(ctx context.Context, user, client string, revocationStrategy strategy.ConsentSessionRevocationStrategy) error
+	RevokeSubjectClientLoginSessionConsentSession(ctx context.Context, user, client, loginSessionId string, revocationStrategy strategy.ConsentSessionRevocationStrategy) error
 
 	VerifyAndInvalidateConsentRequest(ctx context.Context, verifier string) (*HandledConsentRequest, error)
 	FindSessionGrantedConsentRequest(ctx context.Context, scopeStrategy fosite.ScopeStrategy, cr *ConsentRequest) ([]HandledConsentRequest, error)

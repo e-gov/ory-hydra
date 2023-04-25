@@ -24,6 +24,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	strategy "github.com/ory/hydra/persistence/sql/consent"
 	"testing"
 	"time"
 
@@ -578,9 +579,9 @@ func ManagerTests(m Manager, clientManager client.Manager, fositeManager x.Fosit
 					assert.NoError(t, err)
 
 					if tc.client == "" {
-						require.NoError(t, m.RevokeSubjectConsentSession(context.Background(), tc.subject))
+						require.NoError(t, m.RevokeSubjectConsentSession(context.Background(), tc.subject, &strategy.ConsentSessionDeleteStrategy{}))
 					} else {
-						require.NoError(t, m.RevokeSubjectClientConsentSession(context.Background(), tc.subject, tc.client))
+						require.NoError(t, m.RevokeSubjectClientConsentSession(context.Background(), tc.subject, tc.client, &strategy.ConsentSessionDeleteStrategy{}))
 					}
 
 					for _, id := range tc.ids {
@@ -597,8 +598,8 @@ func ManagerTests(m Manager, clientManager client.Manager, fositeManager x.Fosit
 				})
 			}
 
-			require.EqualError(t, m.RevokeSubjectConsentSession(context.Background(), "i-do-not-exist"), x.ErrNotFound.Error())
-			require.EqualError(t, m.RevokeSubjectClientConsentSession(context.Background(), "i-do-not-exist", "i-do-not-exist"), x.ErrNotFound.Error())
+			require.EqualError(t, m.RevokeSubjectConsentSession(context.Background(), "i-do-not-exist", &strategy.ConsentSessionDeleteStrategy{}), x.ErrNotFound.Error())
+			require.EqualError(t, m.RevokeSubjectClientConsentSession(context.Background(), "i-do-not-exist", "i-do-not-exist", &strategy.ConsentSessionDeleteStrategy{}), x.ErrNotFound.Error())
 		})
 
 		t.Run("case=list-used-consent-requests", func(t *testing.T) {

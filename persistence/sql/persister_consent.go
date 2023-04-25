@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	strategy "github.com/ory/hydra/persistence/sql/consent"
 	"time"
 
 	"github.com/ory/hydra/client"
@@ -24,23 +25,23 @@ import (
 
 var _ consent.Manager = &Persister{}
 
-func (p *Persister) RevokeSubjectConsentSession(ctx context.Context, user string) error {
-	return p.transaction(ctx, p.revokeConsentSession("r.subject = ?", user))
+func (p *Persister) RevokeSubjectConsentSession(ctx context.Context, user string, revocationStrategy strategy.ConsentSessionRevocationStrategy) error {
+	return p.transaction(ctx, p.revokeConsentSession(revocationStrategy, "r.subject = ?", user))
 }
 
-func (p *Persister) RevokeLoginSessionConsentSession(ctx context.Context, loginSessionId string) error {
-	return p.transaction(ctx, p.revokeConsentSession("r.login_session_id = ?", loginSessionId))
+func (p *Persister) RevokeLoginSessionConsentSession(ctx context.Context, loginSessionId string, revocationStrategy strategy.ConsentSessionRevocationStrategy) error {
+	return p.transaction(ctx, p.revokeConsentSession(revocationStrategy, "r.login_session_id = ?", loginSessionId))
 }
 
-func (p *Persister) RevokeSubjectClientConsentSession(ctx context.Context, user, client string) error {
-	return p.transaction(ctx, p.revokeConsentSession("r.subject = ? AND r.client_id = ?", user, client))
+func (p *Persister) RevokeSubjectClientConsentSession(ctx context.Context, user, client string, revocationStrategy strategy.ConsentSessionRevocationStrategy) error {
+	return p.transaction(ctx, p.revokeConsentSession(revocationStrategy, "r.subject = ? AND r.client_id = ?", user, client))
 }
 
-func (p *Persister) RevokeSubjectClientLoginSessionConsentSession(ctx context.Context, user, client, loginSessionId string) error {
-	return p.transaction(ctx, p.revokeConsentSession("r.subject = ? AND r.client_id = ? AND r.login_session_id = ?", user, client, loginSessionId))
+func (p *Persister) RevokeSubjectClientLoginSessionConsentSession(ctx context.Context, user, client, loginSessionId string, revocationStrategy strategy.ConsentSessionRevocationStrategy) error {
+	return p.transaction(ctx, p.revokeConsentSession(revocationStrategy, "r.subject = ? AND r.client_id = ? AND r.login_session_id = ?", user, client, loginSessionId))
 }
 
-func (p *Persister) revokeConsentSession(whereStmt string, whereArgs ...interface{}) func(context.Context, *pop.Connection) error {
+func (p *Persister) revokeConsentSession(revocationStrategy strategy.ConsentSessionRevocationStrategy, whereStmt string, whereArgs ...interface{}) func(context.Context, *pop.Connection) error {
 	return func(ctx context.Context, c *pop.Connection) error {
 		hrs := make([]*consent.HandledConsentRequest, 0)
 		if err := c.
@@ -71,8 +72,7 @@ func (p *Persister) revokeConsentSession(whereStmt string, whereArgs ...interfac
 				return err
 			}
 
-			// Since we ON DELETE CASCADE, hydra_oauth2_consent_request_handled will be removed automagically.
-			localCount, err := c.RawQuery("DELETE FROM hydra_oauth2_consent_request WHERE challenge = ?", hr.ID).ExecWithCount()
+			localCount, err := revocationStrategy.Execute(c, hr.ID)
 			if err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
 					return errorsx.WithStack(x.ErrNotFound)

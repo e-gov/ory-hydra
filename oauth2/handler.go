@@ -634,6 +634,7 @@ func (h *Handler) TokenHandler(w http.ResponseWriter, r *http.Request) {
 		LoginSessionID: sqlxx.NullString(sid),
 	}
 
+	// TODO: Some tests are failing due to GSSO-543
 	if isRefreshTokenRequest {
 		// ========================================================================
 		// Same checks as in consent/strategy_default.go authenticationSession

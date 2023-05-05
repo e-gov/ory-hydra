@@ -601,16 +601,15 @@ func (p *Persister) FindSubjectsGrantedConsentRequests(ctx context.Context, subj
 	var fs []flow.Flow
 	c := p.Connection(ctx)
 
+	whereClause := fmt.Sprintf(`(state = %d OR state = %d) AND subject = ? AND consent_skip=FALSE AND consent_error='{}' AND nid = ?`,
+		flow.FlowStateConsentUsed, flow.FlowStateConsentUnused)
+	if includeExpired {
+		whereClause = fmt.Sprintf(`(state = %d OR state = %d) AND subject = ? AND consent_skip=FALSE AND consent_error='{}' AND login_session_id IS NOT NULL AND nid = ?`,
+			flow.FlowStateConsentUsed, flow.FlowStateConsentUnused)
+	}
+
 	if err := c.
-		Where(
-			strings.TrimSpace(fmt.Sprintf(`
-(state = %d OR state = %d) AND
-subject = ? AND
-consent_skip=FALSE AND
-consent_error='{}' AND
-nid = ?`, flow.FlowStateConsentUsed, flow.FlowStateConsentUnused,
-			)),
-			subject, p.NetworkID(ctx)).
+		Where(strings.TrimSpace(whereClause), subject, p.NetworkID(ctx)).
 		Order("requested_at DESC").
 		Paginate(offset/limit+1, limit).
 		All(&fs); err != nil {
@@ -685,6 +684,10 @@ func (p *Persister) filterExpiredConsentRequests(ctx context.Context, requests [
 	_, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.filterExpiredConsentRequests")
 	defer span.End()
 
+	if includeExpired {
+		requests = exceptConsentRequestsWhereWholeSessionIsExpired(requests)
+	}
+
 	var result []consent.AcceptOAuth2ConsentRequest
 	for _, v := range requests {
 		if !includeExpired && v.RememberFor > 0 && v.RequestedAt.Add(time.Duration(v.RememberFor)*time.Second).Before(time.Now().UTC()) {
@@ -698,10 +701,34 @@ func (p *Persister) filterExpiredConsentRequests(ctx context.Context, requests [
 	return result, nil
 }
 
+func exceptConsentRequestsWhereWholeSessionIsExpired(consentRequests []consent.AcceptOAuth2ConsentRequest) []consent.AcceptOAuth2ConsentRequest {
+	activeRequests := make(map[string]bool)
+	requestGroups := make(map[string][]consent.AcceptOAuth2ConsentRequest)
+
+	for _, req := range consentRequests {
+		groupingKey := req.ConsentRequest.LoginSessionID.String()
+		expiresAt := req.RequestedAt.Add(time.Duration(req.RememberFor) * time.Second)
+
+		if req.RememberFor == 0 || expiresAt.After(time.Now().UTC()) {
+			activeRequests[groupingKey] = true
+		}
+
+		requestGroups[groupingKey] = append(requestGroups[groupingKey], req)
+	}
+
+	var filteredRequests []consent.AcceptOAuth2ConsentRequest
+	for _, reqs := range requestGroups {
+		if activeRequests[reqs[0].ConsentRequest.LoginSessionID.String()] {
+			filteredRequests = append(filteredRequests, reqs...)
+		}
+	}
+
+	return filteredRequests
+}
+
 func (p *Persister) ListUserSessionAuthenticatedClientsWithFrontChannelLogout(ctx context.Context, subject, sid string) ([]client.LoginSessionClient, error) {
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.ListUserSessionAuthenticatedClientsWithFrontChannelLogout")
 	defer span.End()
-
 	return p.listUserSessionAuthenticatedClients(ctx, subject, sid, "front")
 }
 

@@ -441,8 +441,13 @@ func (p *Persister) FindSubjectsGrantedConsentRequests(ctx context.Context, subj
 	c := p.Connection(ctx)
 	tn := consent.HandledConsentRequest{}.TableName()
 
+	whereClause := fmt.Sprintf("r.subject = ? AND r.skip=FALSE AND %s.error='{}'", tn)
+	if includeExpired {
+		whereClause = fmt.Sprintf("r.subject = ? AND r.login_session_id IS NOT NULL AND r.skip=FALSE AND %s.error='{}'", tn)
+	}
+
 	if err := c.
-		Where(fmt.Sprintf("r.subject = ? AND r.skip=FALSE AND %s.error='{}'", tn), subject).
+		Where(whereClause, subject).
 		Join("hydra_oauth2_consent_request AS r", fmt.Sprintf("%s.challenge = r.challenge", tn)).
 		Order(fmt.Sprintf("%s.requested_at DESC", tn)).
 		Paginate(offset/limit+1, limit).
@@ -489,6 +494,10 @@ func (p *Persister) CountSubjectsGrantedConsentRequests(ctx context.Context, sub
 func (p *Persister) resolveHandledConsentRequests(ctx context.Context, requests []consent.HandledConsentRequest, includeExpired bool) ([]consent.HandledConsentRequest, error) {
 	var result []consent.HandledConsentRequest
 
+	if includeExpired {
+		requests = exceptConsentRequestsWhereWholeSessionIsExpired(requests)
+	}
+
 	for _, v := range requests {
 		_, err := p.GetConsentRequest(ctx, v.ID)
 		if errors.Is(err, sqlcon.ErrNoRows) || errors.Is(err, x.ErrNotFound) {
@@ -513,6 +522,31 @@ func (p *Persister) resolveHandledConsentRequests(ctx context.Context, requests 
 	}
 
 	return result, nil
+}
+
+func exceptConsentRequestsWhereWholeSessionIsExpired(consentRequests []consent.HandledConsentRequest) []consent.HandledConsentRequest {
+	activeRequests := make(map[string]bool)
+	requestGroups := make(map[string][]consent.HandledConsentRequest)
+
+	for _, req := range consentRequests {
+		groupingKey := req.ConsentRequest.LoginSessionID.String()
+		expiresAt := req.RequestedAt.Add(time.Duration(req.RememberFor) * time.Second)
+
+		if req.RememberFor == 0 || expiresAt.After(time.Now().UTC()) {
+			activeRequests[groupingKey] = true
+		}
+
+		requestGroups[groupingKey] = append(requestGroups[groupingKey], req)
+	}
+
+	var filteredRequests []consent.HandledConsentRequest
+	for _, reqs := range requestGroups {
+		if activeRequests[reqs[0].ConsentRequest.LoginSessionID.String()] {
+			filteredRequests = append(filteredRequests, reqs...)
+		}
+	}
+
+	return filteredRequests
 }
 
 func (p *Persister) ListUserSessionAuthenticatedClientsWithFrontChannelLogout(ctx context.Context, subject, sid string) ([]client.AuthenticatedClient, error) {

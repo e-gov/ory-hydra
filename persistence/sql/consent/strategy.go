@@ -21,6 +21,6 @@ func (p *ConsentSessionDeleteStrategy) Execute(c *pop.Connection, consentId stri
 }
 
 func (p *ConsentSessionExpireStrategy) Execute(c *pop.Connection, consentId string) (int, error) {
-	localCount, err := c.RawQuery("UPDATE hydra_oauth2_consent_request_handled SET remember_for = EXTRACT(EPOCH FROM (NOW() - requested_at)) WHERE challenge = ?", consentId).ExecWithCount()
+	localCount, err := c.RawQuery("UPDATE hydra_oauth2_consent_request_handled SET remember_for = EXTRACT(EPOCH FROM (NOW() - requested_at AT TIME ZONE 'UTC')) WHERE challenge = ?", consentId).ExecWithCount()
 	return localCount, err
 }

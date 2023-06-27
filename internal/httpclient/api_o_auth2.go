@@ -1921,7 +1921,7 @@ type ApiListOAuth2ConsentSessionsRequest struct {
 	pageSize       *int64
 	pageToken      *string
 	loginSessionId *string
-	includeExpired *bool
+	includeExpired *string
 }
 
 // The subject to list the consent sessions for.
@@ -1948,8 +1948,8 @@ func (r ApiListOAuth2ConsentSessionsRequest) LoginSessionId(loginSessionId strin
 	return r
 }
 
-// Option to return expired consent sessions.
-func (r ApiListOAuth2ConsentSessionsRequest) IncludeExpired(includeExpired bool) ApiListOAuth2ConsentSessionsRequest {
+// Option to return partially or fully expired consent sessions. Partially expired consent sessions are consent sessions, where at least one consent session in login session is still active. In this case all consent sessions from such login session are returned.
+func (r ApiListOAuth2ConsentSessionsRequest) IncludeExpired(includeExpired string) ApiListOAuth2ConsentSessionsRequest {
 	r.includeExpired = &includeExpired
 	return r
 }

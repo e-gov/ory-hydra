@@ -595,7 +595,7 @@ func ManagerTests(m Manager, clientManager client.Manager, fositeManager x.Fosit
 
 				require.NoError(t, m.ExtendConsentRequest(context.Background(), scopeStrategy, cr, int(extendRememberFor)))
 
-				crs, err := m.FindSubjectsGrantedConsentRequests(context.Background(), "subject-1", false, 100, 0)
+				crs, err := m.FindSubjectsGrantedConsentRequests(context.Background(), "subject-1", AllActive, 100, 0)
 				require.NoError(t, err)
 				require.EqualValues(t, 2, len(crs))
 				crSession := crs[1]
@@ -632,7 +632,7 @@ func ManagerTests(m Manager, clientManager client.Manager, fositeManager x.Fosit
 
 				require.NoError(t, m.ExtendConsentRequest(context.Background(), scopeStrategy, cr, 1000))
 
-				crs, err := m.FindSubjectsGrantedConsentRequests(context.Background(), "subject-2", false, 10, 0)
+				crs, err := m.FindSubjectsGrantedConsentRequests(context.Background(), "subject-2", AllActive, 10, 0)
 				require.NoError(t, err)
 				require.EqualValues(t, 1, len(crs))
 				cr1 := crs[0]
@@ -654,7 +654,7 @@ func ManagerTests(m Manager, clientManager client.Manager, fositeManager x.Fosit
 
 				require.NoError(t, m.ExtendConsentRequest(context.Background(), scopeStrategy, cr, 1000))
 
-				_, err := m.FindSubjectsGrantedConsentRequests(context.Background(), "subject-3", false, 100, 0)
+				_, err := m.FindSubjectsGrantedConsentRequests(context.Background(), "subject-3", AllActive, 100, 0)
 				require.Error(t, err, ErrNoPreviousConsentFound)
 			})
 		})
@@ -820,7 +820,7 @@ func ManagerTests(m Manager, clientManager client.Manager, fositeManager x.Fosit
 				},
 			} {
 				t.Run(fmt.Sprintf("case=%d/subject=%s/session=%s", i, tc.subject, tc.sid), func(t *testing.T) {
-					consents, err := m.FindSubjectsSessionGrantedConsentRequests(context.Background(), tc.subject, tc.sid, false, 100, 0)
+					consents, err := m.FindSubjectsSessionGrantedConsentRequests(context.Background(), tc.subject, tc.sid, AllActive, 100, 0)
 					assert.Equal(t, len(tc.challenges), len(consents))
 
 					if len(tc.challenges) == 0 {
@@ -862,7 +862,7 @@ func ManagerTests(m Manager, clientManager client.Manager, fositeManager x.Fosit
 				},
 			} {
 				t.Run(fmt.Sprintf("case=%d/subject=%s", i, tc.subject), func(t *testing.T) {
-					consents, err := m.FindSubjectsGrantedConsentRequests(context.Background(), tc.subject, false, 100, 0)
+					consents, err := m.FindSubjectsGrantedConsentRequests(context.Background(), tc.subject, AllActive, 100, 0)
 					assert.Equal(t, len(tc.challenges), len(consents))
 
 					if len(tc.challenges) == 0 {

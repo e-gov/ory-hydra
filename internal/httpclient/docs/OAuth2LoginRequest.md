@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 **OidcContext** | Pointer to [**OAuth2ConsentRequestOpenIDConnectContext**](OAuth2ConsentRequestOpenIDConnectContext.md) |  | [optional] 
 **RequestUrl** | **string** | RequestURL is the original OAuth 2.0 Authorization URL requested by the OAuth 2.0 client. It is the URL which initiates the OAuth 2.0 Authorization Code or OAuth 2.0 Implicit flow. This URL is typically not needed, but might come in handy if you want to deal with additional request parameters. | 
 **RequestedAccessTokenAudience** | **[]string** |  | 
+**RequestedAt** | Pointer to **time.Time** |  | [optional] 
 **RequestedScope** | **[]string** |  | 
 **SessionId** | Pointer to **string** | SessionID is the login session ID. If the user-agent reuses a login session (via cookie / remember flag) this ID will remain the same. If the user-agent did not have an existing authentication session (e.g. remember is false) this will be a new random value. This value is used as the \&quot;sid\&quot; parameter in the ID Token and in OIDC Front-/Back- channel logout. It&#39;s value can generally be used to associate consecutive login requests by a certain user. | [optional] 
 **Skip** | **bool** | Skip, if true, implies that the client has requested the same scopes from the same user previously. If true, you can skip asking the user to grant the requested scopes, and simply forward the user to the redirect URL.  This feature allows you to update / set session information. | 
@@ -137,6 +138,31 @@ and a boolean to check if the value has been set.
 
 SetRequestedAccessTokenAudience sets RequestedAccessTokenAudience field to given value.
 
+
+### GetRequestedAt
+
+`func (o *OAuth2LoginRequest) GetRequestedAt() time.Time`
+
+GetRequestedAt returns the RequestedAt field if non-nil, zero value otherwise.
+
+### GetRequestedAtOk
+
+`func (o *OAuth2LoginRequest) GetRequestedAtOk() (*time.Time, bool)`
+
+GetRequestedAtOk returns a tuple with the RequestedAt field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetRequestedAt
+
+`func (o *OAuth2LoginRequest) SetRequestedAt(v time.Time)`
+
+SetRequestedAt sets RequestedAt field to given value.
+
+### HasRequestedAt
+
+`func (o *OAuth2LoginRequest) HasRequestedAt() bool`
+
+HasRequestedAt returns a boolean if a field has been set.
 
 ### GetRequestedScope
 

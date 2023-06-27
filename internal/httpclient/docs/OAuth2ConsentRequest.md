@@ -14,6 +14,7 @@ Name | Type | Description | Notes
 **OidcContext** | Pointer to [**OAuth2ConsentRequestOpenIDConnectContext**](OAuth2ConsentRequestOpenIDConnectContext.md) |  | [optional] 
 **RequestUrl** | Pointer to **string** | RequestURL is the original OAuth 2.0 Authorization URL requested by the OAuth 2.0 client. It is the URL which initiates the OAuth 2.0 Authorization Code or OAuth 2.0 Implicit flow. This URL is typically not needed, but might come in handy if you want to deal with additional request parameters. | [optional] 
 **RequestedAccessTokenAudience** | Pointer to **[]string** |  | [optional] 
+**RequestedAt** | Pointer to **time.Time** |  | [optional] 
 **RequestedScope** | Pointer to **[]string** |  | [optional] 
 **Skip** | Pointer to **bool** | Skip, if true, implies that the client has requested the same scopes from the same user previously. If true, you must not ask the user to grant the requested scopes. You must however either allow or deny the consent request using the usual API call. | [optional] 
 **Subject** | Pointer to **string** | Subject is the user ID of the end-user that authenticated. Now, that end user needs to grant or deny the scope requested by the OAuth 2.0 client. | [optional] 
@@ -291,6 +292,31 @@ SetRequestedAccessTokenAudience sets RequestedAccessTokenAudience field to given
 `func (o *OAuth2ConsentRequest) HasRequestedAccessTokenAudience() bool`
 
 HasRequestedAccessTokenAudience returns a boolean if a field has been set.
+
+### GetRequestedAt
+
+`func (o *OAuth2ConsentRequest) GetRequestedAt() time.Time`
+
+GetRequestedAt returns the RequestedAt field if non-nil, zero value otherwise.
+
+### GetRequestedAtOk
+
+`func (o *OAuth2ConsentRequest) GetRequestedAtOk() (*time.Time, bool)`
+
+GetRequestedAtOk returns a tuple with the RequestedAt field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetRequestedAt
+
+`func (o *OAuth2ConsentRequest) SetRequestedAt(v time.Time)`
+
+SetRequestedAt sets RequestedAt field to given value.
+
+### HasRequestedAt
+
+`func (o *OAuth2ConsentRequest) HasRequestedAt() bool`
+
+HasRequestedAt returns a boolean if a field has been set.
 
 ### GetRequestedScope
 

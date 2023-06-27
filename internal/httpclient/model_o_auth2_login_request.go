@@ -13,6 +13,7 @@ package openapi
 
 import (
 	"encoding/json"
+	"time"
 )
 
 // OAuth2LoginRequest struct for OAuth2LoginRequest
@@ -22,9 +23,10 @@ type OAuth2LoginRequest struct {
 	Client      OAuth2Client                              `json:"client"`
 	OidcContext *OAuth2ConsentRequestOpenIDConnectContext `json:"oidc_context,omitempty"`
 	// RequestURL is the original OAuth 2.0 Authorization URL requested by the OAuth 2.0 client. It is the URL which initiates the OAuth 2.0 Authorization Code or OAuth 2.0 Implicit flow. This URL is typically not needed, but might come in handy if you want to deal with additional request parameters.
-	RequestUrl                   string   `json:"request_url"`
-	RequestedAccessTokenAudience []string `json:"requested_access_token_audience"`
-	RequestedScope               []string `json:"requested_scope"`
+	RequestUrl                   string     `json:"request_url"`
+	RequestedAccessTokenAudience []string   `json:"requested_access_token_audience"`
+	RequestedAt                  *time.Time `json:"requested_at,omitempty"`
+	RequestedScope               []string   `json:"requested_scope"`
 	// SessionID is the login session ID. If the user-agent reuses a login session (via cookie / remember flag) this ID will remain the same. If the user-agent did not have an existing authentication session (e.g. remember is false) this will be a new random value. This value is used as the \"sid\" parameter in the ID Token and in OIDC Front-/Back- channel logout. It's value can generally be used to associate consecutive login requests by a certain user.
 	SessionId *string `json:"session_id,omitempty"`
 	// Skip, if true, implies that the client has requested the same scopes from the same user previously. If true, you can skip asking the user to grant the requested scopes, and simply forward the user to the redirect URL.  This feature allows you to update / set session information.
@@ -185,6 +187,38 @@ func (o *OAuth2LoginRequest) SetRequestedAccessTokenAudience(v []string) {
 	o.RequestedAccessTokenAudience = v
 }
 
+// GetRequestedAt returns the RequestedAt field value if set, zero value otherwise.
+func (o *OAuth2LoginRequest) GetRequestedAt() time.Time {
+	if o == nil || o.RequestedAt == nil {
+		var ret time.Time
+		return ret
+	}
+	return *o.RequestedAt
+}
+
+// GetRequestedAtOk returns a tuple with the RequestedAt field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *OAuth2LoginRequest) GetRequestedAtOk() (*time.Time, bool) {
+	if o == nil || o.RequestedAt == nil {
+		return nil, false
+	}
+	return o.RequestedAt, true
+}
+
+// HasRequestedAt returns a boolean if a field has been set.
+func (o *OAuth2LoginRequest) HasRequestedAt() bool {
+	if o != nil && o.RequestedAt != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetRequestedAt gets a reference to the given time.Time and assigns it to the RequestedAt field.
+func (o *OAuth2LoginRequest) SetRequestedAt(v time.Time) {
+	o.RequestedAt = &v
+}
+
 // GetRequestedScope returns the RequestedScope field value
 func (o *OAuth2LoginRequest) GetRequestedScope() []string {
 	if o == nil {
@@ -305,6 +339,9 @@ func (o OAuth2LoginRequest) MarshalJSON() ([]byte, error) {
 	}
 	if true {
 		toSerialize["requested_access_token_audience"] = o.RequestedAccessTokenAudience
+	}
+	if o.RequestedAt != nil {
+		toSerialize["requested_at"] = o.RequestedAt
 	}
 	if true {
 		toSerialize["requested_scope"] = o.RequestedScope

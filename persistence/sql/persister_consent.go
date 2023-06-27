@@ -589,12 +589,12 @@ nid = ?`, flow.FlowStateConsentUsed, flow.FlowStateConsentUnused,
 		}
 
 		var err error
-		rs, err = p.filterExpiredConsentRequests(ctx, []consent.AcceptOAuth2ConsentRequest{*f.GetHandledConsentRequest()}, false)
+		rs, err = p.filterExpiredConsentRequests(ctx, []consent.AcceptOAuth2ConsentRequest{*f.GetHandledConsentRequest()}, consent.AllActive)
 		return err
 	})
 }
 
-func (p *Persister) FindSubjectsGrantedConsentRequests(ctx context.Context, subject string, includeExpired bool, limit, offset int) ([]consent.AcceptOAuth2ConsentRequest, error) {
+func (p *Persister) FindSubjectsGrantedConsentRequests(ctx context.Context, subject string, includeExpiredStrategy consent.IncludeExpiredStrategy, limit, offset int) ([]consent.AcceptOAuth2ConsentRequest, error) {
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.FindSubjectsGrantedConsentRequests")
 	defer span.End()
 
@@ -603,7 +603,7 @@ func (p *Persister) FindSubjectsGrantedConsentRequests(ctx context.Context, subj
 
 	whereClause := fmt.Sprintf(`(state = %d OR state = %d) AND subject = ? AND consent_skip=FALSE AND consent_error='{}' AND nid = ?`,
 		flow.FlowStateConsentUsed, flow.FlowStateConsentUnused)
-	if includeExpired {
+	if includeExpiredStrategy == consent.PartiallyExpired || includeExpiredStrategy == consent.AllExpired {
 		whereClause = fmt.Sprintf(`(state = %d OR state = %d) AND subject = ? AND consent_skip=FALSE AND consent_error='{}' AND login_session_id IS NOT NULL AND nid = ?`,
 			flow.FlowStateConsentUsed, flow.FlowStateConsentUnused)
 	}
@@ -624,10 +624,10 @@ func (p *Persister) FindSubjectsGrantedConsentRequests(ctx context.Context, subj
 		rs = append(rs, *f.GetHandledConsentRequest())
 	}
 
-	return p.filterExpiredConsentRequests(ctx, rs, includeExpired)
+	return p.filterExpiredConsentRequests(ctx, rs, includeExpiredStrategy)
 }
 
-func (p *Persister) FindSubjectsSessionGrantedConsentRequests(ctx context.Context, subject, sid string, includeExpired bool, limit, offset int) ([]consent.AcceptOAuth2ConsentRequest, error) {
+func (p *Persister) FindSubjectsSessionGrantedConsentRequests(ctx context.Context, subject, sid string, includeExpiredStrategy consent.IncludeExpiredStrategy, limit, offset int) ([]consent.AcceptOAuth2ConsentRequest, error) {
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.FindSubjectsSessionGrantedConsentRequests")
 	defer span.End()
 
@@ -659,7 +659,7 @@ nid = ?`, flow.FlowStateConsentUsed, flow.FlowStateConsentUnused,
 		rs = append(rs, *f.GetHandledConsentRequest())
 	}
 
-	return p.filterExpiredConsentRequests(ctx, rs, includeExpired)
+	return p.filterExpiredConsentRequests(ctx, rs, includeExpiredStrategy)
 }
 
 func (p *Persister) CountSubjectsGrantedConsentRequests(ctx context.Context, subject string) (int, error) {
@@ -680,17 +680,18 @@ nid = ?`, flow.FlowStateConsentUsed, flow.FlowStateConsentUnused,
 	return n, sqlcon.HandleError(err)
 }
 
-func (p *Persister) filterExpiredConsentRequests(ctx context.Context, requests []consent.AcceptOAuth2ConsentRequest, includeExpired bool) ([]consent.AcceptOAuth2ConsentRequest, error) {
+func (p *Persister) filterExpiredConsentRequests(ctx context.Context, requests []consent.AcceptOAuth2ConsentRequest, includeExpiredStrategy consent.IncludeExpiredStrategy) ([]consent.AcceptOAuth2ConsentRequest, error) {
 	_, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.filterExpiredConsentRequests")
 	defer span.End()
 
-	if includeExpired {
+	if includeExpiredStrategy == consent.PartiallyExpired {
 		requests = exceptConsentRequestsWhereWholeSessionIsExpired(requests)
 	}
 
 	var result []consent.AcceptOAuth2ConsentRequest
 	for _, v := range requests {
-		if !includeExpired && v.RememberFor > 0 && v.RequestedAt.Add(time.Duration(v.RememberFor)*time.Second).Before(time.Now().UTC()) {
+		if includeExpiredStrategy != consent.PartiallyExpired && includeExpiredStrategy != consent.AllExpired &&
+			v.RememberFor > 0 && v.RequestedAt.Add(time.Duration(v.RememberFor)*time.Second).Before(time.Now().UTC()) {
 			continue
 		}
 		result = append(result, v)

@@ -1079,7 +1079,7 @@ func main() {
     pageSize := int64(789) // int64 | Items per Page  This is the number of items per page to return. For details on pagination please head over to the [pagination documentation](https://www.ory.sh/docs/ecosystem/api-design#pagination). (optional) (default to 250)
     pageToken := "pageToken_example" // string | Next Page Token  The next page token. For details on pagination please head over to the [pagination documentation](https://www.ory.sh/docs/ecosystem/api-design#pagination). (optional) (default to "1")
     loginSessionId := "loginSessionId_example" // string | The login session id to list the consent sessions for. (optional)
-    includeExpired := true // bool | Option to return expired consent sessions. (optional)
+    includeExpired := "includeExpired_example" // string | Option to return partially or fully expired consent sessions. Partially expired consent sessions are consent sessions, where at least one consent session in login session is still active. In this case all consent sessions from such login session are returned. (optional)
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -1108,7 +1108,7 @@ Name | Type | Description  | Notes
  **pageSize** | **int64** | Items per Page  This is the number of items per page to return. For details on pagination please head over to the [pagination documentation](https://www.ory.sh/docs/ecosystem/api-design#pagination). | [default to 250]
  **pageToken** | **string** | Next Page Token  The next page token. For details on pagination please head over to the [pagination documentation](https://www.ory.sh/docs/ecosystem/api-design#pagination). | [default to &quot;1&quot;]
  **loginSessionId** | **string** | The login session id to list the consent sessions for. | 
- **includeExpired** | **bool** | Option to return expired consent sessions. | 
+ **includeExpired** | **string** | Option to return partially or fully expired consent sessions. Partially expired consent sessions are consent sessions, where at least one consent session in login session is still active. In this case all consent sessions from such login session are returned. | 
 
 ### Return type
 

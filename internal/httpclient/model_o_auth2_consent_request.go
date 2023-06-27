@@ -13,6 +13,7 @@ package openapi
 
 import (
 	"encoding/json"
+	"time"
 )
 
 // OAuth2ConsentRequest struct for OAuth2ConsentRequest
@@ -30,9 +31,10 @@ type OAuth2ConsentRequest struct {
 	LoginSessionId *string                                   `json:"login_session_id,omitempty"`
 	OidcContext    *OAuth2ConsentRequestOpenIDConnectContext `json:"oidc_context,omitempty"`
 	// RequestURL is the original OAuth 2.0 Authorization URL requested by the OAuth 2.0 client. It is the URL which initiates the OAuth 2.0 Authorization Code or OAuth 2.0 Implicit flow. This URL is typically not needed, but might come in handy if you want to deal with additional request parameters.
-	RequestUrl                   *string  `json:"request_url,omitempty"`
-	RequestedAccessTokenAudience []string `json:"requested_access_token_audience,omitempty"`
-	RequestedScope               []string `json:"requested_scope,omitempty"`
+	RequestUrl                   *string    `json:"request_url,omitempty"`
+	RequestedAccessTokenAudience []string   `json:"requested_access_token_audience,omitempty"`
+	RequestedAt                  *time.Time `json:"requested_at,omitempty"`
+	RequestedScope               []string   `json:"requested_scope,omitempty"`
 	// Skip, if true, implies that the client has requested the same scopes from the same user previously. If true, you must not ask the user to grant the requested scopes. You must however either allow or deny the consent request using the usual API call.
 	Skip *bool `json:"skip,omitempty"`
 	// Subject is the user ID of the end-user that authenticated. Now, that end user needs to grant or deny the scope requested by the OAuth 2.0 client.
@@ -370,6 +372,38 @@ func (o *OAuth2ConsentRequest) SetRequestedAccessTokenAudience(v []string) {
 	o.RequestedAccessTokenAudience = v
 }
 
+// GetRequestedAt returns the RequestedAt field value if set, zero value otherwise.
+func (o *OAuth2ConsentRequest) GetRequestedAt() time.Time {
+	if o == nil || o.RequestedAt == nil {
+		var ret time.Time
+		return ret
+	}
+	return *o.RequestedAt
+}
+
+// GetRequestedAtOk returns a tuple with the RequestedAt field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *OAuth2ConsentRequest) GetRequestedAtOk() (*time.Time, bool) {
+	if o == nil || o.RequestedAt == nil {
+		return nil, false
+	}
+	return o.RequestedAt, true
+}
+
+// HasRequestedAt returns a boolean if a field has been set.
+func (o *OAuth2ConsentRequest) HasRequestedAt() bool {
+	if o != nil && o.RequestedAt != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetRequestedAt gets a reference to the given time.Time and assigns it to the RequestedAt field.
+func (o *OAuth2ConsentRequest) SetRequestedAt(v time.Time) {
+	o.RequestedAt = &v
+}
+
 // GetRequestedScope returns the RequestedScope field value if set, zero value otherwise.
 func (o *OAuth2ConsentRequest) GetRequestedScope() []string {
 	if o == nil || o.RequestedScope == nil {
@@ -497,6 +531,9 @@ func (o OAuth2ConsentRequest) MarshalJSON() ([]byte, error) {
 	}
 	if o.RequestedAccessTokenAudience != nil {
 		toSerialize["requested_access_token_audience"] = o.RequestedAccessTokenAudience
+	}
+	if o.RequestedAt != nil {
+		toSerialize["requested_at"] = o.RequestedAt
 	}
 	if o.RequestedScope != nil {
 		toSerialize["requested_scope"] = o.RequestedScope

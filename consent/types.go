@@ -521,7 +521,7 @@ type LoginRequest struct {
 	CSRF                   string `json:"-"`
 
 	AuthenticatedAt sqlxx.NullTime `json:"-"`
-	RequestedAt     time.Time      `json:"-"`
+	RequestedAt     time.Time      `json:"requested_at"`
 }
 
 // Contains information on an ongoing consent request.
@@ -596,7 +596,7 @@ type OAuth2ConsentRequest struct {
 	Verifier               string         `json:"-"`
 	CSRF                   string         `json:"-"`
 	AuthenticatedAt        sqlxx.NullTime `json:"-"`
-	RequestedAt            time.Time      `json:"-"`
+	RequestedAt            time.Time      `json:"requested_at"`
 }
 
 // Pass session data to a consent request.
@@ -620,6 +620,16 @@ type AcceptOAuth2ConsentRequestSession struct {
 	RefreshConsentRememberFor bool `json:"refresh_consent_remember_for,omitempty"`
 	ConsentRememberFor        int  `json:"consent_remember_for,omitempty"`
 }
+
+// swagger:ignore
+type IncludeExpiredStrategy string
+
+// swagger:ignore
+const (
+	AllActive        IncludeExpiredStrategy = "all_active"
+	AllExpired       IncludeExpiredStrategy = "all_expired"
+	PartiallyExpired IncludeExpiredStrategy = "partially_expired"
+)
 
 // NewConsentRequestSessionData creates a new AcceptOAuth2ConsentRequestSession.
 func NewConsentRequestSessionData() *AcceptOAuth2ConsentRequestSession {

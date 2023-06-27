@@ -1212,8 +1212,12 @@
             "in": "query"
           },
           {
-            "type": "boolean",
-            "description": "Option to return expired consent sessions.",
+            "enum": [
+              "all_expired",
+              " partially_expired"
+            ],
+            "type": "string",
+            "description": "Option to return partially or fully expired consent sessions. Partially expired consent sessions are consent sessions, where at least one consent session in login session is still active. In this case all consent sessions from such login session are returned.",
             "name": "include_expired",
             "in": "query"
           }
@@ -2842,6 +2846,10 @@
         "requested_access_token_audience": {
           "$ref": "#/definitions/StringSliceJSONFormat"
         },
+        "requested_at": {
+          "type": "string",
+          "format": "date-time"
+        },
         "requested_scope": {
           "$ref": "#/definitions/StringSliceJSONFormat"
         },
@@ -2955,6 +2963,10 @@
         },
         "requested_access_token_audience": {
           "$ref": "#/definitions/StringSliceJSONFormat"
+        },
+        "requested_at": {
+          "type": "string",
+          "format": "date-time"
         },
         "requested_scope": {
           "$ref": "#/definitions/StringSliceJSONFormat"

@@ -60,8 +60,11 @@ func NewListSubjectConsentSessionsParamsWithHTTPClient(client *http.Client) *Lis
 */
 type ListSubjectConsentSessionsParams struct {
 
-	// IncludeExpired.
-	IncludeExpired *bool
+	/* IncludeExpired.
+
+	   Option to return partially or fully expired consent sessions. Partially expired consent sessions are consent sessions, where at least one consent session in login session is still active. In this case all consent sessions from such login session are returned.
+	*/
+	IncludeExpired *string
 
 	/* Limit.
 
@@ -142,13 +145,13 @@ func (o *ListSubjectConsentSessionsParams) SetHTTPClient(client *http.Client) {
 }
 
 // WithIncludeExpired adds the includeExpired to the list subject consent sessions params
-func (o *ListSubjectConsentSessionsParams) WithIncludeExpired(includeExpired *bool) *ListSubjectConsentSessionsParams {
+func (o *ListSubjectConsentSessionsParams) WithIncludeExpired(includeExpired *string) *ListSubjectConsentSessionsParams {
 	o.SetIncludeExpired(includeExpired)
 	return o
 }
 
 // SetIncludeExpired adds the includeExpired to the list subject consent sessions params
-func (o *ListSubjectConsentSessionsParams) SetIncludeExpired(includeExpired *bool) {
+func (o *ListSubjectConsentSessionsParams) SetIncludeExpired(includeExpired *string) {
 	o.IncludeExpired = includeExpired
 }
 
@@ -207,12 +210,12 @@ func (o *ListSubjectConsentSessionsParams) WriteToRequest(r runtime.ClientReques
 	if o.IncludeExpired != nil {
 
 		// query param include_expired
-		var qrIncludeExpired bool
+		var qrIncludeExpired string
 
 		if o.IncludeExpired != nil {
 			qrIncludeExpired = *o.IncludeExpired
 		}
-		qIncludeExpired := swag.FormatBool(qrIncludeExpired)
+		qIncludeExpired := qrIncludeExpired
 		if qIncludeExpired != "" {
 
 			if err := r.SetQueryParam("include_expired", qIncludeExpired); err != nil {

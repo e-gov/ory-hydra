@@ -68,9 +68,11 @@ type swaggerListSubjectConsentSessionsPayload struct {
 	// required: true
 	Subject string `json:"subject"`
 
+	// Option to return partially or fully expired consent sessions. Partially expired consent sessions are consent sessions, where at least one consent session in login session is still active. In this case all consent sessions from such login session are returned.
 	// in: query
+	// enum: all_expired,partially_expired
 	// required: false
-	IncludeExpred bool `json:"include_expired"`
+	IncludeExpred string `json:"include_expired"`
 
 	// The login session id to list the consent sessions for.
 	// in: query

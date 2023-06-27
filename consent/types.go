@@ -561,7 +561,7 @@ type LoginRequest struct {
 	CSRF                   string `json:"-" db:"csrf"`
 
 	AuthenticatedAt sqlxx.NullTime `json:"-" db:"authenticated_at"`
-	RequestedAt     time.Time      `json:"-" db:"requested_at"`
+	RequestedAt     time.Time      `json:"requested_at" db:"requested_at"`
 }
 
 func (_ LoginRequest) TableName() string {
@@ -659,8 +659,18 @@ type ConsentRequest struct {
 	Verifier               string         `json:"-" db:"verifier"`
 	CSRF                   string         `json:"-" db:"csrf"`
 	AuthenticatedAt        sqlxx.NullTime `json:"-" db:"authenticated_at"`
-	RequestedAt            time.Time      `json:"-" db:"requested_at"`
+	RequestedAt            time.Time      `json:"requested_at" db:"requested_at"`
 }
+
+// swagger:ignore
+type IncludeExpiredStrategy string
+
+// swagger:ignore
+const (
+	AllActive        IncludeExpiredStrategy = "all_active"
+	AllExpired       IncludeExpiredStrategy = "all_expired"
+	PartiallyExpired IncludeExpiredStrategy = "partially_expired"
+)
 
 func (_ ConsentRequest) TableName() string {
 	return "hydra_oauth2_consent_request"

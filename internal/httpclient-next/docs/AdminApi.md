@@ -1409,7 +1409,7 @@ import (
 
 func main() {
     subject := "subject_example" // string |
-    includeExpired := true // bool |  (optional)
+    includeExpired := "includeExpired_example" // string | Option to return partially or fully expired consent sessions. Partially expired consent sessions are consent sessions, where at least one consent session in login session is still active. In this case all consent sessions from such login session are returned. (optional)
     loginSessionId := "loginSessionId_example" // string | The login session id to list the consent sessions for. (optional)
     limit := int64(789) // int64 | The maximum amount of consent sessions to be returned, upper bound is 500 sessions. (optional)
     offset := int64(789) // int64 | The offset from where to start looking. (optional)
@@ -1433,13 +1433,13 @@ func main() {
 Other parameters are passed through a pointer to a
 apiListSubjectConsentSessionsRequest struct via the builder pattern
 
-| Name               | Type       | Description                                                                         | Notes |
-| ------------------ | ---------- | ----------------------------------------------------------------------------------- | ----- |
-| **subject**        | **string** |                                                                                     |
-| **includeExpired** | **bool**   |                                                                                     |
-| **loginSessionId** | **string** | The login session id to list the consent sessions for.                              |
-| **limit**          | **int64**  | The maximum amount of consent sessions to be returned, upper bound is 500 sessions. |
-| **offset**         | **int64**  | The offset from where to start looking.                                             |
+| Name               | Type       | Description                                                                                                                                                                                                                                                         | Notes |
+| ------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| **subject**        | **string** |                                                                                                                                                                                                                                                                     |
+| **includeExpired** | **string** | Option to return partially or fully expired consent sessions. Partially expired consent sessions are consent sessions, where at least one consent session in login session is still active. In this case all consent sessions from such login session are returned. |
+| **loginSessionId** | **string** | The login session id to list the consent sessions for.                                                                                                                                                                                                              |
+| **limit**          | **int64**  | The maximum amount of consent sessions to be returned, upper bound is 500 sessions.                                                                                                                                                                                 |
+| **offset**         | **int64**  | The offset from where to start looking.                                                                                                                                                                                                                             |
 
 ### Return type
 

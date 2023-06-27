@@ -54,8 +54,8 @@ type Manager interface {
 	VerifyAndInvalidateConsentRequest(ctx context.Context, verifier string) (*HandledConsentRequest, error)
 	FindSessionGrantedConsentRequest(ctx context.Context, scopeStrategy fosite.ScopeStrategy, cr *ConsentRequest) ([]HandledConsentRequest, error)
 	FindGrantedAndRememberedConsentRequests(ctx context.Context, client, user string) ([]HandledConsentRequest, error)
-	FindSubjectsGrantedConsentRequests(ctx context.Context, user string, includeExpired bool, limit, offset int) ([]HandledConsentRequest, error)
-	FindSubjectsSessionGrantedConsentRequests(ctx context.Context, user, loginSessionId string, includeExpired bool, limit, offset int) ([]HandledConsentRequest, error)
+	FindSubjectsGrantedConsentRequests(ctx context.Context, user string, includeExpiredStrategy IncludeExpiredStrategy, limit, offset int) ([]HandledConsentRequest, error)
+	FindSubjectsSessionGrantedConsentRequests(ctx context.Context, user, loginSessionId string, includeExpiredStrategy IncludeExpiredStrategy, limit, offset int) ([]HandledConsentRequest, error)
 	CountSubjectsGrantedConsentRequests(ctx context.Context, user string) (int, error)
 
 	// Cookie management

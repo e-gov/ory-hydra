@@ -58,6 +58,10 @@ type ConsentRequest struct {
 	// requested access token audience
 	RequestedAccessTokenAudience StringSlicePipeDelimiter `json:"requested_access_token_audience,omitempty"`
 
+	// requested at
+	// Format: date-time
+	RequestedAt strfmt.DateTime `json:"requested_at,omitempty"`
+
 	// requested scope
 	RequestedScope StringSlicePipeDelimiter `json:"requested_scope,omitempty"`
 
@@ -92,6 +96,10 @@ func (m *ConsentRequest) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateRequestedAccessTokenAudience(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateRequestedAt(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -172,6 +180,18 @@ func (m *ConsentRequest) validateRequestedAccessTokenAudience(formats strfmt.Reg
 		if ve, ok := err.(*errors.Validation); ok {
 			return ve.ValidateName("requested_access_token_audience")
 		}
+		return err
+	}
+
+	return nil
+}
+
+func (m *ConsentRequest) validateRequestedAt(formats strfmt.Registry) error {
+	if swag.IsZero(m.RequestedAt) { // not required
+		return nil
+	}
+
+	if err := validate.FormatOf("requested_at", "body", "date-time", m.RequestedAt.String(), formats); err != nil {
 		return err
 	}
 

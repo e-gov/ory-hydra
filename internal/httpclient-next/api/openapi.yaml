@@ -1307,12 +1307,20 @@ paths:
           schema:
             type: string
           style: form
-        - explode: true
+        - description:
+            Option to return partially or fully expired consent sessions.
+            Partially expired consent sessions are consent sessions, where at
+            least one consent session in login session is still active. In this
+            case all consent sessions from such login session are returned.
+          explode: true
           in: query
           name: include_expired
           required: false
           schema:
-            type: boolean
+            enum:
+              - all_expired
+              - partially_expired
+            type: string
           style: form
         - description: The login session id to list the consent sessions for.
           explode: true
@@ -2506,6 +2514,7 @@ components:
               - response_types
               - response_types
           login_session_id: login_session_id
+          requested_at: 2000-01-23T04:56:07.000+00:00
           requested_scope:
             - requested_scope
             - requested_scope
@@ -2907,6 +2916,7 @@ components:
             - response_types
             - response_types
         login_session_id: login_session_id
+        requested_at: 2000-01-23T04:56:07.000+00:00
         requested_scope:
           - requested_scope
           - requested_scope
@@ -2962,6 +2972,9 @@ components:
             StringSlicePipeDelimiter de/encodes the string slice to/from a SQL
             string.
           type: array
+        requested_at:
+          format: date-time
+          type: string
         requested_scope:
           items:
             type: string
@@ -3238,6 +3251,7 @@ components:
         session_id: session_id
         skip: true
         request_url: request_url
+        requested_at: 2000-01-23T04:56:07.000+00:00
         requested_scope:
           - requested_scope
           - requested_scope
@@ -3264,6 +3278,9 @@ components:
             StringSlicePipeDelimiter de/encodes the string slice to/from a SQL
             string.
           type: array
+        requested_at:
+          format: date-time
+          type: string
         requested_scope:
           items:
             type: string

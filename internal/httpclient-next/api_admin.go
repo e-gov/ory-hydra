@@ -3461,7 +3461,7 @@ type AdminApiApiListSubjectConsentSessionsRequest struct {
 	ctx            context.Context
 	ApiService     AdminApi
 	subject        *string
-	includeExpired *bool
+	includeExpired *string
 	loginSessionId *string
 	limit          *int64
 	offset         *int64
@@ -3471,7 +3471,7 @@ func (r AdminApiApiListSubjectConsentSessionsRequest) Subject(subject string) Ad
 	r.subject = &subject
 	return r
 }
-func (r AdminApiApiListSubjectConsentSessionsRequest) IncludeExpired(includeExpired bool) AdminApiApiListSubjectConsentSessionsRequest {
+func (r AdminApiApiListSubjectConsentSessionsRequest) IncludeExpired(includeExpired string) AdminApiApiListSubjectConsentSessionsRequest {
 	r.includeExpired = &includeExpired
 	return r
 }

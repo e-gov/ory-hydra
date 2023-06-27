@@ -41,6 +41,10 @@ type LoginRequest struct {
 	// Required: true
 	RequestedAccessTokenAudience StringSlicePipeDelimiter `json:"requested_access_token_audience"`
 
+	// requested at
+	// Format: date-time
+	RequestedAt strfmt.DateTime `json:"requested_at,omitempty"`
+
 	// requested scope
 	// Required: true
 	RequestedScope StringSlicePipeDelimiter `json:"requested_scope"`
@@ -86,6 +90,10 @@ func (m *LoginRequest) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateRequestedAccessTokenAudience(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateRequestedAt(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -170,6 +178,18 @@ func (m *LoginRequest) validateRequestedAccessTokenAudience(formats strfmt.Regis
 		if ve, ok := err.(*errors.Validation); ok {
 			return ve.ValidateName("requested_access_token_audience")
 		}
+		return err
+	}
+
+	return nil
+}
+
+func (m *LoginRequest) validateRequestedAt(formats strfmt.Registry) error {
+	if swag.IsZero(m.RequestedAt) { // not required
+		return nil
+	}
+
+	if err := validate.FormatOf("requested_at", "body", "date-time", m.RequestedAt.String(), formats); err != nil {
 		return err
 	}
 

@@ -76,7 +76,7 @@ type OidcConfiguration struct {
 	// OpenID Connect Userinfo URL  URL of the OP's UserInfo Endpoint.
 	UserinfoEndpoint *string `json:"userinfo_endpoint,omitempty"`
 	// OpenID Connect User Userinfo Signing Algorithm  Algorithm used to sign OpenID Connect Userinfo Responses.
-	UserinfoSignedResponseAlg []string `json:"userinfo_signed_response_alg"`
+	UserinfoSignedResponseAlg []string `json:"userinfo_signed_response_alg,omitempty"`
 	// OpenID Connect Supported Userinfo Signing Algorithm  JSON array containing a list of the JWS [JWS] signing algorithms (alg values) [JWA] supported by the UserInfo Endpoint to encode the Claims in a JWT [JWT].
 	UserinfoSigningAlgValuesSupported []string `json:"userinfo_signing_alg_values_supported,omitempty"`
 }
@@ -1116,7 +1116,7 @@ func (o OidcConfiguration) MarshalJSON() ([]byte, error) {
 	if o.UserinfoEndpoint != nil {
 		toSerialize["userinfo_endpoint"] = o.UserinfoEndpoint
 	}
-	if true {
+	if o.UserinfoSignedResponseAlg != nil {
 		toSerialize["userinfo_signed_response_alg"] = o.UserinfoSignedResponseAlg
 	}
 	if o.UserinfoSigningAlgValuesSupported != nil {

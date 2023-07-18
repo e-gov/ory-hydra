@@ -1190,8 +1190,7 @@
           "jwks_uri",
           "subject_types_supported",
           "response_types_supported",
-          "id_token_signing_alg_values_supported",
-          "id_token_signed_response_alg"
+          "id_token_signing_alg_values_supported"
         ],
         "title": "OpenID Connect Discovery Metadata",
         "type": "object"

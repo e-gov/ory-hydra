@@ -3773,7 +3773,6 @@ components:
           type: array
       required:
       - authorization_endpoint
-      - id_token_signed_response_alg
       - id_token_signing_alg_values_supported
       - issuer
       - jwks_uri

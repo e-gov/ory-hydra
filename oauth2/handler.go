@@ -335,8 +335,8 @@ type oidcConfiguration struct {
 	//
 	// Algorithm used to sign OpenID Connect ID Tokens.
 	//
-	// required: true
-	IDTokenSignedResponseAlg []string `json:"id_token_signed_response_alg"`
+	// required: false
+	IDTokenSignedResponseAlg []string `json:"id_token_signed_response_alg,omitempty"`
 
 	// OpenID Connect User Userinfo Signing Algorithm
 	//
@@ -451,7 +451,6 @@ func (h *Handler) discoverOidcConfiguration(w http.ResponseWriter, r *http.Reque
 		UserinfoEndpoint:                  h.c.OIDCDiscoveryUserinfoEndpoint(r.Context()).String(),
 		TokenEndpointAuthMethodsSupported: []string{"client_secret_basic"},
 		IDTokenSigningAlgValuesSupported:  []string{key.Algorithm},
-		IDTokenSignedResponseAlg:          []string{key.Algorithm},
 		GrantTypesSupported:               []string{"authorization_code"},
 		UiLocalesSupported:                []string{"et", "en", "ru"},
 	})

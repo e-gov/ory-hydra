@@ -2964,8 +2964,7 @@
         "subject_types_supported",
         "response_types_supported",
         "id_token_signing_alg_values_supported",
-        "id_token_signed_response_alg",
-        "userinfo_signed_response_alg"
+        "id_token_signed_response_alg"
       ],
       "properties": {
         "authorization_endpoint": {

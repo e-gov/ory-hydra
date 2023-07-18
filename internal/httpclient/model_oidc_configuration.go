@@ -76,7 +76,7 @@ type OidcConfiguration struct {
 	// OpenID Connect Userinfo URL  URL of the OP's UserInfo Endpoint.
 	UserinfoEndpoint *string `json:"userinfo_endpoint,omitempty"`
 	// OpenID Connect User Userinfo Signing Algorithm  Algorithm used to sign OpenID Connect Userinfo Responses.
-	UserinfoSignedResponseAlg []string `json:"userinfo_signed_response_alg"`
+	UserinfoSignedResponseAlg []string `json:"userinfo_signed_response_alg,omitempty"`
 	// OpenID Connect Supported Userinfo Signing Algorithm  JSON array containing a list of the JWS [JWS] signing algorithms (alg values) [JWA] supported by the UserInfo Endpoint to encode the Claims in a JWT [JWT].
 	UserinfoSigningAlgValuesSupported []string `json:"userinfo_signing_alg_values_supported,omitempty"`
 }
@@ -85,7 +85,7 @@ type OidcConfiguration struct {
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewOidcConfiguration(authorizationEndpoint string, idTokenSignedResponseAlg []string, idTokenSigningAlgValuesSupported []string, issuer string, jwksUri string, responseTypesSupported []string, subjectTypesSupported []string, tokenEndpoint string, userinfoSignedResponseAlg []string) *OidcConfiguration {
+func NewOidcConfiguration(authorizationEndpoint string, idTokenSignedResponseAlg []string, idTokenSigningAlgValuesSupported []string, issuer string, jwksUri string, responseTypesSupported []string, subjectTypesSupported []string, tokenEndpoint string) *OidcConfiguration {
 	this := OidcConfiguration{}
 	this.AuthorizationEndpoint = authorizationEndpoint
 	this.IdTokenSignedResponseAlg = idTokenSignedResponseAlg
@@ -95,7 +95,6 @@ func NewOidcConfiguration(authorizationEndpoint string, idTokenSignedResponseAlg
 	this.ResponseTypesSupported = responseTypesSupported
 	this.SubjectTypesSupported = subjectTypesSupported
 	this.TokenEndpoint = tokenEndpoint
-	this.UserinfoSignedResponseAlg = userinfoSignedResponseAlg
 	return &this
 }
 
@@ -971,26 +970,34 @@ func (o *OidcConfiguration) SetUserinfoEndpoint(v string) {
 	o.UserinfoEndpoint = &v
 }
 
-// GetUserinfoSignedResponseAlg returns the UserinfoSignedResponseAlg field value
+// GetUserinfoSignedResponseAlg returns the UserinfoSignedResponseAlg field value if set, zero value otherwise.
 func (o *OidcConfiguration) GetUserinfoSignedResponseAlg() []string {
-	if o == nil {
+	if o == nil || o.UserinfoSignedResponseAlg == nil {
 		var ret []string
 		return ret
 	}
-
 	return o.UserinfoSignedResponseAlg
 }
 
-// GetUserinfoSignedResponseAlgOk returns a tuple with the UserinfoSignedResponseAlg field value
+// GetUserinfoSignedResponseAlgOk returns a tuple with the UserinfoSignedResponseAlg field value if set, nil otherwise
 // and a boolean to check if the value has been set.
 func (o *OidcConfiguration) GetUserinfoSignedResponseAlgOk() ([]string, bool) {
-	if o == nil {
+	if o == nil || o.UserinfoSignedResponseAlg == nil {
 		return nil, false
 	}
 	return o.UserinfoSignedResponseAlg, true
 }
 
-// SetUserinfoSignedResponseAlg sets field value
+// HasUserinfoSignedResponseAlg returns a boolean if a field has been set.
+func (o *OidcConfiguration) HasUserinfoSignedResponseAlg() bool {
+	if o != nil && o.UserinfoSignedResponseAlg != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetUserinfoSignedResponseAlg gets a reference to the given []string and assigns it to the UserinfoSignedResponseAlg field.
 func (o *OidcConfiguration) SetUserinfoSignedResponseAlg(v []string) {
 	o.UserinfoSignedResponseAlg = v
 }
@@ -1116,7 +1123,7 @@ func (o OidcConfiguration) MarshalJSON() ([]byte, error) {
 	if o.UserinfoEndpoint != nil {
 		toSerialize["userinfo_endpoint"] = o.UserinfoEndpoint
 	}
-	if true {
+	if o.UserinfoSignedResponseAlg != nil {
 		toSerialize["userinfo_signed_response_alg"] = o.UserinfoSignedResponseAlg
 	}
 	if o.UserinfoSigningAlgValuesSupported != nil {

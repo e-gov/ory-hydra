@@ -169,12 +169,7 @@ func (h *Handler) CreateClient(r *http.Request, validator func(context.Context, 
 		}
 	}
 
-	if len(c.LegacyClientID) > 0 {
-		return nil, errorsx.WithStack(herodot.ErrBadRequest.WithReason("It is no longer possible to set an OAuth2 Client ID as a user. The system will generate a unique ID for you."))
-	}
-
 	c.ID = uuidx.NewV4()
-	c.LegacyClientID = c.ID.String()
 
 	if len(c.Secret) == 0 {
 		secretb, err := x.GenerateSecret(26)

@@ -33,14 +33,14 @@ Name | Type | Description | Notes
 **TokenEndpointAuthMethodsSupported** | Pointer to **[]string** | OAuth 2.0 Supported Client Authentication Methods  JSON array containing a list of Client Authentication methods supported by this Token Endpoint. The options are client_secret_post, client_secret_basic, client_secret_jwt, and private_key_jwt, as described in Section 9 of OpenID Connect Core 1.0 | [optional] 
 **UiLocalesSupported** | Pointer to **[]string** | OpenID Connect Supported UI Locales  JSON array containing a list of the UI locales that this OP supports. | [optional] 
 **UserinfoEndpoint** | Pointer to **string** | OpenID Connect Userinfo URL  URL of the OP&#39;s UserInfo Endpoint. | [optional] 
-**UserinfoSignedResponseAlg** | **[]string** | OpenID Connect User Userinfo Signing Algorithm  Algorithm used to sign OpenID Connect Userinfo Responses. | 
+**UserinfoSignedResponseAlg** | Pointer to **[]string** | OpenID Connect User Userinfo Signing Algorithm  Algorithm used to sign OpenID Connect Userinfo Responses. | [optional] 
 **UserinfoSigningAlgValuesSupported** | Pointer to **[]string** | OpenID Connect Supported Userinfo Signing Algorithm  JSON array containing a list of the JWS [JWS] signing algorithms (alg values) [JWA] supported by the UserInfo Endpoint to encode the Claims in a JWT [JWT]. | [optional] 
 
 ## Methods
 
 ### NewOidcConfiguration
 
-`func NewOidcConfiguration(authorizationEndpoint string, idTokenSigningAlgValuesSupported []string, issuer string, jwksUri string, responseTypesSupported []string, subjectTypesSupported []string, tokenEndpoint string, userinfoSignedResponseAlg []string, ) *OidcConfiguration`
+`func NewOidcConfiguration(authorizationEndpoint string, idTokenSigningAlgValuesSupported []string, issuer string, jwksUri string, responseTypesSupported []string, subjectTypesSupported []string, tokenEndpoint string, ) *OidcConfiguration`
 
 NewOidcConfiguration instantiates a new OidcConfiguration object
 This constructor will assign default values to properties that have it defined,
@@ -764,6 +764,11 @@ and a boolean to check if the value has been set.
 
 SetUserinfoSignedResponseAlg sets UserinfoSignedResponseAlg field to given value.
 
+### HasUserinfoSignedResponseAlg
+
+`func (o *OidcConfiguration) HasUserinfoSignedResponseAlg() bool`
+
+HasUserinfoSignedResponseAlg returns a boolean if a field has been set.
 
 ### GetUserinfoSigningAlgValuesSupported
 

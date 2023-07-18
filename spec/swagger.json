@@ -2963,8 +2963,7 @@
         "jwks_uri",
         "subject_types_supported",
         "response_types_supported",
-        "id_token_signing_alg_values_supported",
-        "userinfo_signed_response_alg"
+        "id_token_signing_alg_values_supported"
       ],
       "properties": {
         "authorization_endpoint": {

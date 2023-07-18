@@ -47,8 +47,5 @@
     "en",
     "ru"
   ],
-  "userinfo_endpoint": "/userinfo",
-  "userinfo_signed_response_alg": [
-    "RS256"
-  ]
+  "userinfo_endpoint": "/userinfo"
 }

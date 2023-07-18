@@ -40,7 +40,7 @@ type OidcConfiguration struct {
 	// OAuth 2.0 Supported Grant Types  JSON array containing a list of the OAuth 2.0 Grant Type values that this OP supports.
 	GrantTypesSupported []string `json:"grant_types_supported,omitempty"`
 	// OpenID Connect Default ID Token Signing Algorithms  Algorithm used to sign OpenID Connect ID Tokens.
-	IdTokenSignedResponseAlg []string `json:"id_token_signed_response_alg"`
+	IdTokenSignedResponseAlg []string `json:"id_token_signed_response_alg,omitempty"`
 	// OpenID Connect Supported ID Token Signing Algorithms  JSON array containing a list of the JWS signing algorithms (alg values) supported by the OP for the ID Token to encode the Claims in a JWT.
 	IdTokenSigningAlgValuesSupported []string `json:"id_token_signing_alg_values_supported"`
 	// OpenID Connect Issuer URL  An URL using the https scheme with no query or fragment component that the OP asserts as its IssuerURL Identifier. If IssuerURL discovery is supported , this value MUST be identical to the issuer value returned by WebFinger. This also MUST be identical to the iss Claim value in ID Tokens issued from this IssuerURL.
@@ -85,10 +85,9 @@ type OidcConfiguration struct {
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewOidcConfiguration(authorizationEndpoint string, idTokenSignedResponseAlg []string, idTokenSigningAlgValuesSupported []string, issuer string, jwksUri string, responseTypesSupported []string, subjectTypesSupported []string, tokenEndpoint string, userinfoSignedResponseAlg []string) *OidcConfiguration {
+func NewOidcConfiguration(authorizationEndpoint string, idTokenSigningAlgValuesSupported []string, issuer string, jwksUri string, responseTypesSupported []string, subjectTypesSupported []string, tokenEndpoint string, userinfoSignedResponseAlg []string) *OidcConfiguration {
 	this := OidcConfiguration{}
 	this.AuthorizationEndpoint = authorizationEndpoint
-	this.IdTokenSignedResponseAlg = idTokenSignedResponseAlg
 	this.IdTokenSigningAlgValuesSupported = idTokenSigningAlgValuesSupported
 	this.Issuer = issuer
 	this.JwksUri = jwksUri
@@ -451,26 +450,34 @@ func (o *OidcConfiguration) SetGrantTypesSupported(v []string) {
 	o.GrantTypesSupported = v
 }
 
-// GetIdTokenSignedResponseAlg returns the IdTokenSignedResponseAlg field value
+// GetIdTokenSignedResponseAlg returns the IdTokenSignedResponseAlg field value if set, zero value otherwise.
 func (o *OidcConfiguration) GetIdTokenSignedResponseAlg() []string {
-	if o == nil {
+	if o == nil || o.IdTokenSignedResponseAlg == nil {
 		var ret []string
 		return ret
 	}
-
 	return o.IdTokenSignedResponseAlg
 }
 
-// GetIdTokenSignedResponseAlgOk returns a tuple with the IdTokenSignedResponseAlg field value
+// GetIdTokenSignedResponseAlgOk returns a tuple with the IdTokenSignedResponseAlg field value if set, nil otherwise
 // and a boolean to check if the value has been set.
 func (o *OidcConfiguration) GetIdTokenSignedResponseAlgOk() ([]string, bool) {
-	if o == nil {
+	if o == nil || o.IdTokenSignedResponseAlg == nil {
 		return nil, false
 	}
 	return o.IdTokenSignedResponseAlg, true
 }
 
-// SetIdTokenSignedResponseAlg sets field value
+// HasIdTokenSignedResponseAlg returns a boolean if a field has been set.
+func (o *OidcConfiguration) HasIdTokenSignedResponseAlg() bool {
+	if o != nil && o.IdTokenSignedResponseAlg != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetIdTokenSignedResponseAlg gets a reference to the given []string and assigns it to the IdTokenSignedResponseAlg field.
 func (o *OidcConfiguration) SetIdTokenSignedResponseAlg(v []string) {
 	o.IdTokenSignedResponseAlg = v
 }
@@ -1062,7 +1069,7 @@ func (o OidcConfiguration) MarshalJSON() ([]byte, error) {
 	if o.GrantTypesSupported != nil {
 		toSerialize["grant_types_supported"] = o.GrantTypesSupported
 	}
-	if true {
+	if o.IdTokenSignedResponseAlg != nil {
 		toSerialize["id_token_signed_response_alg"] = o.IdTokenSignedResponseAlg
 	}
 	if true {

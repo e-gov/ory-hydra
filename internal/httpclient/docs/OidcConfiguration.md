@@ -15,7 +15,7 @@ Name | Type | Description | Notes
 **FrontchannelLogoutSessionSupported** | Pointer to **bool** | OpenID Connect Front-Channel Logout Session Required  Boolean value specifying whether the OP can pass iss (issuer) and sid (session ID) query parameters to identify the RP session with the OP when the frontchannel_logout_uri is used. If supported, the sid Claim is also included in ID Tokens issued by the OP. | [optional] 
 **FrontchannelLogoutSupported** | Pointer to **bool** | OpenID Connect Front-Channel Logout Supported  Boolean value specifying whether the OP supports HTTP-based logout, with true indicating support. | [optional] 
 **GrantTypesSupported** | Pointer to **[]string** | OAuth 2.0 Supported Grant Types  JSON array containing a list of the OAuth 2.0 Grant Type values that this OP supports. | [optional] 
-**IdTokenSignedResponseAlg** | **[]string** | OpenID Connect Default ID Token Signing Algorithms  Algorithm used to sign OpenID Connect ID Tokens. | 
+**IdTokenSignedResponseAlg** | Pointer to **[]string** | OpenID Connect Default ID Token Signing Algorithms  Algorithm used to sign OpenID Connect ID Tokens. | [optional] 
 **IdTokenSigningAlgValuesSupported** | **[]string** | OpenID Connect Supported ID Token Signing Algorithms  JSON array containing a list of the JWS signing algorithms (alg values) supported by the OP for the ID Token to encode the Claims in a JWT. | 
 **Issuer** | **string** | OpenID Connect Issuer URL  An URL using the https scheme with no query or fragment component that the OP asserts as its IssuerURL Identifier. If IssuerURL discovery is supported , this value MUST be identical to the issuer value returned by WebFinger. This also MUST be identical to the iss Claim value in ID Tokens issued from this IssuerURL. | 
 **JwksUri** | **string** | OpenID Connect Well-Known JSON Web Keys URL  URL of the OP&#39;s JSON Web Key Set [JWK] document. This contains the signing key(s) the RP uses to validate signatures from the OP. The JWK Set MAY also contain the Server&#39;s encryption key(s), which are used by RPs to encrypt requests to the Server. When both signing and encryption keys are made available, a use (Key Use) parameter value is REQUIRED for all keys in the referenced JWK Set to indicate each key&#39;s intended usage. Although some algorithms allow the same key to be used for both signatures and encryption, doing so is NOT RECOMMENDED, as it is less secure. The JWK x5c parameter MAY be used to provide X.509 representations of keys provided. When used, the bare key values MUST still be present and MUST match those in the certificate. | 
@@ -40,7 +40,7 @@ Name | Type | Description | Notes
 
 ### NewOidcConfiguration
 
-`func NewOidcConfiguration(authorizationEndpoint string, idTokenSignedResponseAlg []string, idTokenSigningAlgValuesSupported []string, issuer string, jwksUri string, responseTypesSupported []string, subjectTypesSupported []string, tokenEndpoint string, userinfoSignedResponseAlg []string, ) *OidcConfiguration`
+`func NewOidcConfiguration(authorizationEndpoint string, idTokenSigningAlgValuesSupported []string, issuer string, jwksUri string, responseTypesSupported []string, subjectTypesSupported []string, tokenEndpoint string, userinfoSignedResponseAlg []string, ) *OidcConfiguration`
 
 NewOidcConfiguration instantiates a new OidcConfiguration object
 This constructor will assign default values to properties that have it defined,
@@ -344,6 +344,11 @@ and a boolean to check if the value has been set.
 
 SetIdTokenSignedResponseAlg sets IdTokenSignedResponseAlg field to given value.
 
+### HasIdTokenSignedResponseAlg
+
+`func (o *OidcConfiguration) HasIdTokenSignedResponseAlg() bool`
+
+HasIdTokenSignedResponseAlg returns a boolean if a field has been set.
 
 ### GetIdTokenSigningAlgValuesSupported
 

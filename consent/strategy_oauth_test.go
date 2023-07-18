@@ -334,11 +334,11 @@ func TestStrategyLoginConsentNext(t *testing.T) {
 		assert.NotNil(t, setCookieHeader)
 
 		t.Run("login cookie client specific suffix is set", func(t *testing.T) {
-			assert.Regexp(t, fmt.Sprintf("ory_hydra_login_csrf_dev_%d=.*", murmur3.Sum32(c.ID.Bytes())), setCookieHeader)
+			assert.Regexp(t, fmt.Sprintf("ory_hydra_login_csrf_dev_%d=.*", murmur3.Sum32([]byte(c.LegacyClientID))), setCookieHeader)
 		})
 
 		t.Run("login cookie max age is set", func(t *testing.T) {
-			assert.Regexp(t, fmt.Sprintf("ory_hydra_login_csrf_dev_%d=.*Max-Age=%.0f;.*", murmur3.Sum32(c.ID.Bytes()), consentRequestMaxAge), setCookieHeader)
+			assert.Regexp(t, fmt.Sprintf("ory_hydra_login_csrf_dev_%d=.*Max-Age=%.0f;.*", murmur3.Sum32([]byte(c.LegacyClientID)), consentRequestMaxAge), setCookieHeader)
 		})
 
 		loginChallengeRes, err := hc.Get(loginChallengeRedirect.String())
@@ -354,11 +354,11 @@ func TestStrategyLoginConsentNext(t *testing.T) {
 		assert.NotNil(t, setCookieHeader)
 
 		t.Run("consent cookie client specific suffix set", func(t *testing.T) {
-			assert.Regexp(t, fmt.Sprintf("ory_hydra_consent_csrf_dev_%d=.*", murmur3.Sum32(c.ID.Bytes())), setCookieHeader)
+			assert.Regexp(t, fmt.Sprintf("ory_hydra_consent_csrf_dev_%d=.*", murmur3.Sum32([]byte(c.LegacyClientID))), setCookieHeader)
 		})
 
 		t.Run("consent cookie max age is set", func(t *testing.T) {
-			assert.Regexp(t, fmt.Sprintf("ory_hydra_consent_csrf_dev_%d=.*Max-Age=%.0f;.*", murmur3.Sum32(c.ID.Bytes()), consentRequestMaxAge), setCookieHeader)
+			assert.Regexp(t, fmt.Sprintf("ory_hydra_consent_csrf_dev_%d=.*Max-Age=%.0f;.*", murmur3.Sum32([]byte(c.LegacyClientID)), consentRequestMaxAge), setCookieHeader)
 		})
 	})
 

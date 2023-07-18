@@ -37,7 +37,7 @@ import (
 func TestClientCredentials(t *testing.T) {
 	ctx := context.Background()
 	reg := internal.NewMockedRegistry(t, &contextx.Default{})
-	reg.Config().MustSet(ctx, config.KeyAccessTokenStrategy, "opaque")
+	reg.Config().MustSet(ctx, config.KeyAccessTokenStrategy, "jwt")
 	public, admin := testhelpers.NewOAuth2Server(ctx, t, reg)
 
 	var newCustomClient = func(t *testing.T, c *hc.Client) (*hc.Client, clientcredentials.Config) {

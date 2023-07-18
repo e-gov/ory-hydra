@@ -5,8 +5,6 @@ package client_test
 
 import (
 	"context"
-	"encoding/json"
-	"io"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -14,10 +12,6 @@ import (
 	"github.com/ory/x/assertx"
 
 	"github.com/ory/x/ioutilx"
-
-	"github.com/ory/x/snapshotx"
-
-	"github.com/ory/x/uuidx"
 
 	"github.com/mohae/deepcopy"
 
@@ -172,12 +166,10 @@ func TestClientSDK(t *testing.T) {
 		assert.Equal(t, "secret", x.FromPointer[string](result.ClientSecret))
 	})
 
-	t.Run("case=id can not be set", func(t *testing.T) {
-		_, res, err := c.OAuth2Api.CreateOAuth2Client(context.Background()).OAuth2Client(hydra.OAuth2Client{ClientId: x.ToPointer(uuidx.NewV4().String())}).Execute()
-		require.Error(t, err)
-		body, err := io.ReadAll(res.Body)
+	t.Run("case=id can be set", func(t *testing.T) {
+		gresult, _, err := c.OAuth2Api.CreateOAuth2Client(context.Background()).OAuth2Client(hydra.OAuth2Client{ClientId: x.ToPointer("test-client-id")}).Execute()
 		require.NoError(t, err)
-		snapshotx.SnapshotT(t, json.RawMessage(body))
+		assert.Equal(t, x.ToPointer("test-client-id"), gresult.ClientId)
 	})
 
 	t.Run("case=patch client legally", func(t *testing.T) {

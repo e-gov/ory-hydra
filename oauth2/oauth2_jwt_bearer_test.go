@@ -42,7 +42,7 @@ import (
 func TestJWTBearer(t *testing.T) {
 	ctx := context.Background()
 	reg := internal.NewMockedRegistry(t, &contextx.Default{})
-	reg.Config().MustSet(ctx, config.KeyAccessTokenStrategy, "opaque")
+	reg.Config().MustSet(ctx, config.KeyAccessTokenStrategy, "jwt")
 	_, admin := testhelpers.NewOAuth2Server(ctx, t, reg)
 
 	plainTextSecret := uuid.New().String()

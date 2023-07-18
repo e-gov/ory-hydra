@@ -42,7 +42,7 @@ import (
 func TestJWTBearer(t *testing.T) {
 	ctx := context.Background()
 	reg := internal.NewMockedRegistry(t, &contextx.Default{})
-	reg.Config().MustSet(ctx, config.KeyAccessTokenStrategy, "opaque")
+	reg.Config().MustSet(ctx, config.KeyAccessTokenStrategy, "jwt")
 	_, admin := testhelpers.NewOAuth2Server(ctx, t, reg)
 
 	plainTextSecret := uuid.New().String()
@@ -263,8 +263,8 @@ func TestJWTBearer(t *testing.T) {
 			}
 		}
 
-		t.Run("strategy=opaque", run("opaque"))
 		t.Run("strategy=jwt", run("jwt"))
+		t.Run("strategy=opaque", run("opaque"))
 	})
 
 	t.Run("case=exchange for an access token without client", func(t *testing.T) {

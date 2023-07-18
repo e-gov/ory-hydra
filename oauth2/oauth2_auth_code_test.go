@@ -76,7 +76,7 @@ type clientCreator interface {
 func TestAuthCodeWithDefaultStrategy(t *testing.T) {
 	ctx := context.TODO()
 	reg := internal.NewMockedRegistry(t, &contextx.Default{})
-	reg.Config().MustSet(ctx, config.KeyAccessTokenStrategy, "opaque")
+	reg.Config().MustSet(ctx, config.KeyAccessTokenStrategy, "jwt")
 	reg.Config().MustSet(ctx, config.KeyRefreshTokenHookURL, "")
 	publicTS, adminTS := testhelpers.NewOAuth2Server(ctx, t, reg)
 

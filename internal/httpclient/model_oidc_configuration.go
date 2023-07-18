@@ -40,7 +40,7 @@ type OidcConfiguration struct {
 	// OAuth 2.0 Supported Grant Types  JSON array containing a list of the OAuth 2.0 Grant Type values that this OP supports.
 	GrantTypesSupported []string `json:"grant_types_supported,omitempty"`
 	// OpenID Connect Default ID Token Signing Algorithms  Algorithm used to sign OpenID Connect ID Tokens.
-	IdTokenSignedResponseAlg []string `json:"id_token_signed_response_alg"`
+	IdTokenSignedResponseAlg []string `json:"id_token_signed_response_alg,omitempty"`
 	// OpenID Connect Supported ID Token Signing Algorithms  JSON array containing a list of the JWS signing algorithms (alg values) supported by the OP for the ID Token to encode the Claims in a JWT.
 	IdTokenSigningAlgValuesSupported []string `json:"id_token_signing_alg_values_supported"`
 	// OpenID Connect Issuer URL  An URL using the https scheme with no query or fragment component that the OP asserts as its IssuerURL Identifier. If IssuerURL discovery is supported , this value MUST be identical to the issuer value returned by WebFinger. This also MUST be identical to the iss Claim value in ID Tokens issued from this IssuerURL.
@@ -1062,7 +1062,7 @@ func (o OidcConfiguration) MarshalJSON() ([]byte, error) {
 	if o.GrantTypesSupported != nil {
 		toSerialize["grant_types_supported"] = o.GrantTypesSupported
 	}
-	if true {
+	if o.IdTokenSignedResponseAlg != nil {
 		toSerialize["id_token_signed_response_alg"] = o.IdTokenSignedResponseAlg
 	}
 	if true {

@@ -135,7 +135,7 @@ func (c *Config) GetDisableRefreshTokenValidation(ctx context.Context) bool {
 }
 
 func (c *Config) GetRefreshTokenScopes(ctx context.Context) []string {
-	return []string{"offline", "offline_access"}
+	return []string{}
 }
 
 func (c *Config) GetMinParameterEntropy(_ context.Context) int {

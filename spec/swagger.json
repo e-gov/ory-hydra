@@ -2119,10 +2119,26 @@
           "type": "object",
           "additionalProperties": {}
         },
+        "consent_remember_for": {
+          "type": "integer",
+          "format": "int64"
+        },
         "id_token": {
           "description": "IDToken sets session data for the OpenID Connect ID token. Keep in mind that the session'id payloads are readable\nby anyone that has access to the ID Challenge. Use with care!",
           "type": "object",
           "additionalProperties": {}
+        },
+        "refresh_consent_remember_for": {
+          "description": "Extends consent remember for if true",
+          "type": "boolean"
+        },
+        "refresh_remember_for": {
+          "description": "Extends session remember for if true",
+          "type": "boolean"
+        },
+        "remember_for": {
+          "type": "integer",
+          "format": "int64"
         }
       }
     },

@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ory/x/sqlxx"
+
 	"github.com/ory/x/httprouterx"
 
 	"github.com/pborman/uuid"
@@ -60,6 +62,9 @@ type Handler struct {
 func NewHandler(r InternalRegistry, c *config.DefaultProvider) *Handler {
 	return &Handler{r: r, c: c}
 }
+
+var ErrNoPreviousConsentFound = errors.New("no previous OAuth 2.0 Consent could be found for this access request")
+var ErrNoAuthenticationSessionFound = errors.New("no previous login session was found")
 
 func (h *Handler) SetRoutes(admin *httprouterx.RouterAdmin, public *httprouterx.RouterPublic, corsMiddleware func(http.Handler) http.Handler) {
 	public.Handler("OPTIONS", TokenPath, corsMiddleware(http.HandlerFunc(h.handleOptions)))
@@ -936,6 +941,107 @@ func (h *Handler) oauth2TokenExchange(w http.ResponseWriter, r *http.Request) {
 			h.logOrAudit(err, r)
 			h.r.OAuth2Provider().WriteAccessError(ctx, w, accessRequest, err)
 			return
+		}
+	}
+
+	session, ok := accessRequest.GetSession().(*Session)
+	sid, sidOk := session.DefaultSession.Claims.Extra["sid"].(string)
+
+	if ok && session.RefreshRememberFor {
+		if sidOk && len(sid) != 0 {
+
+			// ========================================================================
+			// Same checks as in consent/strategy_default.go authenticationSession
+
+			loginSession, err := h.r.ConsentManager().GetRememberedLoginSession(r.Context(), sid)
+			if errors.Is(err, x.ErrNotFound) {
+				h.r.Logger().
+					WithRequest(r).
+					WithField("sid", sid).
+					Info("Authentication session not found.")
+				h.r.Writer().WriteError(w, r, errorsx.WithStack(ErrNoAuthenticationSessionFound))
+				return
+			} else if err != nil {
+				h.r.Logger().
+					WithRequest(r).
+					WithField("sid", sid).
+					WithError(err).
+					Error("Failed to query authentication session.")
+				h.r.Writer().WriteError(w, r, errorsx.WithStack(err))
+				return
+			}
+			h.r.Logger().
+				WithRequest(r).
+				WithField("sid", sid).
+				Info("Authentication session is valid for extending.")
+
+			maxAge := time.Time(loginSession.MaxAge)
+			if !maxAge.IsZero() && time.Now().UTC().Unix() > maxAge.Unix() {
+				h.r.Logger().
+					WithRequest(r).
+					WithField("sid", sid).
+					Info("Authentication session expired.")
+				h.r.Writer().WriteError(w, r, errorsx.WithStack(ErrNoAuthenticationSessionFound))
+				return
+			}
+
+			// ========================================================================
+
+			err = h.r.ConsentManager().ExtendLoginSession(ctx, sid, session.RememberFor)
+			if err != nil {
+				h.r.Logger().
+					WithRequest(r).
+					WithField("sid", sid).
+					WithError(err).
+					Error("Failed to extend authentication session.")
+				h.r.Writer().WriteError(w, r, errorsx.WithStack(err))
+				return
+			}
+		}
+	}
+
+	if ok && session.RefreshConsentRememberFor {
+		if sidOk && len(sid) != 0 {
+
+			cr := consent.OAuth2ConsentRequest{
+				Subject:        session.GetSubject(),
+				ClientID:       accessRequest.GetClient().GetID(),
+				LoginSessionID: sqlxx.NullString(sid),
+			}
+
+			var hcrs *consent.AcceptOAuth2ConsentRequest
+			hcrs, err = h.r.ConsentManager().FindSessionGrantedConsentRequest(r.Context(), h.r.Config().GetScopeStrategy(ctx), &cr)
+			if err != nil {
+				h.r.Logger().
+					WithRequest(r).
+					WithField("sid", sid).
+					WithError(err).
+					Error("Failed to query consent.")
+				h.r.Writer().WriteError(w, r, errorsx.WithStack(err))
+				return
+			} else if hcrs == nil {
+				h.r.Logger().
+					WithRequest(r).
+					WithField("sid", sid).
+					Info("Consent not found or expired.")
+				h.r.Writer().WriteError(w, r, errorsx.WithStack(ErrNoPreviousConsentFound))
+				return
+			}
+			h.r.Logger().
+				WithRequest(r).
+				WithField("sid", sid).
+				Info("Consent is valid for extending.")
+
+			err = h.r.ConsentManager().ExtendConsentRequest(r.Context(), h.r.Config().GetScopeStrategy(ctx), &cr, session.ConsentRememberFor)
+			if err != nil {
+				h.r.Logger().
+					WithRequest(r).
+					WithField("sid", sid).
+					WithError(err).
+					Error("Failed to extend consent.")
+				h.r.Writer().WriteError(w, r, errorsx.WithStack(err))
+				return
+			}
 		}
 	}
 

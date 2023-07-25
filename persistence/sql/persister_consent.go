@@ -400,6 +400,54 @@ func (p *Persister) VerifyAndInvalidateConsentRequest(ctx context.Context, verif
 	})
 }
 
+// Find HandledConsentRequest with same clauses that ExtendConsentRequest uses.
+func (p *Persister) FindSessionGrantedConsentRequest(ctx context.Context, scopeStrategy fosite.ScopeStrategy, cr *consent.OAuth2ConsentRequest) (*consent.AcceptOAuth2ConsentRequest, error) {
+	var consentRequest *consent.AcceptOAuth2ConsentRequest
+	return consentRequest, p.transaction(ctx, func(ctx context.Context, c *pop.Connection) error {
+		ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.FindSessionGrantedConsentRequest")
+		defer span.End()
+
+		sessionFlow := &flow.Flow{}
+		if err := c.
+			Where(
+				strings.TrimSpace(fmt.Sprintf(`
+(state = %d OR state = %d) AND
+subject = ? AND
+client_id = ? AND
+login_session_id = ? AND
+consent_skip=FALSE AND
+consent_error='{}' AND
+consent_remember=TRUE AND
+nid = ?`, flow.FlowStateConsentUsed, flow.FlowStateConsentUnused,
+				)),
+				cr.Subject, cr.ClientID, cr.LoginSessionID.String(), p.NetworkID(ctx)).
+			Order("requested_at DESC").
+			Limit(1).
+			First(sessionFlow); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return errorsx.WithStack(consent.ErrNoPreviousConsentFound)
+			}
+			return sqlcon.HandleError(err)
+		}
+
+		for _, scope := range cr.RequestedScope {
+			if !scopeStrategy(sessionFlow.GrantedScope, scope) {
+				return nil
+			}
+		}
+
+		// TODO: develop-govsso/GSSO-543 has following filter implemented, but oauth2/handler.go TokenHandler()
+		// 	only checks if ErrNoPreviousConsentFound exception is thrown. We must check if FindSessionGrantedConsentRequest()
+		//  returns any result in TokenHandler() or throw ErrNoPreviousConsentFound when expired or not use filtering here at all?
+		// rs, err = p.resolveHandledConsentRequests(ctx, []consent.HandledConsentRequest{sessionHcr}, false)
+		consentRequest = sessionFlow.GetHandledConsentRequest()
+		if consentRequest.RememberFor > 0 && consentRequest.RequestedAt.Add(time.Duration(consentRequest.RememberFor)*time.Second).Before(time.Now().UTC()) {
+			return errorsx.WithStack(consent.ErrNoPreviousConsentFound)
+		}
+		return nil
+	})
+}
+
 func (p *Persister) HandleLoginRequest(ctx context.Context, challenge string, r *consent.HandledLoginRequest) (lr *consent.LoginRequest, err error) {
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.HandleLoginRequest")
 	defer span.End()

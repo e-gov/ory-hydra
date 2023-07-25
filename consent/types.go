@@ -612,6 +612,13 @@ type AcceptOAuth2ConsentRequestSession struct {
 	// IDToken sets session data for the OpenID Connect ID token. Keep in mind that the session'id payloads are readable
 	// by anyone that has access to the ID Challenge. Use with care!
 	IDToken map[string]interface{} `json:"id_token"`
+
+	// Extends session remember for if true
+	RefreshRememberFor bool `json:"refresh_remember_for,omitempty"`
+	RememberFor        int  `json:"remember_for,omitempty"`
+	// Extends consent remember for if true
+	RefreshConsentRememberFor bool `json:"refresh_consent_remember_for,omitempty"`
+	ConsentRememberFor        int  `json:"consent_remember_for,omitempty"`
 }
 
 // NewConsentRequestSessionData creates a new AcceptOAuth2ConsentRequestSession.

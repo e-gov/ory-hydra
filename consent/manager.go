@@ -35,6 +35,7 @@ type Manager interface {
 	RevokeSubjectClientLoginSessionConsentSession(ctx context.Context, user, client, loginSessionId string) error
 
 	VerifyAndInvalidateConsentRequest(ctx context.Context, verifier string) (*AcceptOAuth2ConsentRequest, error)
+	FindSessionGrantedConsentRequest(ctx context.Context, scopeStrategy fosite.ScopeStrategy, cr *OAuth2ConsentRequest) (*AcceptOAuth2ConsentRequest, error)
 	FindGrantedAndRememberedConsentRequests(ctx context.Context, client, user string) ([]AcceptOAuth2ConsentRequest, error)
 	FindSubjectsGrantedConsentRequests(ctx context.Context, user string, limit, offset int) ([]AcceptOAuth2ConsentRequest, error)
 	FindSubjectsSessionGrantedConsentRequests(ctx context.Context, user, sid string, limit, offset int) ([]AcceptOAuth2ConsentRequest, error)

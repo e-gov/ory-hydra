@@ -25,6 +25,22 @@ type consentMock struct {
 	requestTime time.Time
 }
 
+func (c *consentMock) ExecuteBackChannelLogoutBySession(ctx context.Context, r *http.Request, subject, sid string) error {
+	panic("not implemented")
+}
+
+func (c *consentMock) ExecuteBackChannelLogoutBySubject(ctx context.Context, r *http.Request, subject string) error {
+	panic("not implemented")
+}
+
+func (c *consentMock) ExecuteBackChannelLogoutByClient(ctx context.Context, r *http.Request, subject, client string) error {
+	panic("not implemented")
+}
+
+func (c *consentMock) ExecuteBackChannelLogoutByClientSession(ctx context.Context, r *http.Request, subject, client, sid string) error {
+	panic("not implemented")
+}
+
 func (c *consentMock) HandleOAuth2AuthorizationRequest(ctx context.Context, w http.ResponseWriter, r *http.Request, req fosite.AuthorizeRequester) (*consent.AcceptOAuth2ConsentRequest, error) {
 	if c.deny {
 		return nil, fosite.ErrRequestForbidden

@@ -42,6 +42,20 @@ func (p *Persister) RevokeSubjectClientConsentSession(ctx context.Context, user,
 	return p.transaction(ctx, p.revokeConsentSession("consent_challenge_id IS NOT NULL AND subject = ? AND client_id = ?", user, client))
 }
 
+func (p *Persister) RevokeLoginSessionConsentSession(ctx context.Context, loginSessionId string) error {
+	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.RevokeLoginSessionConsentSession")
+	defer span.End()
+
+	return p.transaction(ctx, p.revokeConsentSession("consent_challenge_id IS NOT NULL AND login_session_id = ?", loginSessionId))
+}
+
+func (p *Persister) RevokeSubjectClientLoginSessionConsentSession(ctx context.Context, user, client, loginSessionId string) error {
+	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.RevokeSubjectClientLoginSessionConsentSession")
+	defer span.End()
+
+	return p.transaction(ctx, p.revokeConsentSession("consent_challenge_id IS NOT NULL AND subject = ? AND client_id = ? AND login_session_id = ?", user, client, loginSessionId))
+}
+
 func (p *Persister) revokeConsentSession(whereStmt string, whereArgs ...interface{}) func(context.Context, *pop.Connection) error {
 	return func(ctx context.Context, c *pop.Connection) error {
 		fs := make([]*flow.Flow, 0)
@@ -535,29 +549,34 @@ func (p *Persister) filterExpiredConsentRequests(ctx context.Context, requests [
 	return result, nil
 }
 
-func (p *Persister) ListUserAuthenticatedClientsWithFrontChannelLogout(ctx context.Context, subject, sid string) ([]client.Client, error) {
-	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.ListUserAuthenticatedClientsWithFrontChannelLogout")
+func (p *Persister) ListUserSessionAuthenticatedClientsWithFrontChannelLogout(ctx context.Context, subject, sid string) ([]client.LoginSessionClient, error) {
+	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.ListUserSessionAuthenticatedClientsWithFrontChannelLogout")
 	defer span.End()
 
-	return p.listUserAuthenticatedClients(ctx, subject, sid, "front")
+	return p.listUserSessionAuthenticatedClients(ctx, subject, sid, "front")
 }
 
-func (p *Persister) ListUserAuthenticatedClientsWithBackChannelLogout(ctx context.Context, subject, sid string) ([]client.Client, error) {
-	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.ListUserAuthenticatedClientsWithBackChannelLogout")
+func (p *Persister) ListUserSessionAuthenticatedClientsWithBackChannelLogout(ctx context.Context, subject, sid string) ([]client.LoginSessionClient, error) {
+	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.ListUserSessionAuthenticatedClientsWithBackChannelLogout")
 	defer span.End()
-	return p.listUserAuthenticatedClients(ctx, subject, sid, "back")
+	return p.listUserSessionAuthenticatedClients(ctx, subject, sid, "back")
 }
 
-func (p *Persister) listUserAuthenticatedClients(ctx context.Context, subject, sid, channel string) ([]client.Client, error) {
+func (p *Persister) ListUserAuthenticatedClientsWithBackChannelLogout(ctx context.Context, subject string) ([]client.LoginSessionClient, error) {
+	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.ListUserSessionAuthenticatedClientsWithBackChannelLogout")
+	defer span.End()
+	return p.listUserAuthenticatedClients(ctx, subject, "back")
+}
+
+func (p *Persister) listUserSessionAuthenticatedClients(ctx context.Context, subject, sid, channel string) ([]client.LoginSessionClient, error) {
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.listUserAuthenticatedClients")
 	defer span.End()
 
-	var cs []client.Client
-	return cs, p.transaction(ctx, func(ctx context.Context, c *pop.Connection) error {
-		if err := c.RawQuery(
-			/* #nosec G201 - channel can either be "front" or "back" */
-			fmt.Sprintf(`
-SELECT DISTINCT c.* FROM hydra_client as c
+	var cs []client.LoginSessionClient
+	if err := p.Connection(ctx).RawQuery(
+		/* #nosec G201 - channel can either be "front" or "back" */
+		fmt.Sprintf(`
+SELECT DISTINCT c.*, f.login_session_id FROM hydra_client as c
 JOIN hydra_oauth2_flow as f ON (c.id = f.client_id)
 WHERE
 	f.subject=? AND
@@ -566,19 +585,47 @@ WHERE
 	f.login_session_id = ? AND
 	f.nid = ? AND
 	c.nid = ?`,
-				channel,
-				channel,
-			),
-			subject,
-			sid,
-			p.NetworkID(ctx),
-			p.NetworkID(ctx),
-		).All(&cs); err != nil {
-			return sqlcon.HandleError(err)
-		}
+			channel,
+			channel,
+		),
+		subject,
+		sid,
+		p.NetworkID(ctx),
+		p.NetworkID(ctx),
+	).All(&cs); err != nil {
+		return nil, sqlcon.HandleError(err)
+	}
 
-		return nil
-	})
+	return cs, nil
+}
+
+func (p *Persister) listUserAuthenticatedClients(ctx context.Context, subject, channel string) ([]client.LoginSessionClient, error) {
+	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.listUserAuthenticatedClients")
+	defer span.End()
+
+	var cs []client.LoginSessionClient
+	if err := p.Connection(ctx).RawQuery(
+		/* #nosec G201 - channel can either be "front" or "back" */
+		fmt.Sprintf(`
+SELECT DISTINCT c.*, f.login_session_id FROM hydra_client as c
+JOIN hydra_oauth2_flow as f ON (c.id = f.client_id)
+WHERE
+	f.subject=? AND
+	c.%schannel_logout_uri!='' AND
+	c.%schannel_logout_uri IS NOT NULL AND
+	f.nid = ? AND
+	c.nid = ?`,
+			channel,
+			channel,
+		),
+		subject,
+		p.NetworkID(ctx),
+		p.NetworkID(ctx),
+	).All(&cs); err != nil {
+		return nil, sqlcon.HandleError(err)
+	}
+
+	return cs, nil
 }
 
 func (p *Persister) CreateLogoutRequest(ctx context.Context, request *consent.LogoutRequest) error {

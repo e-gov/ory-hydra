@@ -2840,11 +2840,13 @@ func (a *OAuth2ApiService) RejectOAuth2LogoutRequestExecute(r ApiRejectOAuth2Log
 }
 
 type ApiRevokeOAuth2ConsentSessionsRequest struct {
-	ctx        context.Context
-	ApiService *OAuth2ApiService
-	subject    *string
-	client     *string
-	all        *bool
+	ctx                      context.Context
+	ApiService               *OAuth2ApiService
+	subject                  *string
+	client                   *string
+	loginSessionId           *string
+	all                      *bool
+	triggerBackChannelLogout *bool
 }
 
 // OAuth 2.0 Consent Subject  The subject whose consent sessions should be deleted.
@@ -2859,9 +2861,21 @@ func (r ApiRevokeOAuth2ConsentSessionsRequest) Client(client string) ApiRevokeOA
 	return r
 }
 
+// If set, deletes only those consent sessions by the Subject that have been granted to the specified session id. Can be combined with client or all parameter.
+func (r ApiRevokeOAuth2ConsentSessionsRequest) LoginSessionId(loginSessionId string) ApiRevokeOAuth2ConsentSessionsRequest {
+	r.loginSessionId = &loginSessionId
+	return r
+}
+
 // Revoke All Consent Sessions  If set to &#x60;true&#x60; deletes all consent sessions by the Subject that have been granted.
 func (r ApiRevokeOAuth2ConsentSessionsRequest) All(all bool) ApiRevokeOAuth2ConsentSessionsRequest {
 	r.all = &all
+	return r
+}
+
+// If set to &#x60;?trigger_back_channel_logout&#x3D;true&#x60;, performs back channel logout for matching clients
+func (r ApiRevokeOAuth2ConsentSessionsRequest) TriggerBackChannelLogout(triggerBackChannelLogout bool) ApiRevokeOAuth2ConsentSessionsRequest {
+	r.triggerBackChannelLogout = &triggerBackChannelLogout
 	return r
 }
 
@@ -2911,8 +2925,14 @@ func (a *OAuth2ApiService) RevokeOAuth2ConsentSessionsExecute(r ApiRevokeOAuth2C
 	if r.client != nil {
 		localVarQueryParams.Add("client", parameterToString(*r.client, ""))
 	}
+	if r.loginSessionId != nil {
+		localVarQueryParams.Add("LoginSessionId", parameterToString(*r.loginSessionId, ""))
+	}
 	if r.all != nil {
 		localVarQueryParams.Add("all", parameterToString(*r.all, ""))
+	}
+	if r.triggerBackChannelLogout != nil {
+		localVarQueryParams.Add("trigger_back_channel_logout", parameterToString(*r.triggerBackChannelLogout, ""))
 	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}

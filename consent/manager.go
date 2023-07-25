@@ -5,6 +5,7 @@ package consent
 
 import (
 	"context"
+	"github.com/ory/fosite"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -27,6 +28,7 @@ type Manager interface {
 	CreateConsentRequest(ctx context.Context, req *OAuth2ConsentRequest) error
 	GetConsentRequest(ctx context.Context, challenge string) (*OAuth2ConsentRequest, error)
 	HandleConsentRequest(ctx context.Context, r *AcceptOAuth2ConsentRequest) (*OAuth2ConsentRequest, error)
+	ExtendConsentRequest(ctx context.Context, scopeStrategy fosite.ScopeStrategy, req *OAuth2ConsentRequest, extendBy int) error
 	RevokeSubjectConsentSession(ctx context.Context, user string) error
 	RevokeSubjectClientConsentSession(ctx context.Context, user, client string) error
 	RevokeLoginSessionConsentSession(ctx context.Context, loginSessionId string) error

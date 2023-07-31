@@ -324,10 +324,20 @@ func (m *RegistryBase) CookieStore(ctx context.Context) (sessions.Store, error) 
 }
 
 func (m *RegistryBase) HTTPClient(ctx context.Context, opts ...httpx.ResilientOptions) *retryablehttp.Client {
+	clientConfig, err := m.conf.TLSClientConfig()
+	if err != nil {
+		m.Logger().WithError(err).Error("Unable to configure client TLS.")
+		panic(err)
+	}
 	opts = append(opts,
 		httpx.ResilientClientWithLogger(m.Logger()),
 		httpx.ResilientClientWithMaxRetry(2),
-		httpx.ResilientClientWithConnectionTimeout(30*time.Second))
+		httpx.ResilientClientWithConnectionTimeout(30*time.Second),
+		httpx.ResilientClientWithClient(&http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: clientConfig,
+			},
+		}))
 
 	tracer := m.Tracer(ctx)
 	if tracer.IsLoaded() {

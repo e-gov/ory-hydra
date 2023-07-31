@@ -337,6 +337,9 @@ func (m *RegistryBase) HTTPClient(ctx context.Context, opts ...httpx.ResilientOp
 			Transport: &http.Transport{
 				TLSClientConfig: clientConfig,
 			},
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return errors.New("unexpected redirect") // Using http.ErrUseLastResponse would result no retry
+			},
 		}))
 
 	tracer := m.Tracer(ctx)

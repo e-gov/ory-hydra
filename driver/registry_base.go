@@ -5,7 +5,6 @@ package driver
 
 import (
 	"context"
-	"crypto/sha256"
 	"fmt"
 	"net/http"
 	"time"
@@ -297,8 +296,7 @@ func (m *RegistryBase) CookieStore(ctx context.Context) (sessions.Store, error) 
 	}
 
 	for _, k := range secrets {
-		encrypt := sha256.Sum256(k)
-		keys = append(keys, k, encrypt[:])
+		keys = append(keys, k)
 	}
 
 	cs := sessions.NewCookieStore(keys...)

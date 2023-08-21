@@ -38,6 +38,7 @@ const (
 	HSMSlotNumber                                = "hsm.slot"
 	HSMKeySetPrefix                              = "hsm.key_set_prefix"
 	HSMTokenLabel                                = "hsm.token_label" // #nosec G101
+	HSMMaxSessions                               = "hsm.max_sessions"
 	KeyWellKnownKeys                             = "webfinger.jwks.broadcast_keys"
 	KeyOAuth2ClientRegistrationURL               = "webfinger.oidc_discovery.client_registration_url"
 	KeyOAuth2TokenURL                            = "webfinger.oidc_discovery.token_url" // #nosec G101
@@ -502,6 +503,11 @@ func (p *DefaultProvider) HSMPin() string {
 
 func (p *DefaultProvider) HSMTokenLabel() string {
 	return p.getProvider(contextx.RootContext).String(HSMTokenLabel)
+}
+
+func (p *DefaultProvider) HSMMaxSessions() *int {
+	n := p.getProvider(contextx.RootContext).Int(HSMMaxSessions)
+	return &n
 }
 
 func (p *DefaultProvider) GetGrantTypeJWTBearerIDOptional(ctx context.Context) bool {

@@ -53,6 +53,8 @@ type (
 		DeleteKey(ctx context.Context, set, kid string) error
 
 		DeleteKeySet(ctx context.Context, set string) error
+
+		Close(ctx context.Context) error
 	}
 
 	SQLData struct {

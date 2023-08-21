@@ -178,3 +178,17 @@ func (mr *MockManagerMockRecorder) UpdateKeySet(ctx, set, keys interface{}) *gom
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateKeySet", reflect.TypeOf((*MockManager)(nil).UpdateKeySet), ctx, set, keys)
 }
+
+// Close mocks base method.
+func (m *MockManager) Close(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Close", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Close indicates an expected call of Close.
+func (mr *MockManagerMockRecorder) Close(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockManager)(nil).Close), ctx)
+}

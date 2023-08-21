@@ -244,6 +244,14 @@ func (m *KeyManager) UpdateKeySet(_ context.Context, _ string, _ *jose.JSONWebKe
 	return errors.WithStack(ErrPreGeneratedKeys)
 }
 
+func (m *KeyManager) Close(_ context.Context) error {
+	err := m.Context.Close()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func getKeySetAttributes(m *KeyManager, key crypto11.Signer, kid []byte) (string, string, string, error) {
 	if kid == nil {
 		ckaId, err := m.GetAttribute(key, crypto11.CkaId)

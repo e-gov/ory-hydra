@@ -31,6 +31,7 @@ const (
 	HsmSlotNumber                                = "hsm.slot"
 	HsmKeySetPrefix                              = "hsm.key_set_prefix"
 	HsmTokenLabel                                = "hsm.token_label" // #nosec G101
+	HsmMaxSessions                               = "hsm.max_sessions"
 	KeyWellKnownKeys                             = "webfinger.jwks.broadcast_keys"
 	KeyOAuth2ClientRegistrationURL               = "webfinger.oidc_discovery.client_registration_url"
 	KeyOAuth2TokenURL                            = "webfinger.oidc_discovery.token_url" // #nosec G101
@@ -472,6 +473,10 @@ func (p *Provider) HsmTokenLabel() string {
 
 func (p *Provider) HsmKeySetPrefix() string {
 	return p.p.String(HsmKeySetPrefix)
+}
+
+func (p *Provider) HsmMaxSessions() int {
+	return p.p.Int(HsmMaxSessions)
 }
 
 func (p *Provider) GrantTypeJWTBearerIDOptional() bool {

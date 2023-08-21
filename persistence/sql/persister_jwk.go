@@ -188,3 +188,8 @@ func (p *Persister) DeleteKey(ctx context.Context, set, kid string) error {
 func (p *Persister) DeleteKeySet(ctx context.Context, set string) error {
 	return sqlcon.HandleError(p.Connection(ctx).RawQuery("DELETE FROM hydra_jwk WHERE sid=?", set).Exec())
 }
+
+func (p *Persister) Close(_ context.Context) error {
+	// Only implemented for hardware key manager
+	return nil
+}

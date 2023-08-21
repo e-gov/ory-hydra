@@ -95,3 +95,11 @@ func (m ManagerStrategy) DeleteKeySet(ctx context.Context, set string) error {
 		return nil
 	}
 }
+
+func (m ManagerStrategy) Close(ctx context.Context) error {
+	err := m.hardwareKeyManager.Close(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}

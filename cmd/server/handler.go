@@ -326,6 +326,16 @@ func serve(
 		ReadHeaderTimeout: time.Second * 5,
 	})
 
+	if d.Config().HSMEnabled() {
+		srv.RegisterOnShutdown(func() {
+			d.Logger().Info("Gracefully closing HSM sessions...")
+			err := d.KeyManager().Close(cmd.Context())
+			if err != nil {
+				d.Logger().WithError(err).Error("Unable to gracefully close HSM sessions!")
+			}
+		})
+	}
+
 	if err := graceful.Graceful(func() error {
 		d.Logger().Infof("Setting up http server on %s", address)
 		listener, err := networkx.MakeListener(address, permission)

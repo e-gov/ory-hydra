@@ -16,7 +16,7 @@ RUN go build -tags sqlite,json1,hsm -o /usr/bin/hydra
 
 FROM builder as test-hsm
 ENV HSM_ENABLED=true
-ENV HSM_LIBRARY=/usr/lib/softhsm/libsofthsm2.so
+ENV HSM_LIBRARY=/usr/lib/softhsm/pkcs11-logger-x64.so
 ENV HSM_TOKEN_LABEL=hydra
 ENV HSM_PIN=1234
 
@@ -35,6 +35,9 @@ RUN addgroup -S ory; \
     chown -R ory:ory /var/lib/softhsm/tokens
 
 COPY --from=build-hydra /usr/bin/hydra /usr/bin/hydra
+
+ENV PKCS11SPY=/usr/lib/softhsm/libsofthsm2.so
+ENV PKCS11SPY_OUTPUT=/usr/lib/softhsm/pkcs11-spy.log
 
 # By creating the sqlite folder as the ory user, the mounted volume will be owned by ory:ory, which
 # is required for read/write of SQLite.

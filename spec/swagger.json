@@ -1445,8 +1445,7 @@
             "type": "string",
             "description": "The login session id to list the consent sessions for.",
             "name": "login_session_id",
-            "in": "query",
-            "required": true
+            "in": "query"
           },
           {
             "type": "integer",

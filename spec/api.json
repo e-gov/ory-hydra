@@ -1458,6 +1458,12 @@
       "wellKnown": {
         "description": "It includes links to several endpoints (e.g. /oauth2/token) and exposes information on supported signature algorithms\namong others.",
         "properties": {
+          "acr_values_supported": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "authorization_endpoint": {
             "description": "URL of the OP's OAuth 2.0 Authorization Endpoint.",
             "example": "https://playground.ory.sh/ory-hydra/public/oauth2/auth",
@@ -1470,6 +1476,12 @@
           "backchannel_logout_supported": {
             "description": "Boolean value specifying whether the OP supports back-channel logout, with true indicating support.",
             "type": "boolean"
+          },
+          "claim_types_supported": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
           },
           "claims_parameter_supported": {
             "description": "Boolean value specifying whether the OP supports use of the claims parameter, with true indicating support.",
@@ -1574,6 +1586,9 @@
             },
             "type": "array"
           },
+          "service_documentation": {
+            "type": "string"
+          },
           "subject_types_supported": {
             "description": "JSON array containing a list of the Subject Identifier types that this OP supports. Valid types include\npairwise and public.",
             "items": {
@@ -1588,6 +1603,12 @@
           },
           "token_endpoint_auth_methods_supported": {
             "description": "JSON array containing a list of Client Authentication methods supported by this Token Endpoint. The options are\nclient_secret_post, client_secret_basic, client_secret_jwt, and private_key_jwt, as described in Section 9 of OpenID Connect Core 1.0",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "ui_locales_supported": {
             "items": {
               "type": "string"
             },

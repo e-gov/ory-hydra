@@ -4,9 +4,11 @@
 
 | Name                                       | Type                    | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Notes      |
 | ------------------------------------------ | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| **AcrValuesSupported**                     | Pointer to **[]string** |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [optional] |
 | **AuthorizationEndpoint**                  | **string**              | URL of the OP&#39;s OAuth 2.0 Authorization Endpoint.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | **BackchannelLogoutSessionSupported**      | Pointer to **bool**     | Boolean value specifying whether the OP can pass a sid (session ID) Claim in the Logout Token to identify the RP session with the OP. If supported, the sid Claim is also included in ID Tokens issued by the OP                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [optional] |
 | **BackchannelLogoutSupported**             | Pointer to **bool**     | Boolean value specifying whether the OP supports back-channel logout, with true indicating support.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | [optional] |
+| **ClaimTypesSupported**                    | Pointer to **[]string** |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [optional] |
 | **ClaimsParameterSupported**               | Pointer to **bool**     | Boolean value specifying whether the OP supports use of the claims parameter, with true indicating support.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | [optional] |
 | **ClaimsSupported**                        | Pointer to **[]string** | JSON array containing a list of the Claim Names of the Claims that the OpenID Provider MAY be able to supply values for. Note that for privacy or other reasons, this might not be an exhaustive list.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | [optional] |
 | **CodeChallengeMethodsSupported**          | Pointer to **[]string** | JSON array containing a list of Proof Key for Code Exchange (PKCE) [RFC7636] code challenge methods supported by this authorization server.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | [optional] |
@@ -26,9 +28,11 @@
 | **ResponseTypesSupported**                 | **[]string**            | JSON array containing a list of the OAuth 2.0 response_type values that this OP supports. Dynamic OpenID Providers MUST support the code, id_token, and the token id_token Response Type values.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | **RevocationEndpoint**                     | Pointer to **string**   | URL of the authorization server&#39;s OAuth 2.0 revocation endpoint.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | [optional] |
 | **ScopesSupported**                        | Pointer to **[]string** | SON array containing a list of the OAuth 2.0 [RFC6749] scope values that this server supports. The server MUST support the openid scope value. Servers MAY choose not to advertise some supported scope values even when this parameter is used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [optional] |
+| **ServiceDocumentation**                   | Pointer to **string**   |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [optional] |
 | **SubjectTypesSupported**                  | **[]string**            | JSON array containing a list of the Subject Identifier types that this OP supports. Valid types include pairwise and public.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | **TokenEndpoint**                          | **string**              | URL of the OP&#39;s OAuth 2.0 Token Endpoint                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | **TokenEndpointAuthMethodsSupported**      | Pointer to **[]string** | JSON array containing a list of Client Authentication methods supported by this Token Endpoint. The options are client_secret_post, client_secret_basic, client_secret_jwt, and private_key_jwt, as described in Section 9 of OpenID Connect Core 1.0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | [optional] |
+| **UiLocalesSupported**                     | Pointer to **[]string** |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | [optional] |
 | **UserinfoEndpoint**                       | Pointer to **string**   | URL of the OP&#39;s UserInfo Endpoint.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | [optional] |
 | **UserinfoSigningAlgValuesSupported**      | Pointer to **[]string** | JSON array containing a list of the JWS [JWS] signing algorithms (alg values) [JWA] supported by the UserInfo Endpoint to encode the Claims in a JWT [JWT].                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | [optional] |
 
@@ -50,6 +54,33 @@ required properties is changed
 NewWellKnownWithDefaults instantiates a new WellKnown object This constructor
 will only assign default values to properties that have it defined, but it
 doesn't guarantee that properties required by API are set
+
+### GetAcrValuesSupported
+
+`func (o *WellKnown) GetAcrValuesSupported() []string`
+
+GetAcrValuesSupported returns the AcrValuesSupported field if non-nil, zero
+value otherwise.
+
+### GetAcrValuesSupportedOk
+
+`func (o *WellKnown) GetAcrValuesSupportedOk() (*[]string, bool)`
+
+GetAcrValuesSupportedOk returns a tuple with the AcrValuesSupported field if
+it's non-nil, zero value otherwise and a boolean to check if the value has been
+set.
+
+### SetAcrValuesSupported
+
+`func (o *WellKnown) SetAcrValuesSupported(v []string)`
+
+SetAcrValuesSupported sets AcrValuesSupported field to given value.
+
+### HasAcrValuesSupported
+
+`func (o *WellKnown) HasAcrValuesSupported() bool`
+
+HasAcrValuesSupported returns a boolean if a field has been set.
 
 ### GetAuthorizationEndpoint
 
@@ -127,6 +158,33 @@ value.
 `func (o *WellKnown) HasBackchannelLogoutSupported() bool`
 
 HasBackchannelLogoutSupported returns a boolean if a field has been set.
+
+### GetClaimTypesSupported
+
+`func (o *WellKnown) GetClaimTypesSupported() []string`
+
+GetClaimTypesSupported returns the ClaimTypesSupported field if non-nil, zero
+value otherwise.
+
+### GetClaimTypesSupportedOk
+
+`func (o *WellKnown) GetClaimTypesSupportedOk() (*[]string, bool)`
+
+GetClaimTypesSupportedOk returns a tuple with the ClaimTypesSupported field if
+it's non-nil, zero value otherwise and a boolean to check if the value has been
+set.
+
+### SetClaimTypesSupported
+
+`func (o *WellKnown) SetClaimTypesSupported(v []string)`
+
+SetClaimTypesSupported sets ClaimTypesSupported field to given value.
+
+### HasClaimTypesSupported
+
+`func (o *WellKnown) HasClaimTypesSupported() bool`
+
+HasClaimTypesSupported returns a boolean if a field has been set.
 
 ### GetClaimsParameterSupported
 
@@ -620,6 +678,33 @@ SetScopesSupported sets ScopesSupported field to given value.
 
 HasScopesSupported returns a boolean if a field has been set.
 
+### GetServiceDocumentation
+
+`func (o *WellKnown) GetServiceDocumentation() string`
+
+GetServiceDocumentation returns the ServiceDocumentation field if non-nil, zero
+value otherwise.
+
+### GetServiceDocumentationOk
+
+`func (o *WellKnown) GetServiceDocumentationOk() (*string, bool)`
+
+GetServiceDocumentationOk returns a tuple with the ServiceDocumentation field if
+it's non-nil, zero value otherwise and a boolean to check if the value has been
+set.
+
+### SetServiceDocumentation
+
+`func (o *WellKnown) SetServiceDocumentation(v string)`
+
+SetServiceDocumentation sets ServiceDocumentation field to given value.
+
+### HasServiceDocumentation
+
+`func (o *WellKnown) HasServiceDocumentation() bool`
+
+HasServiceDocumentation returns a boolean if a field has been set.
+
 ### GetSubjectTypesSupported
 
 `func (o *WellKnown) GetSubjectTypesSupported() []string`
@@ -688,6 +773,33 @@ field to given value.
 `func (o *WellKnown) HasTokenEndpointAuthMethodsSupported() bool`
 
 HasTokenEndpointAuthMethodsSupported returns a boolean if a field has been set.
+
+### GetUiLocalesSupported
+
+`func (o *WellKnown) GetUiLocalesSupported() []string`
+
+GetUiLocalesSupported returns the UiLocalesSupported field if non-nil, zero
+value otherwise.
+
+### GetUiLocalesSupportedOk
+
+`func (o *WellKnown) GetUiLocalesSupportedOk() (*[]string, bool)`
+
+GetUiLocalesSupportedOk returns a tuple with the UiLocalesSupported field if
+it's non-nil, zero value otherwise and a boolean to check if the value has been
+set.
+
+### SetUiLocalesSupported
+
+`func (o *WellKnown) SetUiLocalesSupported(v []string)`
+
+SetUiLocalesSupported sets UiLocalesSupported field to given value.
+
+### HasUiLocalesSupported
+
+`func (o *WellKnown) HasUiLocalesSupported() bool`
+
+HasUiLocalesSupported returns a boolean if a field has been set.
 
 ### GetUserinfoEndpoint
 

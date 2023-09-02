@@ -22,6 +22,9 @@ import (
 // swagger:model wellKnown
 type WellKnown struct {
 
+	// acr values supported
+	AcrValuesSupported []string `json:"acr_values_supported"`
+
 	// URL of the OP's OAuth 2.0 Authorization Endpoint.
 	// Example: https://playground.ory.sh/ory-hydra/public/oauth2/auth
 	// Required: true
@@ -33,6 +36,9 @@ type WellKnown struct {
 
 	// Boolean value specifying whether the OP supports back-channel logout, with true indicating support.
 	BackchannelLogoutSupported bool `json:"backchannel_logout_supported,omitempty"`
+
+	// claim types supported
+	ClaimTypesSupported []string `json:"claim_types_supported"`
 
 	// Boolean value specifying whether the OP supports use of the claims parameter, with true indicating support.
 	ClaimsParameterSupported bool `json:"claims_parameter_supported,omitempty"`
@@ -117,6 +123,9 @@ type WellKnown struct {
 	// support the openid scope value. Servers MAY choose not to advertise some supported scope values even when this parameter is used
 	ScopesSupported []string `json:"scopes_supported"`
 
+	// service documentation
+	ServiceDocumentation string `json:"service_documentation,omitempty"`
+
 	// JSON array containing a list of the Subject Identifier types that this OP supports. Valid types include
 	// pairwise and public.
 	// Required: true
@@ -130,6 +139,9 @@ type WellKnown struct {
 	// JSON array containing a list of Client Authentication methods supported by this Token Endpoint. The options are
 	// client_secret_post, client_secret_basic, client_secret_jwt, and private_key_jwt, as described in Section 9 of OpenID Connect Core 1.0
 	TokenEndpointAuthMethodsSupported []string `json:"token_endpoint_auth_methods_supported"`
+
+	// ui locales supported
+	UILocalesSupported []string `json:"ui_locales_supported"`
 
 	// URL of the OP's UserInfo Endpoint.
 	UserinfoEndpoint string `json:"userinfo_endpoint,omitempty"`

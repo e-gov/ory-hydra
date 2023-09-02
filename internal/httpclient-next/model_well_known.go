@@ -17,12 +17,14 @@ import (
 
 // WellKnown It includes links to several endpoints (e.g. /oauth2/token) and exposes information on supported signature algorithms among others.
 type WellKnown struct {
+	AcrValuesSupported []string `json:"acr_values_supported,omitempty"`
 	// URL of the OP's OAuth 2.0 Authorization Endpoint.
 	AuthorizationEndpoint string `json:"authorization_endpoint"`
 	// Boolean value specifying whether the OP can pass a sid (session ID) Claim in the Logout Token to identify the RP session with the OP. If supported, the sid Claim is also included in ID Tokens issued by the OP
 	BackchannelLogoutSessionSupported *bool `json:"backchannel_logout_session_supported,omitempty"`
 	// Boolean value specifying whether the OP supports back-channel logout, with true indicating support.
-	BackchannelLogoutSupported *bool `json:"backchannel_logout_supported,omitempty"`
+	BackchannelLogoutSupported *bool    `json:"backchannel_logout_supported,omitempty"`
+	ClaimTypesSupported        []string `json:"claim_types_supported,omitempty"`
 	// Boolean value specifying whether the OP supports use of the claims parameter, with true indicating support.
 	ClaimsParameterSupported *bool `json:"claims_parameter_supported,omitempty"`
 	// JSON array containing a list of the Claim Names of the Claims that the OpenID Provider MAY be able to supply values for. Note that for privacy or other reasons, this might not be an exhaustive list.
@@ -60,13 +62,15 @@ type WellKnown struct {
 	// URL of the authorization server's OAuth 2.0 revocation endpoint.
 	RevocationEndpoint *string `json:"revocation_endpoint,omitempty"`
 	// SON array containing a list of the OAuth 2.0 [RFC6749] scope values that this server supports. The server MUST support the openid scope value. Servers MAY choose not to advertise some supported scope values even when this parameter is used
-	ScopesSupported []string `json:"scopes_supported,omitempty"`
+	ScopesSupported      []string `json:"scopes_supported,omitempty"`
+	ServiceDocumentation *string  `json:"service_documentation,omitempty"`
 	// JSON array containing a list of the Subject Identifier types that this OP supports. Valid types include pairwise and public.
 	SubjectTypesSupported []string `json:"subject_types_supported"`
 	// URL of the OP's OAuth 2.0 Token Endpoint
 	TokenEndpoint string `json:"token_endpoint"`
 	// JSON array containing a list of Client Authentication methods supported by this Token Endpoint. The options are client_secret_post, client_secret_basic, client_secret_jwt, and private_key_jwt, as described in Section 9 of OpenID Connect Core 1.0
 	TokenEndpointAuthMethodsSupported []string `json:"token_endpoint_auth_methods_supported,omitempty"`
+	UiLocalesSupported                []string `json:"ui_locales_supported,omitempty"`
 	// URL of the OP's UserInfo Endpoint.
 	UserinfoEndpoint *string `json:"userinfo_endpoint,omitempty"`
 	// JSON array containing a list of the JWS [JWS] signing algorithms (alg values) [JWA] supported by the UserInfo Endpoint to encode the Claims in a JWT [JWT].
@@ -95,6 +99,38 @@ func NewWellKnown(authorizationEndpoint string, idTokenSigningAlgValuesSupported
 func NewWellKnownWithDefaults() *WellKnown {
 	this := WellKnown{}
 	return &this
+}
+
+// GetAcrValuesSupported returns the AcrValuesSupported field value if set, zero value otherwise.
+func (o *WellKnown) GetAcrValuesSupported() []string {
+	if o == nil || o.AcrValuesSupported == nil {
+		var ret []string
+		return ret
+	}
+	return o.AcrValuesSupported
+}
+
+// GetAcrValuesSupportedOk returns a tuple with the AcrValuesSupported field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *WellKnown) GetAcrValuesSupportedOk() ([]string, bool) {
+	if o == nil || o.AcrValuesSupported == nil {
+		return nil, false
+	}
+	return o.AcrValuesSupported, true
+}
+
+// HasAcrValuesSupported returns a boolean if a field has been set.
+func (o *WellKnown) HasAcrValuesSupported() bool {
+	if o != nil && o.AcrValuesSupported != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetAcrValuesSupported gets a reference to the given []string and assigns it to the AcrValuesSupported field.
+func (o *WellKnown) SetAcrValuesSupported(v []string) {
+	o.AcrValuesSupported = v
 }
 
 // GetAuthorizationEndpoint returns the AuthorizationEndpoint field value
@@ -183,6 +219,38 @@ func (o *WellKnown) HasBackchannelLogoutSupported() bool {
 // SetBackchannelLogoutSupported gets a reference to the given bool and assigns it to the BackchannelLogoutSupported field.
 func (o *WellKnown) SetBackchannelLogoutSupported(v bool) {
 	o.BackchannelLogoutSupported = &v
+}
+
+// GetClaimTypesSupported returns the ClaimTypesSupported field value if set, zero value otherwise.
+func (o *WellKnown) GetClaimTypesSupported() []string {
+	if o == nil || o.ClaimTypesSupported == nil {
+		var ret []string
+		return ret
+	}
+	return o.ClaimTypesSupported
+}
+
+// GetClaimTypesSupportedOk returns a tuple with the ClaimTypesSupported field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *WellKnown) GetClaimTypesSupportedOk() ([]string, bool) {
+	if o == nil || o.ClaimTypesSupported == nil {
+		return nil, false
+	}
+	return o.ClaimTypesSupported, true
+}
+
+// HasClaimTypesSupported returns a boolean if a field has been set.
+func (o *WellKnown) HasClaimTypesSupported() bool {
+	if o != nil && o.ClaimTypesSupported != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetClaimTypesSupported gets a reference to the given []string and assigns it to the ClaimTypesSupported field.
+func (o *WellKnown) SetClaimTypesSupported(v []string) {
+	o.ClaimTypesSupported = v
 }
 
 // GetClaimsParameterSupported returns the ClaimsParameterSupported field value if set, zero value otherwise.
@@ -761,6 +829,38 @@ func (o *WellKnown) SetScopesSupported(v []string) {
 	o.ScopesSupported = v
 }
 
+// GetServiceDocumentation returns the ServiceDocumentation field value if set, zero value otherwise.
+func (o *WellKnown) GetServiceDocumentation() string {
+	if o == nil || o.ServiceDocumentation == nil {
+		var ret string
+		return ret
+	}
+	return *o.ServiceDocumentation
+}
+
+// GetServiceDocumentationOk returns a tuple with the ServiceDocumentation field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *WellKnown) GetServiceDocumentationOk() (*string, bool) {
+	if o == nil || o.ServiceDocumentation == nil {
+		return nil, false
+	}
+	return o.ServiceDocumentation, true
+}
+
+// HasServiceDocumentation returns a boolean if a field has been set.
+func (o *WellKnown) HasServiceDocumentation() bool {
+	if o != nil && o.ServiceDocumentation != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetServiceDocumentation gets a reference to the given string and assigns it to the ServiceDocumentation field.
+func (o *WellKnown) SetServiceDocumentation(v string) {
+	o.ServiceDocumentation = &v
+}
+
 // GetSubjectTypesSupported returns the SubjectTypesSupported field value
 func (o *WellKnown) GetSubjectTypesSupported() []string {
 	if o == nil {
@@ -841,6 +941,38 @@ func (o *WellKnown) SetTokenEndpointAuthMethodsSupported(v []string) {
 	o.TokenEndpointAuthMethodsSupported = v
 }
 
+// GetUiLocalesSupported returns the UiLocalesSupported field value if set, zero value otherwise.
+func (o *WellKnown) GetUiLocalesSupported() []string {
+	if o == nil || o.UiLocalesSupported == nil {
+		var ret []string
+		return ret
+	}
+	return o.UiLocalesSupported
+}
+
+// GetUiLocalesSupportedOk returns a tuple with the UiLocalesSupported field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *WellKnown) GetUiLocalesSupportedOk() ([]string, bool) {
+	if o == nil || o.UiLocalesSupported == nil {
+		return nil, false
+	}
+	return o.UiLocalesSupported, true
+}
+
+// HasUiLocalesSupported returns a boolean if a field has been set.
+func (o *WellKnown) HasUiLocalesSupported() bool {
+	if o != nil && o.UiLocalesSupported != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetUiLocalesSupported gets a reference to the given []string and assigns it to the UiLocalesSupported field.
+func (o *WellKnown) SetUiLocalesSupported(v []string) {
+	o.UiLocalesSupported = v
+}
+
 // GetUserinfoEndpoint returns the UserinfoEndpoint field value if set, zero value otherwise.
 func (o *WellKnown) GetUserinfoEndpoint() string {
 	if o == nil || o.UserinfoEndpoint == nil {
@@ -907,6 +1039,9 @@ func (o *WellKnown) SetUserinfoSigningAlgValuesSupported(v []string) {
 
 func (o WellKnown) MarshalJSON() ([]byte, error) {
 	toSerialize := map[string]interface{}{}
+	if o.AcrValuesSupported != nil {
+		toSerialize["acr_values_supported"] = o.AcrValuesSupported
+	}
 	if true {
 		toSerialize["authorization_endpoint"] = o.AuthorizationEndpoint
 	}
@@ -915,6 +1050,9 @@ func (o WellKnown) MarshalJSON() ([]byte, error) {
 	}
 	if o.BackchannelLogoutSupported != nil {
 		toSerialize["backchannel_logout_supported"] = o.BackchannelLogoutSupported
+	}
+	if o.ClaimTypesSupported != nil {
+		toSerialize["claim_types_supported"] = o.ClaimTypesSupported
 	}
 	if o.ClaimsParameterSupported != nil {
 		toSerialize["claims_parameter_supported"] = o.ClaimsParameterSupported
@@ -973,6 +1111,9 @@ func (o WellKnown) MarshalJSON() ([]byte, error) {
 	if o.ScopesSupported != nil {
 		toSerialize["scopes_supported"] = o.ScopesSupported
 	}
+	if o.ServiceDocumentation != nil {
+		toSerialize["service_documentation"] = o.ServiceDocumentation
+	}
 	if true {
 		toSerialize["subject_types_supported"] = o.SubjectTypesSupported
 	}
@@ -981,6 +1122,9 @@ func (o WellKnown) MarshalJSON() ([]byte, error) {
 	}
 	if o.TokenEndpointAuthMethodsSupported != nil {
 		toSerialize["token_endpoint_auth_methods_supported"] = o.TokenEndpointAuthMethodsSupported
+	}
+	if o.UiLocalesSupported != nil {
+		toSerialize["ui_locales_supported"] = o.UiLocalesSupported
 	}
 	if o.UserinfoEndpoint != nil {
 		toSerialize["userinfo_endpoint"] = o.UserinfoEndpoint

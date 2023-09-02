@@ -3822,6 +3822,12 @@
         "id_token_signing_alg_values_supported"
       ],
       "properties": {
+        "acr_values_supported": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "authorization_endpoint": {
           "description": "URL of the OP's OAuth 2.0 Authorization Endpoint.",
           "type": "string",
@@ -3834,6 +3840,12 @@
         "backchannel_logout_supported": {
           "description": "Boolean value specifying whether the OP supports back-channel logout, with true indicating support.",
           "type": "boolean"
+        },
+        "claim_types_supported": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "claims_parameter_supported": {
           "description": "Boolean value specifying whether the OP supports use of the claims parameter, with true indicating support.",
@@ -3938,6 +3950,9 @@
             "type": "string"
           }
         },
+        "service_documentation": {
+          "type": "string"
+        },
         "subject_types_supported": {
           "description": "JSON array containing a list of the Subject Identifier types that this OP supports. Valid types include\npairwise and public.",
           "type": "array",
@@ -3952,6 +3967,12 @@
         },
         "token_endpoint_auth_methods_supported": {
           "description": "JSON array containing a list of Client Authentication methods supported by this Token Endpoint. The options are\nclient_secret_post, client_secret_basic, client_secret_jwt, and private_key_jwt, as described in Section 9 of OpenID Connect Core 1.0",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ui_locales_supported": {
           "type": "array",
           "items": {
             "type": "string"
@@ -4013,4 +4034,3 @@
   "x-forwarded-proto": "string",
   "x-request-id": "string"
 }
-

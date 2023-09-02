@@ -2512,6 +2512,10 @@ components:
         session:
           access_token: ""
           id_token: ""
+          refresh_consent_remember_for: true
+          refresh_remember_for: true
+          consent_remember_for: 6
+          remember_for: 1
         grant_access_token_audience:
           - grant_access_token_audience
           - grant_access_token_audience
@@ -2980,6 +2984,10 @@ components:
       example:
         access_token: ""
         id_token: ""
+        refresh_consent_remember_for: true
+        refresh_remember_for: true
+        consent_remember_for: 6
+        remember_for: 1
       properties:
         access_token:
           description: |-
@@ -2987,10 +2995,22 @@ components:
             refresh grant. Keep in mind that this data will be available to anyone performing OAuth 2.0 Challenge Introspection.
             If only your services can perform OAuth 2.0 Challenge Introspection, this is usually fine. But if third parties
             can access that endpoint as well, sensitive data from the session might be exposed to them. Use with care!
+        consent_remember_for:
+          format: int64
+          type: integer
         id_token:
           description: |-
             IDToken sets session data for the OpenID Connect ID token. Keep in mind that the session'id payloads are readable
             by anyone that has access to the ID Challenge. Use with care!
+        refresh_consent_remember_for:
+          description: Extends consent remember for if true
+          type: boolean
+        refresh_remember_for:
+          description: Extends session remember for if true
+          type: boolean
+        remember_for:
+          format: int64
+          type: integer
       title: Used to pass session data to a consent request.
       type: object
     flushInactiveOAuth2TokensRequest:

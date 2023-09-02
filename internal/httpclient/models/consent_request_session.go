@@ -23,9 +23,21 @@ type ConsentRequestSession struct {
 	// can access that endpoint as well, sensitive data from the session might be exposed to them. Use with care!
 	AccessToken interface{} `json:"access_token,omitempty"`
 
+	// consent remember for
+	ConsentRememberFor int64 `json:"consent_remember_for,omitempty"`
+
 	// IDToken sets session data for the OpenID Connect ID token. Keep in mind that the session'id payloads are readable
 	// by anyone that has access to the ID Challenge. Use with care!
 	IDToken interface{} `json:"id_token,omitempty"`
+
+	// Extends consent remember for if true
+	RefreshConsentRememberFor bool `json:"refresh_consent_remember_for,omitempty"`
+
+	// Extends session remember for if true
+	RefreshRememberFor bool `json:"refresh_remember_for,omitempty"`
+
+	// remember for
+	RememberFor int64 `json:"remember_for,omitempty"`
 }
 
 // Validate validates this consent request session

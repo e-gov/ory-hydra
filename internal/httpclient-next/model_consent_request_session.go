@@ -18,9 +18,15 @@ import (
 // ConsentRequestSession struct for ConsentRequestSession
 type ConsentRequestSession struct {
 	// AccessToken sets session data for the access and refresh token, as well as any future tokens issued by the refresh grant. Keep in mind that this data will be available to anyone performing OAuth 2.0 Challenge Introspection. If only your services can perform OAuth 2.0 Challenge Introspection, this is usually fine. But if third parties can access that endpoint as well, sensitive data from the session might be exposed to them. Use with care!
-	AccessToken interface{} `json:"access_token,omitempty"`
+	AccessToken        interface{} `json:"access_token,omitempty"`
+	ConsentRememberFor *int64      `json:"consent_remember_for,omitempty"`
 	// IDToken sets session data for the OpenID Connect ID token. Keep in mind that the session'id payloads are readable by anyone that has access to the ID Challenge. Use with care!
 	IdToken interface{} `json:"id_token,omitempty"`
+	// Extends consent remember for if true
+	RefreshConsentRememberFor *bool `json:"refresh_consent_remember_for,omitempty"`
+	// Extends session remember for if true
+	RefreshRememberFor *bool  `json:"refresh_remember_for,omitempty"`
+	RememberFor        *int64 `json:"remember_for,omitempty"`
 }
 
 // NewConsentRequestSession instantiates a new ConsentRequestSession object
@@ -73,6 +79,38 @@ func (o *ConsentRequestSession) SetAccessToken(v interface{}) {
 	o.AccessToken = v
 }
 
+// GetConsentRememberFor returns the ConsentRememberFor field value if set, zero value otherwise.
+func (o *ConsentRequestSession) GetConsentRememberFor() int64 {
+	if o == nil || o.ConsentRememberFor == nil {
+		var ret int64
+		return ret
+	}
+	return *o.ConsentRememberFor
+}
+
+// GetConsentRememberForOk returns a tuple with the ConsentRememberFor field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *ConsentRequestSession) GetConsentRememberForOk() (*int64, bool) {
+	if o == nil || o.ConsentRememberFor == nil {
+		return nil, false
+	}
+	return o.ConsentRememberFor, true
+}
+
+// HasConsentRememberFor returns a boolean if a field has been set.
+func (o *ConsentRequestSession) HasConsentRememberFor() bool {
+	if o != nil && o.ConsentRememberFor != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetConsentRememberFor gets a reference to the given int64 and assigns it to the ConsentRememberFor field.
+func (o *ConsentRequestSession) SetConsentRememberFor(v int64) {
+	o.ConsentRememberFor = &v
+}
+
 // GetIdToken returns the IdToken field value if set, zero value otherwise (both if not set or set to explicit null).
 func (o *ConsentRequestSession) GetIdToken() interface{} {
 	if o == nil {
@@ -106,13 +144,121 @@ func (o *ConsentRequestSession) SetIdToken(v interface{}) {
 	o.IdToken = v
 }
 
+// GetRefreshConsentRememberFor returns the RefreshConsentRememberFor field value if set, zero value otherwise.
+func (o *ConsentRequestSession) GetRefreshConsentRememberFor() bool {
+	if o == nil || o.RefreshConsentRememberFor == nil {
+		var ret bool
+		return ret
+	}
+	return *o.RefreshConsentRememberFor
+}
+
+// GetRefreshConsentRememberForOk returns a tuple with the RefreshConsentRememberFor field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *ConsentRequestSession) GetRefreshConsentRememberForOk() (*bool, bool) {
+	if o == nil || o.RefreshConsentRememberFor == nil {
+		return nil, false
+	}
+	return o.RefreshConsentRememberFor, true
+}
+
+// HasRefreshConsentRememberFor returns a boolean if a field has been set.
+func (o *ConsentRequestSession) HasRefreshConsentRememberFor() bool {
+	if o != nil && o.RefreshConsentRememberFor != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetRefreshConsentRememberFor gets a reference to the given bool and assigns it to the RefreshConsentRememberFor field.
+func (o *ConsentRequestSession) SetRefreshConsentRememberFor(v bool) {
+	o.RefreshConsentRememberFor = &v
+}
+
+// GetRefreshRememberFor returns the RefreshRememberFor field value if set, zero value otherwise.
+func (o *ConsentRequestSession) GetRefreshRememberFor() bool {
+	if o == nil || o.RefreshRememberFor == nil {
+		var ret bool
+		return ret
+	}
+	return *o.RefreshRememberFor
+}
+
+// GetRefreshRememberForOk returns a tuple with the RefreshRememberFor field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *ConsentRequestSession) GetRefreshRememberForOk() (*bool, bool) {
+	if o == nil || o.RefreshRememberFor == nil {
+		return nil, false
+	}
+	return o.RefreshRememberFor, true
+}
+
+// HasRefreshRememberFor returns a boolean if a field has been set.
+func (o *ConsentRequestSession) HasRefreshRememberFor() bool {
+	if o != nil && o.RefreshRememberFor != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetRefreshRememberFor gets a reference to the given bool and assigns it to the RefreshRememberFor field.
+func (o *ConsentRequestSession) SetRefreshRememberFor(v bool) {
+	o.RefreshRememberFor = &v
+}
+
+// GetRememberFor returns the RememberFor field value if set, zero value otherwise.
+func (o *ConsentRequestSession) GetRememberFor() int64 {
+	if o == nil || o.RememberFor == nil {
+		var ret int64
+		return ret
+	}
+	return *o.RememberFor
+}
+
+// GetRememberForOk returns a tuple with the RememberFor field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *ConsentRequestSession) GetRememberForOk() (*int64, bool) {
+	if o == nil || o.RememberFor == nil {
+		return nil, false
+	}
+	return o.RememberFor, true
+}
+
+// HasRememberFor returns a boolean if a field has been set.
+func (o *ConsentRequestSession) HasRememberFor() bool {
+	if o != nil && o.RememberFor != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetRememberFor gets a reference to the given int64 and assigns it to the RememberFor field.
+func (o *ConsentRequestSession) SetRememberFor(v int64) {
+	o.RememberFor = &v
+}
+
 func (o ConsentRequestSession) MarshalJSON() ([]byte, error) {
 	toSerialize := map[string]interface{}{}
 	if o.AccessToken != nil {
 		toSerialize["access_token"] = o.AccessToken
 	}
+	if o.ConsentRememberFor != nil {
+		toSerialize["consent_remember_for"] = o.ConsentRememberFor
+	}
 	if o.IdToken != nil {
 		toSerialize["id_token"] = o.IdToken
+	}
+	if o.RefreshConsentRememberFor != nil {
+		toSerialize["refresh_consent_remember_for"] = o.RefreshConsentRememberFor
+	}
+	if o.RefreshRememberFor != nil {
+		toSerialize["refresh_remember_for"] = o.RefreshRememberFor
+	}
+	if o.RememberFor != nil {
+		toSerialize["remember_for"] = o.RememberFor
 	}
 	return json.Marshal(toSerialize)
 }

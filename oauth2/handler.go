@@ -23,12 +23,13 @@ package oauth2
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ory/x/sqlxx"
 	"html/template"
 	"net/http"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/ory/x/sqlxx"
 
 	"github.com/pborman/uuid"
 

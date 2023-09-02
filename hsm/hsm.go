@@ -23,8 +23,8 @@ type Context interface {
 
 func NewContext(c *config.Provider, l *logrusx.Logger) Context {
 	config11 := &crypto11.Config{
-		Path: c.HsmLibraryPath(),
-		Pin:  c.HsmPin(),
+		Path:        c.HsmLibraryPath(),
+		Pin:         c.HsmPin(),
 		MaxSessions: c.HsmMaxSessions(),
 	}
 

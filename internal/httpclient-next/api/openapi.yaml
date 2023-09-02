@@ -2524,6 +2524,7 @@ components:
           - grant_scope
           - grant_scope
         remember_for: 0
+        requested_at: 2000-01-23T04:56:07.000+00:00
       properties:
         consent_request:
           $ref: "#/components/schemas/consentRequest"
@@ -2556,6 +2557,9 @@ components:
             authorization will be remembered indefinitely.
           format: int64
           type: integer
+        requested_at:
+          format: date-time
+          type: string
         session:
           $ref: "#/components/schemas/consentRequestSession"
       type: object

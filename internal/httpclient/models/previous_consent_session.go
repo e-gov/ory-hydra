@@ -11,6 +11,7 @@ import (
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
+	"github.com/go-openapi/validate"
 )
 
 // PreviousConsentSession The response used to return used consent requests
@@ -40,6 +41,10 @@ type PreviousConsentSession struct {
 	// authorization will be remembered indefinitely.
 	RememberFor int64 `json:"remember_for,omitempty"`
 
+	// requested at
+	// Format: date-time
+	RequestedAt strfmt.DateTime `json:"requested_at,omitempty"`
+
 	// session
 	Session *ConsentRequestSession `json:"session,omitempty"`
 }
@@ -61,6 +66,10 @@ func (m *PreviousConsentSession) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateHandledAt(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := m.validateRequestedAt(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -130,6 +139,18 @@ func (m *PreviousConsentSession) validateHandledAt(formats strfmt.Registry) erro
 		if ve, ok := err.(*errors.Validation); ok {
 			return ve.ValidateName("handled_at")
 		}
+		return err
+	}
+
+	return nil
+}
+
+func (m *PreviousConsentSession) validateRequestedAt(formats strfmt.Registry) error {
+	if swag.IsZero(m.RequestedAt) { // not required
+		return nil
+	}
+
+	if err := validate.FormatOf("requested_at", "body", "date-time", m.RequestedAt.String(), formats); err != nil {
 		return err
 	}
 

@@ -263,6 +263,10 @@
             "format": "int64",
             "type": "integer"
           },
+          "requested_at": {
+            "format": "date-time",
+            "type": "string"
+          },
           "session": {
             "$ref": "#/components/schemas/consentRequestSession"
           }

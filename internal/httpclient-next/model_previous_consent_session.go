@@ -26,6 +26,7 @@ type PreviousConsentSession struct {
 	Remember *bool `json:"remember,omitempty"`
 	// RememberFor sets how long the consent authorization should be remembered for in seconds. If set to `0`, the authorization will be remembered indefinitely.
 	RememberFor *int64                 `json:"remember_for,omitempty"`
+	RequestedAt *time.Time             `json:"requested_at,omitempty"`
 	Session     *ConsentRequestSession `json:"session,omitempty"`
 }
 
@@ -238,6 +239,38 @@ func (o *PreviousConsentSession) SetRememberFor(v int64) {
 	o.RememberFor = &v
 }
 
+// GetRequestedAt returns the RequestedAt field value if set, zero value otherwise.
+func (o *PreviousConsentSession) GetRequestedAt() time.Time {
+	if o == nil || o.RequestedAt == nil {
+		var ret time.Time
+		return ret
+	}
+	return *o.RequestedAt
+}
+
+// GetRequestedAtOk returns a tuple with the RequestedAt field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *PreviousConsentSession) GetRequestedAtOk() (*time.Time, bool) {
+	if o == nil || o.RequestedAt == nil {
+		return nil, false
+	}
+	return o.RequestedAt, true
+}
+
+// HasRequestedAt returns a boolean if a field has been set.
+func (o *PreviousConsentSession) HasRequestedAt() bool {
+	if o != nil && o.RequestedAt != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetRequestedAt gets a reference to the given time.Time and assigns it to the RequestedAt field.
+func (o *PreviousConsentSession) SetRequestedAt(v time.Time) {
+	o.RequestedAt = &v
+}
+
 // GetSession returns the Session field value if set, zero value otherwise.
 func (o *PreviousConsentSession) GetSession() ConsentRequestSession {
 	if o == nil || o.Session == nil {
@@ -289,6 +322,9 @@ func (o PreviousConsentSession) MarshalJSON() ([]byte, error) {
 	}
 	if o.RememberFor != nil {
 		toSerialize["remember_for"] = o.RememberFor
+	}
+	if o.RequestedAt != nil {
+		toSerialize["requested_at"] = o.RequestedAt
 	}
 	if o.Session != nil {
 		toSerialize["session"] = o.Session

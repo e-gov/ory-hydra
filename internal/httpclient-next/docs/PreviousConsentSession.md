@@ -10,6 +10,7 @@
 | **HandledAt**                | Pointer to **time.Time**                                         |                                                                                                                                                                          | [optional] |
 | **Remember**                 | Pointer to **bool**                                              | Remember, if set to true, tells ORY Hydra to remember this consent authorization and reuse it if the same client asks the same user for the same, or a subset of, scope. | [optional] |
 | **RememberFor**              | Pointer to **int64**                                             | RememberFor sets how long the consent authorization should be remembered for in seconds. If set to &#x60;0&#x60;, the authorization will be remembered indefinitely.     | [optional] |
+| **RequestedAt**              | Pointer to **time.Time**                                         |                                                                                                                                                                          | [optional] |
 | **Session**                  | Pointer to [**ConsentRequestSession**](ConsentRequestSession.md) |                                                                                                                                                                          | [optional] |
 
 ## Methods
@@ -183,6 +184,31 @@ SetRememberFor sets RememberFor field to given value.
 `func (o *PreviousConsentSession) HasRememberFor() bool`
 
 HasRememberFor returns a boolean if a field has been set.
+
+### GetRequestedAt
+
+`func (o *PreviousConsentSession) GetRequestedAt() time.Time`
+
+GetRequestedAt returns the RequestedAt field if non-nil, zero value otherwise.
+
+### GetRequestedAtOk
+
+`func (o *PreviousConsentSession) GetRequestedAtOk() (*time.Time, bool)`
+
+GetRequestedAtOk returns a tuple with the RequestedAt field if it's non-nil,
+zero value otherwise and a boolean to check if the value has been set.
+
+### SetRequestedAt
+
+`func (o *PreviousConsentSession) SetRequestedAt(v time.Time)`
+
+SetRequestedAt sets RequestedAt field to given value.
+
+### HasRequestedAt
+
+`func (o *PreviousConsentSession) HasRequestedAt() bool`
+
+HasRequestedAt returns a boolean if a field has been set.
 
 ### GetSession
 

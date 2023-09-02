@@ -285,7 +285,7 @@ func (h *Handler) GetConsentSessions(w http.ResponseWriter, r *http.Request, ps 
 	h.r.Writer().Write(w, r, a)
 }
 
-// swagger:route DELETE /oauth2/auth/sessions/login/{id} admin revokeAuthenticationSession
+// swagger:route DELETE /oauth2/auth/sessions/login/{id} admin revokeAuthenticationSessionById
 //
 // Invalidates an Authentication Session
 //

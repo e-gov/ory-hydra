@@ -150,6 +150,15 @@ type swaggerRejectLogoutRequest struct {
 	Body RequestDeniedError
 }
 
+// swagger:parameters revokeAuthenticationSessionById
+type revokeAuthenticationSessionById struct {
+	// The id of the login session.
+	//
+	// in: path
+	// required: true
+	ID string `json:"id"`
+}
+
 // A list of used consent requests.
 // swagger:response handledConsentRequestList
 type swaggerListHandledConsentRequestsResult struct {

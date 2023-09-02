@@ -92,6 +92,8 @@ type ClientService interface {
 
 	RevokeAuthenticationSession(params *RevokeAuthenticationSessionParams, opts ...ClientOption) (*RevokeAuthenticationSessionNoContent, error)
 
+	RevokeAuthenticationSessionByID(params *RevokeAuthenticationSessionByIDParams, opts ...ClientOption) (*RevokeAuthenticationSessionByIDNoContent, error)
+
 	RevokeConsentSessions(params *RevokeConsentSessionsParams, opts ...ClientOption) (*RevokeConsentSessionsNoContent, error)
 
 	TrustJwtGrantIssuer(params *TrustJwtGrantIssuerParams, opts ...ClientOption) (*TrustJwtGrantIssuerCreated, error)
@@ -1473,6 +1475,48 @@ func (a *Client) RevokeAuthenticationSession(params *RevokeAuthenticationSession
 	// unexpected success response
 	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
 	msg := fmt.Sprintf("unexpected success response for revokeAuthenticationSession: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
+}
+
+/*
+  RevokeAuthenticationSessionByID invalidates an authentication session
+
+  This endpoint invalidates an authentication session by session id. After revoking the authentication session, the subject
+has to re-authenticate at ORY Hydra. This endpoint does not invalidate any tokens and does not work with OpenID Connect
+Front- or Back-channel logout.
+*/
+func (a *Client) RevokeAuthenticationSessionByID(params *RevokeAuthenticationSessionByIDParams, opts ...ClientOption) (*RevokeAuthenticationSessionByIDNoContent, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewRevokeAuthenticationSessionByIDParams()
+	}
+	op := &runtime.ClientOperation{
+		ID:                 "revokeAuthenticationSessionById",
+		Method:             "DELETE",
+		PathPattern:        "/oauth2/auth/sessions/login/{id}",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http", "https"},
+		Params:             params,
+		Reader:             &RevokeAuthenticationSessionByIDReader{formats: a.formats},
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	}
+	for _, opt := range opts {
+		opt(op)
+	}
+
+	result, err := a.transport.Submit(op)
+	if err != nil {
+		return nil, err
+	}
+	success, ok := result.(*RevokeAuthenticationSessionByIDNoContent)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for revokeAuthenticationSessionById: API contract not enforced by server. Client expected to get an error, but got: %T", result)
 	panic(msg)
 }
 

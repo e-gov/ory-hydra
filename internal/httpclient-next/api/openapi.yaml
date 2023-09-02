@@ -1414,6 +1414,42 @@ paths:
         Invalidates a Subject's Authentication Session
       tags:
         - admin
+  /oauth2/auth/sessions/login/{id}:
+    delete:
+      description: |-
+        This endpoint invalidates an authentication session by session id. After revoking the authentication session, the subject
+        has to re-authenticate at ORY Hydra. This endpoint does not invalidate any tokens and does not work with OpenID Connect
+        Front- or Back-channel logout.
+      operationId: revokeAuthenticationSessionById
+      parameters:
+        - description: The id of the login session.
+          explode: false
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          style: simple
+      responses:
+        "204":
+          description: |-
+            Empty responses are sent when, for example, resources are deleted. The HTTP status code for empty responses is
+            typically 201.
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/jsonError"
+          description: jsonError
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/jsonError"
+          description: jsonError
+      summary: Invalidates an Authentication Session
+      tags:
+        - admin
   /oauth2/flush:
     post:
       description: |-

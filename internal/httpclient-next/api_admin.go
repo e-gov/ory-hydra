@@ -550,6 +550,22 @@ type AdminApi interface {
 	RevokeAuthenticationSessionExecute(r AdminApiApiRevokeAuthenticationSessionRequest) (*http.Response, error)
 
 	/*
+			 * RevokeAuthenticationSessionById Invalidates an Authentication Session
+			 * This endpoint invalidates an authentication session by session id. After revoking the authentication session, the subject
+		has to re-authenticate at ORY Hydra. This endpoint does not invalidate any tokens and does not work with OpenID Connect
+		Front- or Back-channel logout.
+			 * @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+			 * @param id The id of the login session.
+			 * @return AdminApiApiRevokeAuthenticationSessionByIdRequest
+	*/
+	RevokeAuthenticationSessionById(ctx context.Context, id string) AdminApiApiRevokeAuthenticationSessionByIdRequest
+
+	/*
+	 * RevokeAuthenticationSessionByIdExecute executes the request
+	 */
+	RevokeAuthenticationSessionByIdExecute(r AdminApiApiRevokeAuthenticationSessionByIdRequest) (*http.Response, error)
+
+	/*
 			 * RevokeConsentSessions Revokes Consent Sessions of a Subject for a Specific OAuth 2.0 Client
 			 * This endpoint revokes a subject's granted consent sessions for a specific OAuth 2.0 Client and invalidates all
 		associated OAuth 2.0 Access Tokens.
@@ -4361,6 +4377,121 @@ func (a *AdminApiService) RevokeAuthenticationSessionExecute(r AdminApiApiRevoke
 	}
 
 	localVarQueryParams.Add("subject", parameterToString(*r.subject, ""))
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"application/json"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, localVarFormFileName, localVarFileName, localVarFileBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarHTTPResponse, err
+	}
+
+	localVarBody, err := ioutil.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = ioutil.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		if localVarHTTPResponse.StatusCode == 400 {
+			var v JsonError
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHTTPResponse, newErr
+			}
+			newErr.model = v
+			return localVarHTTPResponse, newErr
+		}
+		if localVarHTTPResponse.StatusCode == 500 {
+			var v JsonError
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHTTPResponse, newErr
+			}
+			newErr.model = v
+		}
+		return localVarHTTPResponse, newErr
+	}
+
+	return localVarHTTPResponse, nil
+}
+
+type AdminApiApiRevokeAuthenticationSessionByIdRequest struct {
+	ctx        context.Context
+	ApiService AdminApi
+	id         string
+}
+
+func (r AdminApiApiRevokeAuthenticationSessionByIdRequest) Execute() (*http.Response, error) {
+	return r.ApiService.RevokeAuthenticationSessionByIdExecute(r)
+}
+
+/*
+ * RevokeAuthenticationSessionById Invalidates an Authentication Session
+ * This endpoint invalidates an authentication session by session id. After revoking the authentication session, the subject
+has to re-authenticate at ORY Hydra. This endpoint does not invalidate any tokens and does not work with OpenID Connect
+Front- or Back-channel logout.
+ * @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+ * @param id The id of the login session.
+ * @return AdminApiApiRevokeAuthenticationSessionByIdRequest
+*/
+func (a *AdminApiService) RevokeAuthenticationSessionById(ctx context.Context, id string) AdminApiApiRevokeAuthenticationSessionByIdRequest {
+	return AdminApiApiRevokeAuthenticationSessionByIdRequest{
+		ApiService: a,
+		ctx:        ctx,
+		id:         id,
+	}
+}
+
+/*
+ * Execute executes the request
+ */
+func (a *AdminApiService) RevokeAuthenticationSessionByIdExecute(r AdminApiApiRevokeAuthenticationSessionByIdRequest) (*http.Response, error) {
+	var (
+		localVarHTTPMethod   = http.MethodDelete
+		localVarPostBody     interface{}
+		localVarFormFileName string
+		localVarFileName     string
+		localVarFileBytes    []byte
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AdminApiService.RevokeAuthenticationSessionById")
+	if err != nil {
+		return nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/oauth2/auth/sessions/login/{id}"
+	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterToString(r.id, "")), -1)
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
 

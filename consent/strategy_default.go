@@ -24,13 +24,14 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"github.com/twmb/murmur3"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/twmb/murmur3"
 
 	"github.com/ory/hydra/driver/config"
 

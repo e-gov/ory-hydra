@@ -48,6 +48,9 @@ type AcceptLoginRequest struct {
 	// If you fail to compute the proper value, then authentication processes which have id_token_hint set might fail.
 	ForceSubjectIdentifier string `json:"force_subject_identifier,omitempty"`
 
+	// RefreshRememberFor, if set to true, session cookie expiry time will be reset when session is refreshed.
+	RefreshRememberFor bool `json:"refresh_remember_for,omitempty"`
+
 	// Remember, if set to true, tells ORY Hydra to remember this user by telling the user agent (browser) to store
 	// a cookie with authentication data. If the same user performs another OAuth 2.0 Authorization Request, he/she
 	// will not be asked to log in again.

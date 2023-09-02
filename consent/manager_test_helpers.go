@@ -24,9 +24,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	strategy "github.com/ory/hydra/persistence/sql/consent"
 	"testing"
 	"time"
+
+	strategy "github.com/ory/hydra/persistence/sql/consent"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

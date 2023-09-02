@@ -37,6 +37,7 @@ All URIs are relative to _http://localhost_
 | [**UpdateJsonWebKeySet**](AdminApi.md#UpdateJsonWebKeySet)                 | **Put** /keys/{set}                              | Update a JSON Web Key Set                                                                           |
 | [**UpdateOAuth2Client**](AdminApi.md#UpdateOAuth2Client)                   | **Put** /clients/{id}                            | Update an OAuth 2.0 Client                                                                          |
 | [**UpdateOAuth2ClientLifespans**](AdminApi.md#UpdateOAuth2ClientLifespans) | **Put** /clients/{id}/lifespans                  |
+| [**ExpireConsentSessions**](AdminApi.md#ExpireConsentSessions)                     | **Put** /oauth2/auth/sessions/consent            | # Revokes Consent Sessions of a Subject for a Specific OAuth 2.0 Client                             |
 
 ## AcceptConsentRequest
 
@@ -663,6 +664,63 @@ apiDeleteTrustedJwtGrantIssuerRequest struct via the builder pattern
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
+
+### Return type
+
+(empty response body)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#)
+[[Back to API list]](../README.md#documentation-for-api-endpoints)
+[[Back to Model list]](../README.md#documentation-for-models)
+[[Back to README]](../README.md)
+
+## ExpireConsentSessions
+
+> ExpireConsentSessions(ctx).Execute()
+
+# Revokes Consent Sessions of a Subject for a Specific OAuth 2.0 Client
+
+### Example
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    openapiclient "./openapi"
+)
+
+func main() {
+
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    resp, r, err := apiClient.AdminApi.ExpireConsentSessions(context.Background()).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `AdminApi.ExpireConsentSessions``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+}
+```
+
+### Path Parameters
+
+This endpoint does not need any parameter.
+
+### Other Parameters
+
+Other parameters are passed through a pointer to a
+apiExpireConsentSessionsRequest struct via the builder pattern
 
 ### Return type
 

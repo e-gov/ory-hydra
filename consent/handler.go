@@ -22,10 +22,11 @@ package consent
 
 import (
 	"encoding/json"
-	strategy "github.com/ory/hydra/persistence/sql/consent"
 	"net/http"
 	"net/url"
 	"time"
+
+	strategy "github.com/ory/hydra/persistence/sql/consent"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
@@ -82,7 +83,7 @@ func (h *Handler) SetRoutes(admin *x.RouterAdmin) {
 	admin.PUT(LogoutPath+"/reject", h.RejectLogoutRequest)
 }
 
-// swagger:route PUT /oauth2/auth/sessions/consent admin revokeConsentSessions
+// swagger:route PUT /oauth2/auth/sessions/consent admin expireConsentSessions
 //
 // # Revokes Consent Sessions of a Subject for a Specific OAuth 2.0 Client
 //

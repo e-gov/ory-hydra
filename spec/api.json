@@ -3340,6 +3340,39 @@
         "tags": [
           "admin"
         ]
+      },
+      "put": {
+        "description": "This endpoint expires a subject's granted consent sessions for a specific OAuth 2.0 Client and invalidates all\nassociated OAuth 2.0 Access Tokens.",
+        "operationId": "expireConsentSessions",
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/emptyResponse"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/jsonError"
+                }
+              }
+            },
+            "description": "jsonError"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/jsonError"
+                }
+              }
+            },
+            "description": "jsonError"
+          }
+        },
+        "summary": "# Revokes Consent Sessions of a Subject for a Specific OAuth 2.0 Client",
+        "tags": [
+          "admin"
+        ]
       }
     },
     "/oauth2/auth/sessions/login/{id}": {

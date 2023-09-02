@@ -4,8 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	strategy "github.com/ory/hydra/persistence/sql/consent"
 	"time"
+
+	strategy "github.com/ory/hydra/persistence/sql/consent"
 
 	"github.com/ory/hydra/client"
 

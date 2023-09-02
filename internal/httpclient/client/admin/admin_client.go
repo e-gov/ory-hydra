@@ -52,6 +52,8 @@ type ClientService interface {
 
 	DeleteTrustedJwtGrantIssuer(params *DeleteTrustedJwtGrantIssuerParams, opts ...ClientOption) (*DeleteTrustedJwtGrantIssuerNoContent, error)
 
+	ExpireConsentSessions(params *ExpireConsentSessionsParams, opts ...ClientOption) (*ExpireConsentSessionsNoContent, error)
+
 	FlushInactiveOAuth2Tokens(params *FlushInactiveOAuth2TokensParams, opts ...ClientOption) (*FlushInactiveOAuth2TokensNoContent, error)
 
 	GetConsentRequest(params *GetConsentRequestParams, opts ...ClientOption) (*GetConsentRequestOK, error)
@@ -587,6 +589,47 @@ func (a *Client) DeleteTrustedJwtGrantIssuer(params *DeleteTrustedJwtGrantIssuer
 	// unexpected success response
 	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
 	msg := fmt.Sprintf("unexpected success response for deleteTrustedJwtGrantIssuer: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
+}
+
+/*
+  ExpireConsentSessions revokes consent sessions of a subject for a specific o auth 2 0 client
+
+  This endpoint expires a subject's granted consent sessions for a specific OAuth 2.0 Client and invalidates all
+associated OAuth 2.0 Access Tokens.
+*/
+func (a *Client) ExpireConsentSessions(params *ExpireConsentSessionsParams, opts ...ClientOption) (*ExpireConsentSessionsNoContent, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewExpireConsentSessionsParams()
+	}
+	op := &runtime.ClientOperation{
+		ID:                 "expireConsentSessions",
+		Method:             "PUT",
+		PathPattern:        "/oauth2/auth/sessions/consent",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http", "https"},
+		Params:             params,
+		Reader:             &ExpireConsentSessionsReader{formats: a.formats},
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	}
+	for _, opt := range opts {
+		opt(op)
+	}
+
+	result, err := a.transport.Submit(op)
+	if err != nil {
+		return nil, err
+	}
+	success, ok := result.(*ExpireConsentSessionsNoContent)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for expireConsentSessions: API contract not enforced by server. Client expected to get an error, but got: %T", result)
 	panic(msg)
 }
 

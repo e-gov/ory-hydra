@@ -219,6 +219,20 @@ type AdminApi interface {
 	DeleteTrustedJwtGrantIssuerExecute(r AdminApiApiDeleteTrustedJwtGrantIssuerRequest) (*http.Response, error)
 
 	/*
+			 * ExpireConsentSessions # Revokes Consent Sessions of a Subject for a Specific OAuth 2.0 Client
+			 * This endpoint expires a subject's granted consent sessions for a specific OAuth 2.0 Client and invalidates all
+		associated OAuth 2.0 Access Tokens.
+			 * @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+			 * @return AdminApiApiExpireConsentSessionsRequest
+	*/
+	ExpireConsentSessions(ctx context.Context) AdminApiApiExpireConsentSessionsRequest
+
+	/*
+	 * ExpireConsentSessionsExecute executes the request
+	 */
+	ExpireConsentSessionsExecute(r AdminApiApiExpireConsentSessionsRequest) (*http.Response, error)
+
+	/*
 			 * FlushInactiveOAuth2Tokens Flush Expired OAuth2 Access Tokens
 			 * This endpoint flushes expired OAuth2 access tokens from the database. You can set a time after which no tokens will be
 		not be touched, in case you want to keep recent tokens for auditing. Refresh tokens can not be flushed as they are deleted
@@ -1945,6 +1959,116 @@ func (a *AdminApiService) DeleteTrustedJwtGrantIssuerExecute(r AdminApiApiDelete
 		}
 		if localVarHTTPResponse.StatusCode == 500 {
 			var v GenericError
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHTTPResponse, newErr
+			}
+			newErr.model = v
+		}
+		return localVarHTTPResponse, newErr
+	}
+
+	return localVarHTTPResponse, nil
+}
+
+type AdminApiApiExpireConsentSessionsRequest struct {
+	ctx        context.Context
+	ApiService AdminApi
+}
+
+func (r AdminApiApiExpireConsentSessionsRequest) Execute() (*http.Response, error) {
+	return r.ApiService.ExpireConsentSessionsExecute(r)
+}
+
+/*
+ * ExpireConsentSessions # Revokes Consent Sessions of a Subject for a Specific OAuth 2.0 Client
+ * This endpoint expires a subject's granted consent sessions for a specific OAuth 2.0 Client and invalidates all
+associated OAuth 2.0 Access Tokens.
+ * @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+ * @return AdminApiApiExpireConsentSessionsRequest
+*/
+func (a *AdminApiService) ExpireConsentSessions(ctx context.Context) AdminApiApiExpireConsentSessionsRequest {
+	return AdminApiApiExpireConsentSessionsRequest{
+		ApiService: a,
+		ctx:        ctx,
+	}
+}
+
+/*
+ * Execute executes the request
+ */
+func (a *AdminApiService) ExpireConsentSessionsExecute(r AdminApiApiExpireConsentSessionsRequest) (*http.Response, error) {
+	var (
+		localVarHTTPMethod   = http.MethodPut
+		localVarPostBody     interface{}
+		localVarFormFileName string
+		localVarFileName     string
+		localVarFileBytes    []byte
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "AdminApiService.ExpireConsentSessions")
+	if err != nil {
+		return nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/oauth2/auth/sessions/consent"
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"application/json"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, localVarFormFileName, localVarFileName, localVarFileBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarHTTPResponse, err
+	}
+
+	localVarBody, err := ioutil.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = ioutil.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		if localVarHTTPResponse.StatusCode == 400 {
+			var v JsonError
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHTTPResponse, newErr
+			}
+			newErr.model = v
+			return localVarHTTPResponse, newErr
+		}
+		if localVarHTTPResponse.StatusCode == 500 {
+			var v JsonError
 			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
 			if err != nil {
 				newErr.error = err.Error()

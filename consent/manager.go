@@ -22,8 +22,9 @@ package consent
 
 import (
 	"context"
-	strategy "github.com/ory/hydra/persistence/sql/consent"
 	"time"
+
+	strategy "github.com/ory/hydra/persistence/sql/consent"
 
 	"github.com/ory/fosite"
 

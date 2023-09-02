@@ -3458,12 +3458,13 @@ func (a *AdminApiService) ListOAuth2ClientsExecute(r AdminApiApiListOAuth2Client
 }
 
 type AdminApiApiListSubjectConsentSessionsRequest struct {
-	ctx        context.Context
-	ApiService AdminApi
-	subject    *string
-	limit      *int64
-	offset     *int64
+	ctx            context.Context
+	ApiService     AdminApi
+	subject        *string
 	includeExpired *bool
+	loginSessionId *string
+	limit          *int64
+	offset         *int64
 }
 
 func (r AdminApiApiListSubjectConsentSessionsRequest) Subject(subject string) AdminApiApiListSubjectConsentSessionsRequest {
@@ -3472,6 +3473,10 @@ func (r AdminApiApiListSubjectConsentSessionsRequest) Subject(subject string) Ad
 }
 func (r AdminApiApiListSubjectConsentSessionsRequest) IncludeExpired(includeExpired bool) AdminApiApiListSubjectConsentSessionsRequest {
 	r.includeExpired = &includeExpired
+	return r
+}
+func (r AdminApiApiListSubjectConsentSessionsRequest) LoginSessionId(loginSessionId string) AdminApiApiListSubjectConsentSessionsRequest {
+	r.loginSessionId = &loginSessionId
 	return r
 }
 func (r AdminApiApiListSubjectConsentSessionsRequest) Limit(limit int64) AdminApiApiListSubjectConsentSessionsRequest {
@@ -3537,6 +3542,9 @@ func (a *AdminApiService) ListSubjectConsentSessionsExecute(r AdminApiApiListSub
 	localVarQueryParams.Add("subject", parameterToString(*r.subject, ""))
 	if r.includeExpired != nil {
 		localVarQueryParams.Add("include_expired", parameterToString(*r.includeExpired, ""))
+	}
+	if r.loginSessionId != nil {
+		localVarQueryParams.Add("login_session_id", parameterToString(*r.loginSessionId, ""))
 	}
 	if r.limit != nil {
 		localVarQueryParams.Add("limit", parameterToString(*r.limit, ""))

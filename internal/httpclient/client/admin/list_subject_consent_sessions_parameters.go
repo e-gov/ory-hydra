@@ -71,6 +71,12 @@ type ListSubjectConsentSessionsParams struct {
 	*/
 	Limit *int64
 
+	/* LoginSessionID.
+
+	   The login session id to list the consent sessions for.
+	*/
+	LoginSessionID *string
+
 	/* Offset.
 
 	   The offset from where to start looking.
@@ -157,6 +163,17 @@ func (o *ListSubjectConsentSessionsParams) SetLimit(limit *int64) {
 	o.Limit = limit
 }
 
+// WithLoginSessionID adds the loginSessionID to the list subject consent sessions params
+func (o *ListSubjectConsentSessionsParams) WithLoginSessionID(loginSessionID *string) *ListSubjectConsentSessionsParams {
+	o.SetLoginSessionID(loginSessionID)
+	return o
+}
+
+// SetLoginSessionID adds the loginSessionId to the list subject consent sessions params
+func (o *ListSubjectConsentSessionsParams) SetLoginSessionID(loginSessionID *string) {
+	o.LoginSessionID = loginSessionID
+}
+
 // WithOffset adds the offset to the list subject consent sessions params
 func (o *ListSubjectConsentSessionsParams) WithOffset(offset *int64) *ListSubjectConsentSessionsParams {
 	o.SetOffset(offset)
@@ -216,6 +233,23 @@ func (o *ListSubjectConsentSessionsParams) WriteToRequest(r runtime.ClientReques
 		if qLimit != "" {
 
 			if err := r.SetQueryParam("limit", qLimit); err != nil {
+				return err
+			}
+		}
+	}
+
+	if o.LoginSessionID != nil {
+
+		// query param login_session_id
+		var qrLoginSessionID string
+
+		if o.LoginSessionID != nil {
+			qrLoginSessionID = *o.LoginSessionID
+		}
+		qLoginSessionID := qrLoginSessionID
+		if qLoginSessionID != "" {
+
+			if err := r.SetQueryParam("login_session_id", qLoginSessionID); err != nil {
 				return err
 			}
 		}

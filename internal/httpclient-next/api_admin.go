@@ -3463,10 +3463,15 @@ type AdminApiApiListSubjectConsentSessionsRequest struct {
 	subject    *string
 	limit      *int64
 	offset     *int64
+	includeExpired *bool
 }
 
 func (r AdminApiApiListSubjectConsentSessionsRequest) Subject(subject string) AdminApiApiListSubjectConsentSessionsRequest {
 	r.subject = &subject
+	return r
+}
+func (r AdminApiApiListSubjectConsentSessionsRequest) IncludeExpired(includeExpired bool) AdminApiApiListSubjectConsentSessionsRequest {
+	r.includeExpired = &includeExpired
 	return r
 }
 func (r AdminApiApiListSubjectConsentSessionsRequest) Limit(limit int64) AdminApiApiListSubjectConsentSessionsRequest {
@@ -3530,6 +3535,9 @@ func (a *AdminApiService) ListSubjectConsentSessionsExecute(r AdminApiApiListSub
 	}
 
 	localVarQueryParams.Add("subject", parameterToString(*r.subject, ""))
+	if r.includeExpired != nil {
+		localVarQueryParams.Add("include_expired", parameterToString(*r.includeExpired, ""))
+	}
 	if r.limit != nil {
 		localVarQueryParams.Add("limit", parameterToString(*r.limit, ""))
 	}

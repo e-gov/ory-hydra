@@ -1307,6 +1307,13 @@ paths:
           schema:
             type: string
           style: form
+        - explode: true
+          in: query
+          name: include_expired
+          required: false
+          schema:
+            type: boolean
+          style: form
         - description:
             The maximum amount of consent sessions to be returned, upper bound
             is 500 sessions.

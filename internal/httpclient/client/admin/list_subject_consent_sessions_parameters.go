@@ -60,6 +60,9 @@ func NewListSubjectConsentSessionsParamsWithHTTPClient(client *http.Client) *Lis
 */
 type ListSubjectConsentSessionsParams struct {
 
+	// IncludeExpired.
+	IncludeExpired *bool
+
 	/* Limit.
 
 	   The maximum amount of consent sessions to be returned, upper bound is 500 sessions.
@@ -132,6 +135,17 @@ func (o *ListSubjectConsentSessionsParams) SetHTTPClient(client *http.Client) {
 	o.HTTPClient = client
 }
 
+// WithIncludeExpired adds the includeExpired to the list subject consent sessions params
+func (o *ListSubjectConsentSessionsParams) WithIncludeExpired(includeExpired *bool) *ListSubjectConsentSessionsParams {
+	o.SetIncludeExpired(includeExpired)
+	return o
+}
+
+// SetIncludeExpired adds the includeExpired to the list subject consent sessions params
+func (o *ListSubjectConsentSessionsParams) SetIncludeExpired(includeExpired *bool) {
+	o.IncludeExpired = includeExpired
+}
+
 // WithLimit adds the limit to the list subject consent sessions params
 func (o *ListSubjectConsentSessionsParams) WithLimit(limit *int64) *ListSubjectConsentSessionsParams {
 	o.SetLimit(limit)
@@ -172,6 +186,23 @@ func (o *ListSubjectConsentSessionsParams) WriteToRequest(r runtime.ClientReques
 		return err
 	}
 	var res []error
+
+	if o.IncludeExpired != nil {
+
+		// query param include_expired
+		var qrIncludeExpired bool
+
+		if o.IncludeExpired != nil {
+			qrIncludeExpired = *o.IncludeExpired
+		}
+		qIncludeExpired := swag.FormatBool(qrIncludeExpired)
+		if qIncludeExpired != "" {
+
+			if err := r.SetQueryParam("include_expired", qIncludeExpired); err != nil {
+				return err
+			}
+		}
+	}
 
 	if o.Limit != nil {
 

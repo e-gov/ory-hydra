@@ -1391,7 +1391,7 @@ No authorization required
 ## ListSubjectConsentSessions
 
 > []PreviousConsentSession
-> ListSubjectConsentSessions(ctx).Subject(subject).Limit(limit).Offset(offset).Execute()
+> ListSubjectConsentSessions(ctx).Subject(subject).IncludeExpired(includeExpired).Limit(limit).Offset(offset).Execute()
 
 Lists All Consent Sessions of a Subject
 
@@ -1409,12 +1409,13 @@ import (
 
 func main() {
     subject := "subject_example" // string |
+    includeExpired := true // bool |  (optional)
     limit := int64(789) // int64 | The maximum amount of consent sessions to be returned, upper bound is 500 sessions. (optional)
     offset := int64(789) // int64 | The offset from where to start looking. (optional)
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.AdminApi.ListSubjectConsentSessions(context.Background()).Subject(subject).Limit(limit).Offset(offset).Execute()
+    resp, r, err := apiClient.AdminApi.ListSubjectConsentSessions(context.Background()).Subject(subject).IncludeExpired(includeExpired).Limit(limit).Offset(offset).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `AdminApi.ListSubjectConsentSessions``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -1431,11 +1432,12 @@ func main() {
 Other parameters are passed through a pointer to a
 apiListSubjectConsentSessionsRequest struct via the builder pattern
 
-| Name        | Type       | Description                                                                         | Notes |
-| ----------- | ---------- | ----------------------------------------------------------------------------------- | ----- |
-| **subject** | **string** |                                                                                     |
-| **limit**   | **int64**  | The maximum amount of consent sessions to be returned, upper bound is 500 sessions. |
-| **offset**  | **int64**  | The offset from where to start looking.                                             |
+| Name               | Type       | Description                                                                         | Notes |
+| ------------------ | ---------- | ----------------------------------------------------------------------------------- | ----- |
+| **subject**        | **string** |                                                                                     |
+| **includeExpired** | **bool**   |                                                                                     |
+| **limit**          | **int64**  | The maximum amount of consent sessions to be returned, upper bound is 500 sessions. |
+| **offset**         | **int64**  | The offset from where to start looking.                                             |
 
 ### Return type
 

@@ -3285,6 +3285,13 @@
             }
           },
           {
+            "in": "query",
+            "name": "include_expired",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "description": "The login session id to list the consent sessions for.",
             "in": "query",
             "name": "login_session_id",

@@ -21,11 +21,16 @@
 package server
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
+	"github.com/ory/x/errorsx"
 	"net/http"
+	"os"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/ory/x/configx"
@@ -96,10 +101,10 @@ func RunServeAdmin(cmd *cobra.Command, args []string) {
 
 	d.PrometheusManager().RegisterRouter(admin.Router)
 
+	stopNotifier := NewStopNotifier()
 	var wg sync.WaitGroup
-	wg.Add(1)
 
-	go serve(
+	startServer(
 		d,
 		cmd,
 		&wg,
@@ -108,7 +113,13 @@ func RunServeAdmin(cmd *cobra.Command, args []string) {
 		d.Config().ListenOn(config.AdminInterface),
 		d.Config().SocketPermission(config.AdminInterface),
 		cert,
+		stopNotifier,
 	)
+
+	onGracefulShutdown(func(_ os.Signal) {
+		d.Logger().Info("Graceful shutdown signal received")
+		stopNotifier.Notify()
+	})
 
 	wg.Wait()
 }
@@ -122,10 +133,10 @@ func RunServePublic(cmd *cobra.Command, args []string) {
 
 	d.PrometheusManager().RegisterRouter(public.Router)
 
+	stopNotifier := NewStopNotifier()
 	var wg sync.WaitGroup
-	wg.Add(1)
 
-	go serve(
+	startServer(
 		d,
 		cmd,
 		&wg,
@@ -134,7 +145,13 @@ func RunServePublic(cmd *cobra.Command, args []string) {
 		d.Config().ListenOn(config.PublicInterface),
 		d.Config().SocketPermission(config.PublicInterface),
 		cert,
+		stopNotifier,
 	)
+
+	onGracefulShutdown(func(_ os.Signal) {
+		d.Logger().Info("Graceful shutdown signal received")
+		stopNotifier.Notify()
+	})
 
 	wg.Wait()
 }
@@ -147,10 +164,10 @@ func RunServeAll(cmd *cobra.Command, args []string) {
 	d.PrometheusManager().RegisterRouter(admin.Router)
 	d.PrometheusManager().RegisterRouter(public.Router)
 
+	stopNotifier := NewStopNotifier()
 	var wg sync.WaitGroup
-	wg.Add(2)
 
-	go serve(
+	startServer(
 		d,
 		cmd,
 		&wg,
@@ -159,9 +176,10 @@ func RunServeAll(cmd *cobra.Command, args []string) {
 		d.Config().ListenOn(config.PublicInterface),
 		d.Config().SocketPermission(config.PublicInterface),
 		GetOrCreateTLSCertificate(cmd, d, config.PublicInterface),
+		stopNotifier,
 	)
 
-	go serve(
+	startServer(
 		d,
 		cmd,
 		&wg,
@@ -170,9 +188,29 @@ func RunServeAll(cmd *cobra.Command, args []string) {
 		d.Config().ListenOn(config.AdminInterface),
 		d.Config().SocketPermission(config.AdminInterface),
 		GetOrCreateTLSCertificate(cmd, d, config.AdminInterface),
+		stopNotifier,
 	)
 
+	onGracefulShutdown(func(_ os.Signal) {
+		d.Logger().Info("Graceful shutdown signal received")
+		stopNotifier.Notify()
+	})
+
 	wg.Wait()
+
+	/* See https://erictse.dev/posts/graceful-go-http-server/#not-registeronshutdown.
+	 * Additionally, since separate `http.Server` instances are created for public and admin endpoints, using
+	 * `http.Server.RegisterOnShutdown` would 2 attempts to close HSM sessions, the latter of which would panic.
+	 */
+	if d.Config().HsmEnabled() {
+		d.Logger().Info("Gracefully closing HSM sessions...")
+		err := d.KeyManager().Close(cmd.Context())
+		if err != nil {
+			d.Logger().WithError(err).Error("Unable to gracefully close HSM sessions!")
+		} else {
+			d.Logger().Info("HSM sessions gracefully closed")
+		}
+	}
 }
 
 func setup(d driver.Registry, cmd *cobra.Command) (admin *x.RouterAdmin, public *x.RouterPublic, adminmw, publicmw *negroni.Negroni) {
@@ -292,7 +330,7 @@ func setup(d driver.Registry, cmd *cobra.Command) (admin *x.RouterAdmin, public 
 	return
 }
 
-func serve(
+func startServer(
 	d driver.Registry,
 	cmd *cobra.Command,
 	wg *sync.WaitGroup,
@@ -301,9 +339,8 @@ func serve(
 	address string,
 	permission *configx.UnixPermission,
 	cert []tls.Certificate,
+	stopNotifier *StopNotifier,
 ) {
-	defer wg.Done()
-
 	// #nosec G112 false positive
 	var srv = graceful.WithDefaults(&http.Server{
 		Handler: handler,
@@ -317,40 +354,86 @@ func serve(
 		srv.RegisterOnShutdown(d.Tracer(cmd.Context()).Close)
 	}
 
-	if d.Config().HsmEnabled() {
-		srv.RegisterOnShutdown(func() {
-			d.Logger().Info("Gracefully closing HSM sessions...")
-			err := d.KeyManager().Close(cmd.Context())
-			if err != nil {
-				d.Logger().WithError(err).Error("Unable to gracefully close HSM sessions!")
+	var doneOnce = sync.Once{}
+
+	wg.Add(1)
+
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				if err, ok := r.(error); ok {
+					d.Logger().WithError(errorsx.WithStack(err)).Errorf("Panic recovered while running HTTP server: %v", r)
+				} else {
+					d.Logger().Errorf("Panic recovered while running HTTP server: %v", r)
+				}
 			}
-		})
+			stopNotifier.Notify()
+			doneOnce.Do(wg.Done)
+		}()
+
+		err := serve(d, address, permission, srv, iface)
+		if err != http.ErrServerClosed {
+			d.Logger().WithError(errorsx.WithStack(err)).Error("Error while running HTTP server")
+		}
+	}()
+
+	go func() {
+		stopNotifier.Wait()
+
+		d.Logger().Info("Server stop signal received, shutting down server")
+
+		defer func() {
+			if r := recover(); r != nil {
+				if err, ok := r.(error); ok {
+					d.Logger().WithError(errorsx.WithStack(err)).Errorf("Panic recovered while stopping HTTP server: %v", r)
+				} else {
+					d.Logger().Errorf("Panic recovered while stopping HTTP server: %v", r)
+				}
+			}
+			doneOnce.Do(wg.Done)
+		}()
+
+		timer, cancel := context.WithTimeout(context.Background(), graceful.DefaultShutdownTimeout)
+		defer cancel()
+		err := srv.Shutdown(timer)
+		if err != nil {
+			d.Logger().WithError(errorsx.WithStack(err)).Error("Error while shutting down HTTP server")
+		}
+	}()
+}
+
+func serve(d driver.Registry, address string, permission *configx.UnixPermission, srv *http.Server, iface config.ServeInterface) error {
+	d.Logger().Infof("Setting up http server on %s", address)
+	listener, err := networkx.MakeListener(address, permission)
+	if err != nil {
+		return err
 	}
 
-	if err := graceful.Graceful(func() error {
-		d.Logger().Infof("Setting up http server on %s", address)
-		listener, err := networkx.MakeListener(address, permission)
-		if err != nil {
-			return err
-		}
-
-		if networkx.AddressIsUnixSocket(address) {
+	if networkx.AddressIsUnixSocket(address) {
+		return srv.Serve(listener)
+	} else {
+		tls := d.Config().TLS(iface)
+		if !tls.Enabled() {
+			if iface == config.PublicInterface {
+				d.Logger().Warnln("HTTPS disabled. Never do this in production.")
+			}
+			return srv.Serve(listener)
+		} else if len(tls.AllowTerminationFrom()) > 0 {
+			d.Logger().Infoln("Upstream TLS termination enabled, disabling https.")
 			return srv.Serve(listener)
 		} else {
-			tls := d.Config().TLS(iface)
-			if !tls.Enabled() {
-				if iface == config.PublicInterface {
-					d.Logger().Warnln("HTTPS disabled. Never do this in production.")
-				}
-				return srv.Serve(listener)
-			} else if len(tls.AllowTerminationFrom()) > 0 {
-				d.Logger().Infoln("Upstream TLS termination enabled, disabling https.")
-				return srv.Serve(listener)
-			} else {
-				return srv.ServeTLS(listener, "", "")
-			}
+			return srv.ServeTLS(listener, "", "")
 		}
-	}, srv.Shutdown); err != nil {
-		d.Logger().WithError(err).Fatal("Could not gracefully run server")
 	}
+}
+
+func onGracefulShutdown(callback func(os.Signal)) {
+	shutdownChan := make(chan os.Signal)
+	signal.Notify(shutdownChan, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		shutdownSignal := <-shutdownChan
+		signal.Stop(shutdownChan)
+		close(shutdownChan)
+		callback(shutdownSignal)
+	}()
 }

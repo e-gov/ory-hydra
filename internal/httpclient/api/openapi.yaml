@@ -3272,6 +3272,7 @@ components:
         session_id: session_id
         skip: true
         request_url: request_url
+        requested_at: 2000-01-23T04:56:07.000+00:00
         requested_scope:
         - requested_scope
         - requested_scope
@@ -3298,6 +3299,9 @@ components:
           title: "StringSliceJSONFormat represents []string{} which is encoded to/from\
             \ JSON for SQL storage."
           type: array
+        requested_at:
+          format: date-time
+          type: string
         requested_scope:
           items:
             type: string

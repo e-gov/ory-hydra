@@ -520,7 +520,7 @@ type LoginRequest struct {
 	CSRF                   string `json:"-"`
 
 	AuthenticatedAt sqlxx.NullTime `json:"-"`
-	RequestedAt     time.Time      `json:"-"`
+	RequestedAt     time.Time      `json:"requested_at"`
 }
 
 // Contains information on an ongoing consent request.

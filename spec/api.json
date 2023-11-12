@@ -902,6 +902,10 @@
           "requested_access_token_audience": {
             "$ref": "#/components/schemas/StringSliceJSONFormat"
           },
+          "requested_at": {
+            "format": "date-time",
+            "type": "string"
+          },
           "requested_scope": {
             "$ref": "#/components/schemas/StringSliceJSONFormat"
           },

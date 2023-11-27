@@ -321,7 +321,7 @@ type oidcConfiguration struct {
 	// OpenID Connect Supported Userinfo Signing Algorithm
 	//
 	// 	JSON array containing a list of the JWS [JWS] signing algorithms (alg values) [JWA] supported by the UserInfo Endpoint to encode the Claims in a JWT [JWT].
-	UserinfoSigningAlgValuesSupported []string `json:"userinfo_signing_alg_values_supported"`
+	UserinfoSigningAlgValuesSupported []string `json:"userinfo_signing_alg_values_supported,omitempty"`
 
 	// OpenID Connect Supported ID Token Signing Algorithms
 	//
@@ -348,7 +348,7 @@ type oidcConfiguration struct {
 	// OpenID Connect Request Parameter Supported
 	//
 	// Boolean value specifying whether the OP supports use of the request parameter, with true indicating support.
-	RequestParameterSupported bool `json:"request_parameter_supported"`
+	RequestParameterSupported bool `json:"request_parameter_supported,omitempty"`
 
 	// OpenID Connect Request URI Parameter Supported
 	//
@@ -359,7 +359,7 @@ type oidcConfiguration struct {
 	//
 	// Boolean value specifying whether the OP requires any request_uri values used to be pre-registered
 	// using the request_uris registration parameter.
-	RequireRequestURIRegistration bool `json:"require_request_uri_registration"`
+	RequireRequestURIRegistration bool `json:"require_request_uri_registration,omitempty"`
 
 	// OpenID Connect Claims Parameter Parameter Supported
 	//
@@ -369,7 +369,7 @@ type oidcConfiguration struct {
 	// OAuth 2.0 Token Revocation URL
 	//
 	// URL of the authorization server's OAuth 2.0 revocation endpoint.
-	RevocationEndpoint string `json:"revocation_endpoint"`
+	RevocationEndpoint string `json:"revocation_endpoint,omitempty"`
 
 	// OpenID Connect Back-Channel Logout Supported
 	//
@@ -385,14 +385,14 @@ type oidcConfiguration struct {
 	// OpenID Connect Front-Channel Logout Supported
 	//
 	// Boolean value specifying whether the OP supports HTTP-based logout, with true indicating support.
-	FrontChannelLogoutSupported bool `json:"frontchannel_logout_supported"`
+	FrontChannelLogoutSupported bool `json:"frontchannel_logout_supported,omitempty"`
 
 	// OpenID Connect Front-Channel Logout Session Required
 	//
 	// Boolean value specifying whether the OP can pass iss (issuer) and sid (session ID) query parameters to identify
 	// the RP session with the OP when the frontchannel_logout_uri is used. If supported, the sid Claim is also
 	// included in ID Tokens issued by the OP.
-	FrontChannelLogoutSessionSupported bool `json:"frontchannel_logout_session_supported"`
+	FrontChannelLogoutSessionSupported bool `json:"frontchannel_logout_session_supported,omitempty"`
 
 	// OpenID Connect End-Session Endpoint
 	//
@@ -405,7 +405,7 @@ type oidcConfiguration struct {
 	// which are described in Section 6.1 of OpenID Connect Core 1.0 [OpenID.Core]. These algorithms are used both when
 	// the Request Object is passed by value (using the request parameter) and when it is passed by reference
 	// (using the request_uri parameter).
-	RequestObjectSigningAlgValuesSupported []string `json:"request_object_signing_alg_values_supported"`
+	RequestObjectSigningAlgValuesSupported []string `json:"request_object_signing_alg_values_supported,omitempty"`
 
 	// OAuth 2.0 PKCE Supported Code Challenge Methods
 	//
@@ -442,7 +442,6 @@ func (h *Handler) discoverOidcConfiguration(w http.ResponseWriter, r *http.Reque
 		AuthURL:                                h.c.OAuth2AuthURL(r.Context()).String(),
 		TokenURL:                               h.c.OAuth2TokenURL(r.Context()).String(),
 		JWKsURI:                                h.c.JWKSURL(r.Context()).String(),
-		RevocationEndpoint:                     urlx.AppendPaths(h.c.IssuerURL(r.Context()), RevocationPath).String(),
 		RegistrationEndpoint:                   h.c.OAuth2ClientRegistrationURL(r.Context()).String(),
 		SubjectTypes:                           h.c.SubjectTypesSupported(r.Context()),
 		ResponseTypes:                          []string{"code"},
@@ -457,16 +456,10 @@ func (h *Handler) discoverOidcConfiguration(w http.ResponseWriter, r *http.Reque
 		GrantTypesSupported:                    []string{"authorization_code"},
 		UiLocalesSupported:                     []string{"et", "en", "ru"},
 		ResponseModesSupported:                 []string{"query", "fragment"},
-		UserinfoSigningAlgValuesSupported:      []string{"none", key.Algorithm},
-		RequestParameterSupported:              true,
 		RequestURIParameterSupported:           true,
-		RequireRequestURIRegistration:          true,
 		BackChannelLogoutSupported:             true,
 		BackChannelLogoutSessionSupported:      true,
-		FrontChannelLogoutSupported:            true,
-		FrontChannelLogoutSessionSupported:     true,
 		EndSessionEndpoint:                     urlx.AppendPaths(h.c.IssuerURL(r.Context()), LogoutPath).String(),
-		RequestObjectSigningAlgValuesSupported: []string{"none", "RS256", "ES256"},
 		CodeChallengeMethodsSupported:          []string{"plain", "S256"},
 	})
 }

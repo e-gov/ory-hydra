@@ -21,6 +21,7 @@ type Context interface {
 	FindKeyPair(id []byte, label []byte) (crypto11.Signer, error)
 	FindKeyPairs(id []byte, label []byte) (signer []crypto11.Signer, err error)
 	GetAttribute(key interface{}, attribute crypto11.AttributeType) (a *crypto11.Attribute, err error)
+	Close() error
 }
 
 func NewContext(c *config.DefaultProvider, l *logrusx.Logger) Context {

@@ -215,3 +215,8 @@ func (p *Persister) DeleteKeySet(ctx context.Context, set string) error {
 	err := p.QueryWithNetwork(ctx).Where("sid=?", set).Delete(&jwk.SQLData{})
 	return sqlcon.HandleError(err)
 }
+
+func (p *Persister) Close(_ context.Context) error {
+	// Only implemented for hardware key manager
+	return nil
+}

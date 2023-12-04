@@ -5,14 +5,10 @@ package jwk
 
 import (
 	"context"
-	"net"
-
 	"github.com/ory/x/josex"
 
-	"github.com/gofrs/uuid"
 	"gopkg.in/square/go-jose.v2"
 
-	"github.com/ory/fosite"
 	"github.com/ory/hydra/v2/driver/config"
 
 	"github.com/pkg/errors"
@@ -31,29 +27,23 @@ type DefaultJWTSigner struct {
 	r     InternalRegistry
 	c     *config.DefaultProvider
 	setID string
+	k     CachedKeys
 }
 
 func NewDefaultJWTSigner(c *config.DefaultProvider, r InternalRegistry, setID string) *DefaultJWTSigner {
-	j := &DefaultJWTSigner{c: c, r: r, setID: setID, DefaultSigner: &jwt.DefaultSigner{}}
+	j := &DefaultJWTSigner{
+		c:             c,
+		r:             r,
+		setID:         setID,
+		DefaultSigner: &jwt.DefaultSigner{},
+		k:             NewDefaultCachedKeys(r, setID),
+	}
 	j.DefaultSigner.GetPrivateKey = j.getPrivateKey
 	return j
 }
 
 func (j *DefaultJWTSigner) getKeys(ctx context.Context) (private *jose.JSONWebKey, err error) {
-	private, err = GetOrGenerateKeys(ctx, j.r, j.r.KeyManager(), j.setID, uuid.Must(uuid.NewV4()).String(), string(jose.RS256))
-	if err == nil {
-		return private, nil
-	}
-
-	var netError net.Error
-	if errors.As(err, &netError) {
-		return nil, errors.WithStack(fosite.ErrServerError.
-			WithHintf(`Could not ensure that signing keys for "%s" exists. A network error occurred, see error for specific details.`, j.setID))
-	}
-
-	return nil, errors.WithStack(fosite.ErrServerError.
-		WithWrap(err).
-		WithHintf(`Could not ensure that signing keys for "%s" exists. If you are running against a persistent SQL database this is most likely because your "secrets.system" ("SECRETS_SYSTEM" environment variable) is not set or changed. When running with an SQL database backend you need to make sure that the secret is set and stays the same, unless when doing key rotation. This may also happen when you forget to run "hydra migrate sql..`, j.setID))
+	return j.k.Get(ctx)
 }
 
 func (j *DefaultJWTSigner) GetPublicKeyID(ctx context.Context) (string, error) {

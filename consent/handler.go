@@ -99,10 +99,10 @@ type revokeOAuth2ConsentSessions struct {
 	// in: query
 	All bool `json:"all"`
 
-	// If set to `?trigger_back_channel_logout=true`, performs back channel logout for matching clients
+	// If set to `?trigger_backchannel_logout=true`, performs back-channel logout for matching clients
 	//
 	// in: query
-	TriggerBackChannelLogout bool `json:"trigger_back_channel_logout"`
+	TriggerBackChannelLogout bool `json:"trigger_backchannel_logout"`
 }
 
 // swagger:route DELETE /admin/oauth2/auth/sessions/consent oAuth2 revokeOAuth2ConsentSessions
@@ -127,7 +127,7 @@ func (h *Handler) revokeOAuth2ConsentSessions(w http.ResponseWriter, r *http.Req
 	subject := r.URL.Query().Get("subject")
 	client := r.URL.Query().Get("client")
 	loginSessionId := r.URL.Query().Get("login_session_id")
-	triggerBackChannelLogout := r.URL.Query().Get("trigger_back_channel_logout")
+	triggerBackChannelLogout := r.URL.Query().Get("trigger_backchannel_logout") == "true"
 	allClients := r.URL.Query().Get("all") == "true"
 
 	if subject == "" {
@@ -174,10 +174,10 @@ type expireOAuth2ConsentSessions struct {
 	// in: query
 	All bool `json:"all"`
 
-	// If set to `?trigger_back_channel_logout=true`, performs back channel logout for matching clients
+	// If set to `?trigger_backchannel_logout=true`, performs back-channel logout for matching clients
 	//
 	// in: query
-	TriggerBackChannelLogout bool `json:"trigger_back_channel_logout"`
+	TriggerBackChannelLogout bool `json:"trigger_backchannel_logout"`
 }
 
 // swagger:route PUT /admin/oauth2/auth/sessions/consent oAuth2 expireOAuth2ConsentSessions
@@ -202,7 +202,7 @@ func (h *Handler) expireOAuth2ConsentSessions(w http.ResponseWriter, r *http.Req
 	subject := r.URL.Query().Get("subject")
 	client := r.URL.Query().Get("client")
 	loginSessionId := r.URL.Query().Get("login_session_id")
-	triggerBackChannelLogout := r.URL.Query().Get("trigger_backchannel_logout")
+	triggerBackChannelLogout := r.URL.Query().Get("trigger_backchannel_logout") == "true"
 
 	allClients := r.URL.Query().Get("all") == "true"
 	if subject == "" {
@@ -218,12 +218,12 @@ func (h *Handler) expireOAuth2ConsentSessions(w http.ResponseWriter, r *http.Req
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *Handler) handleConsentSession(r *http.Request, client string, subject string, loginSessionId string, triggerBackChannelLogout string, allClients bool, revocationStrategy strategy.ConsentSessionRevocationStrategy) error {
+func (h *Handler) handleConsentSession(r *http.Request, client string, subject string, loginSessionId string, triggerBackChannelLogout bool, allClients bool, revocationStrategy strategy.ConsentSessionRevocationStrategy) error {
 
 	switch {
 	case len(client) > 0:
 		if len(loginSessionId) > 0 {
-			if triggerBackChannelLogout == "true" {
+			if triggerBackChannelLogout {
 				if err := h.r.ConsentStrategy().ExecuteBackChannelLogoutByClientSession(r.Context(), r, subject, client, loginSessionId); err != nil {
 					h.r.Logger().WithError(err).Warn("Unable to execute back channel logout")
 				}
@@ -232,7 +232,7 @@ func (h *Handler) handleConsentSession(r *http.Request, client string, subject s
 				return err
 			}
 		} else {
-			if triggerBackChannelLogout == "true" {
+			if triggerBackChannelLogout {
 				if err := h.r.ConsentStrategy().ExecuteBackChannelLogoutByClient(r.Context(), r, subject, client); err != nil {
 					h.r.Logger().WithError(err).Warn("Unable to execute back channel logout")
 				}
@@ -243,7 +243,7 @@ func (h *Handler) handleConsentSession(r *http.Request, client string, subject s
 		}
 	case allClients:
 		if len(loginSessionId) > 0 {
-			if triggerBackChannelLogout == "true" {
+			if triggerBackChannelLogout {
 				if err := h.r.ConsentStrategy().ExecuteBackChannelLogoutBySession(r.Context(), r, subject, loginSessionId); err != nil {
 					h.r.Logger().WithError(err).Warn("Unable to execute back channel logout")
 				}
@@ -252,7 +252,7 @@ func (h *Handler) handleConsentSession(r *http.Request, client string, subject s
 				return err
 			}
 		} else {
-			if triggerBackChannelLogout == "true" {
+			if triggerBackChannelLogout {
 				if err := h.r.ConsentStrategy().ExecuteBackChannelLogoutBySubject(r.Context(), r, subject); err != nil {
 					h.r.Logger().WithError(err).Warn("Unable to execute back channel logout")
 				}

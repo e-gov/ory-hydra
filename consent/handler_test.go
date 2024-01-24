@@ -291,7 +291,7 @@ func TestRevokeConsentSession(t *testing.T) {
 		return &wg
 	}
 
-	t.Run("case=subject=subject-1,client=client-1,session=session-1,trigger_back_channel_logout=true", func(t *testing.T) {
+	t.Run("case=subject=subject-1,client=client-1,session=session-1,trigger_backchannel_logout=true", func(t *testing.T) {
 		conf := internal.NewConfigurationWithDefaults()
 		reg := internal.NewRegistryMemory(t, conf, &contextx.Default{})
 		backChannelWG := newWg(1)
@@ -308,7 +308,7 @@ func TestRevokeConsentSession(t *testing.T) {
 		backChannelWG.Wait()
 	})
 
-	t.Run("case=subject=subject-1,client=client-1,session=session-1,trigger_back_channel_logout=false", func(t *testing.T) {
+	t.Run("case=subject=subject-1,client=client-1,session=session-1,trigger_backchannel_logout=false", func(t *testing.T) {
 		conf := internal.NewConfigurationWithDefaults()
 		reg := internal.NewRegistryMemory(t, conf, &contextx.Default{})
 		backChannelWG := newWg(0)
@@ -325,7 +325,7 @@ func TestRevokeConsentSession(t *testing.T) {
 		backChannelWG.Wait()
 	})
 
-	t.Run("case=subject=subject-1,client=client-1,trigger_back_channel_logout=true", func(t *testing.T) {
+	t.Run("case=subject=subject-1,client=client-1,trigger_backchannel_logout=true", func(t *testing.T) {
 		conf := internal.NewConfigurationWithDefaults()
 		reg := internal.NewRegistryMemory(t, conf, &contextx.Default{})
 		backChannelWG := newWg(2)
@@ -344,7 +344,7 @@ func TestRevokeConsentSession(t *testing.T) {
 		backChannelWG.Wait()
 	})
 
-	t.Run("case=subject=subject-1,client=client-1,trigger_back_channel_logout=false", func(t *testing.T) {
+	t.Run("case=subject=subject-1,client=client-1,trigger_backchannel_logout=false", func(t *testing.T) {
 		conf := internal.NewConfigurationWithDefaults()
 		reg := internal.NewRegistryMemory(t, conf, &contextx.Default{})
 		backChannelWG := newWg(0)
@@ -363,7 +363,7 @@ func TestRevokeConsentSession(t *testing.T) {
 		backChannelWG.Wait()
 	})
 
-	t.Run("case=subject=subject-1,all=true,session=session-1,trigger_back_channel_logout=true", func(t *testing.T) {
+	t.Run("case=subject=subject-1,all=true,session=session-1,trigger_backchannel_logout=true", func(t *testing.T) {
 		conf := internal.NewConfigurationWithDefaults()
 		reg := internal.NewRegistryMemory(t, conf, &contextx.Default{})
 		backChannelWG := newWg(1)
@@ -383,7 +383,7 @@ func TestRevokeConsentSession(t *testing.T) {
 		backChannelWG.Wait()
 	})
 
-	t.Run("case=subject=subject-1,all=true,session=session-1,trigger_back_channel_logout=false", func(t *testing.T) {
+	t.Run("case=subject=subject-1,all=true,session=session-1,trigger_backchannel_logout=false", func(t *testing.T) {
 		conf := internal.NewConfigurationWithDefaults()
 		reg := internal.NewRegistryMemory(t, conf, &contextx.Default{})
 		backChannelWG := newWg(0)
@@ -403,7 +403,7 @@ func TestRevokeConsentSession(t *testing.T) {
 		backChannelWG.Wait()
 	})
 
-	t.Run("case=subject=subject-1,all=true,trigger_back_channel_logout=true", func(t *testing.T) {
+	t.Run("case=subject=subject-1,all=true,trigger_backchannel_logout=true", func(t *testing.T) {
 		conf := internal.NewConfigurationWithDefaults()
 		reg := internal.NewRegistryMemory(t, conf, &contextx.Default{})
 		backChannelWG := newWg(2)
@@ -423,7 +423,7 @@ func TestRevokeConsentSession(t *testing.T) {
 		backChannelWG.Wait()
 	})
 
-	t.Run("case=subject=subject-1,all=true,trigger_back_channel_logout=false", func(t *testing.T) {
+	t.Run("case=subject=subject-1,all=true,trigger_backchannel_logout=false", func(t *testing.T) {
 		conf := internal.NewConfigurationWithDefaults()
 		reg := internal.NewRegistryMemory(t, conf, &contextx.Default{})
 		backChannelWG := newWg(0)
@@ -465,7 +465,7 @@ func performDeleteConsentSession(t *testing.T, reg driver.Registry, client, logi
 		q.Set("login_session_id", loginSessionId.(string))
 	}
 	if triggerBackChannelLogout {
-		q.Set("trigger_back_channel_logout", "true")
+		q.Set("trigger_backchannel_logout", "true")
 	}
 	u.RawQuery = q.Encode()
 	req, err := http.NewRequest(http.MethodDelete, u.String(), nil)

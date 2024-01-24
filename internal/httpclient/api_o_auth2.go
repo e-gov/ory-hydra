@@ -870,7 +870,7 @@ type ApiExpireOAuth2ConsentSessionsRequest struct {
 	client                   *string
 	loginSessionId           *string
 	all                      *bool
-	triggerBackChannelLogout *bool
+	triggerBackchannelLogout *bool
 }
 
 // OAuth 2.0 Consent Subject  The subject whose consent sessions should be deleted.
@@ -897,9 +897,9 @@ func (r ApiExpireOAuth2ConsentSessionsRequest) All(all bool) ApiExpireOAuth2Cons
 	return r
 }
 
-// If set to &#x60;?trigger_back_channel_logout&#x3D;true&#x60;, performs back channel logout for matching clients
-func (r ApiExpireOAuth2ConsentSessionsRequest) TriggerBackChannelLogout(triggerBackChannelLogout bool) ApiExpireOAuth2ConsentSessionsRequest {
-	r.triggerBackChannelLogout = &triggerBackChannelLogout
+// If set to &#x60;?trigger_backchannel_logout&#x3D;true&#x60;, performs back-channel logout for matching clients
+func (r ApiExpireOAuth2ConsentSessionsRequest) TriggerBackchannelLogout(triggerBackchannelLogout bool) ApiExpireOAuth2ConsentSessionsRequest {
+	r.triggerBackchannelLogout = &triggerBackchannelLogout
 	return r
 }
 
@@ -955,8 +955,8 @@ func (a *OAuth2ApiService) ExpireOAuth2ConsentSessionsExecute(r ApiExpireOAuth2C
 	if r.all != nil {
 		localVarQueryParams.Add("all", parameterToString(*r.all, ""))
 	}
-	if r.triggerBackChannelLogout != nil {
-		localVarQueryParams.Add("trigger_back_channel_logout", parameterToString(*r.triggerBackChannelLogout, ""))
+	if r.triggerBackchannelLogout != nil {
+		localVarQueryParams.Add("trigger_backchannel_logout", parameterToString(*r.triggerBackchannelLogout, ""))
 	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
@@ -3003,7 +3003,7 @@ type ApiRevokeOAuth2ConsentSessionsRequest struct {
 	client                   *string
 	loginSessionId           *string
 	all                      *bool
-	triggerBackChannelLogout *bool
+	triggerBackchannelLogout *bool
 }
 
 // OAuth 2.0 Consent Subject  The subject whose consent sessions should be deleted.
@@ -3030,9 +3030,9 @@ func (r ApiRevokeOAuth2ConsentSessionsRequest) All(all bool) ApiRevokeOAuth2Cons
 	return r
 }
 
-// If set to &#x60;?trigger_back_channel_logout&#x3D;true&#x60;, performs back channel logout for matching clients
-func (r ApiRevokeOAuth2ConsentSessionsRequest) TriggerBackChannelLogout(triggerBackChannelLogout bool) ApiRevokeOAuth2ConsentSessionsRequest {
-	r.triggerBackChannelLogout = &triggerBackChannelLogout
+// If set to &#x60;?trigger_backchannel_logout&#x3D;true&#x60;, performs back-channel logout for matching clients
+func (r ApiRevokeOAuth2ConsentSessionsRequest) TriggerBackchannelLogout(triggerBackchannelLogout bool) ApiRevokeOAuth2ConsentSessionsRequest {
+	r.triggerBackchannelLogout = &triggerBackchannelLogout
 	return r
 }
 
@@ -3088,8 +3088,8 @@ func (a *OAuth2ApiService) RevokeOAuth2ConsentSessionsExecute(r ApiRevokeOAuth2C
 	if r.all != nil {
 		localVarQueryParams.Add("all", parameterToString(*r.all, ""))
 	}
-	if r.triggerBackChannelLogout != nil {
-		localVarQueryParams.Add("trigger_back_channel_logout", parameterToString(*r.triggerBackChannelLogout, ""))
+	if r.triggerBackchannelLogout != nil {
+		localVarQueryParams.Add("trigger_backchannel_logout", parameterToString(*r.triggerBackchannelLogout, ""))
 	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}

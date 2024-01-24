@@ -1282,8 +1282,8 @@
           },
           {
             "type": "boolean",
-            "description": "If set to `?trigger_back_channel_logout=true`, performs back channel logout for matching clients",
-            "name": "trigger_back_channel_logout",
+            "description": "If set to `?trigger_backchannel_logout=true`, performs back-channel logout for matching clients",
+            "name": "trigger_backchannel_logout",
             "in": "query"
           }
         ],
@@ -1344,8 +1344,8 @@
           },
           {
             "type": "boolean",
-            "description": "If set to `?trigger_back_channel_logout=true`, performs back channel logout for matching clients",
-            "name": "trigger_back_channel_logout",
+            "description": "If set to `?trigger_backchannel_logout=true`, performs back-channel logout for matching clients",
+            "name": "trigger_backchannel_logout",
             "in": "query"
           }
         ],

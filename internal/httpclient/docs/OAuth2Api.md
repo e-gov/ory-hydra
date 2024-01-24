@@ -506,7 +506,7 @@ No authorization required
 
 ## ExpireOAuth2ConsentSessions
 
-> ExpireOAuth2ConsentSessions(ctx).Subject(subject).Client(client).LoginSessionId(loginSessionId).All(all).TriggerBackChannelLogout(triggerBackChannelLogout).Execute()
+> ExpireOAuth2ConsentSessions(ctx).Subject(subject).Client(client).LoginSessionId(loginSessionId).All(all).TriggerBackchannelLogout(triggerBackchannelLogout).Execute()
 
 Expires Consent Sessions of a Subject for a Specific OAuth 2.0 Client
 
@@ -529,11 +529,11 @@ func main() {
     client := "client_example" // string | OAuth 2.0 Client ID  If set, deletes only those consent sessions that have been granted to the specified OAuth 2.0 Client ID. (optional)
     loginSessionId := "loginSessionId_example" // string | If set, deletes only those consent sessions by the Subject that have been granted to the specified session id. Can be combined with client or all parameter. (optional)
     all := true // bool | Revoke All Consent Sessions  If set to `true` deletes all consent sessions by the Subject that have been granted. (optional)
-    triggerBackChannelLogout := true // bool | If set to `?trigger_back_channel_logout=true`, performs back channel logout for matching clients (optional)
+    triggerBackchannelLogout := true // bool | If set to `?trigger_backchannel_logout=true`, performs back-channel logout for matching clients (optional)
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.OAuth2Api.ExpireOAuth2ConsentSessions(context.Background()).Subject(subject).Client(client).LoginSessionId(loginSessionId).All(all).TriggerBackChannelLogout(triggerBackChannelLogout).Execute()
+    resp, r, err := apiClient.OAuth2Api.ExpireOAuth2ConsentSessions(context.Background()).Subject(subject).Client(client).LoginSessionId(loginSessionId).All(all).TriggerBackchannelLogout(triggerBackchannelLogout).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `OAuth2Api.ExpireOAuth2ConsentSessions``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -556,7 +556,7 @@ Name | Type | Description  | Notes
  **client** | **string** | OAuth 2.0 Client ID  If set, deletes only those consent sessions that have been granted to the specified OAuth 2.0 Client ID. | 
  **loginSessionId** | **string** | If set, deletes only those consent sessions by the Subject that have been granted to the specified session id. Can be combined with client or all parameter. | 
  **all** | **bool** | Revoke All Consent Sessions  If set to &#x60;true&#x60; deletes all consent sessions by the Subject that have been granted. | 
- **triggerBackChannelLogout** | **bool** | If set to &#x60;?trigger_back_channel_logout&#x3D;true&#x60;, performs back channel logout for matching clients | 
+ **triggerBackchannelLogout** | **bool** | If set to &#x60;?trigger_backchannel_logout&#x3D;true&#x60;, performs back-channel logout for matching clients | 
 
 ### Return type
 
@@ -1607,7 +1607,7 @@ No authorization required
 
 ## RevokeOAuth2ConsentSessions
 
-> RevokeOAuth2ConsentSessions(ctx).Subject(subject).Client(client).LoginSessionId(loginSessionId).All(all).TriggerBackChannelLogout(triggerBackChannelLogout).Execute()
+> RevokeOAuth2ConsentSessions(ctx).Subject(subject).Client(client).LoginSessionId(loginSessionId).All(all).TriggerBackchannelLogout(triggerBackchannelLogout).Execute()
 
 Revoke OAuth 2.0 Consent Sessions of a Subject
 
@@ -1630,11 +1630,11 @@ func main() {
     client := "client_example" // string | OAuth 2.0 Client ID  If set, deletes only those consent sessions that have been granted to the specified OAuth 2.0 Client ID. (optional)
     loginSessionId := "loginSessionId_example" // string | If set, deletes only those consent sessions by the Subject that have been granted to the specified session id. Can be combined with client or all parameter. (optional)
     all := true // bool | Revoke All Consent Sessions  If set to `true` deletes all consent sessions by the Subject that have been granted. (optional)
-    triggerBackChannelLogout := true // bool | If set to `?trigger_back_channel_logout=true`, performs back channel logout for matching clients (optional)
+    triggerBackchannelLogout := true // bool | If set to `?trigger_backchannel_logout=true`, performs back-channel logout for matching clients (optional)
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.OAuth2Api.RevokeOAuth2ConsentSessions(context.Background()).Subject(subject).Client(client).LoginSessionId(loginSessionId).All(all).TriggerBackChannelLogout(triggerBackChannelLogout).Execute()
+    resp, r, err := apiClient.OAuth2Api.RevokeOAuth2ConsentSessions(context.Background()).Subject(subject).Client(client).LoginSessionId(loginSessionId).All(all).TriggerBackchannelLogout(triggerBackchannelLogout).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `OAuth2Api.RevokeOAuth2ConsentSessions``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -1657,7 +1657,7 @@ Name | Type | Description  | Notes
  **client** | **string** | OAuth 2.0 Client ID  If set, deletes only those consent sessions that have been granted to the specified OAuth 2.0 Client ID. | 
  **loginSessionId** | **string** | If set, deletes only those consent sessions by the Subject that have been granted to the specified session id. Can be combined with client or all parameter. | 
  **all** | **bool** | Revoke All Consent Sessions  If set to &#x60;true&#x60; deletes all consent sessions by the Subject that have been granted. | 
- **triggerBackChannelLogout** | **bool** | If set to &#x60;?trigger_back_channel_logout&#x3D;true&#x60;, performs back channel logout for matching clients | 
+ **triggerBackchannelLogout** | **bool** | If set to &#x60;?trigger_backchannel_logout&#x3D;true&#x60;, performs back-channel logout for matching clients | 
 
 ### Return type
 

@@ -2814,9 +2814,9 @@
             }
           },
           {
-            "description": "If set to `?trigger_back_channel_logout=true`, performs back channel logout for matching clients",
+            "description": "If set to `?trigger_backchannel_logout=true`, performs back-channel logout for matching clients",
             "in": "query",
-            "name": "trigger_back_channel_logout",
+            "name": "trigger_backchannel_logout",
             "schema": {
               "type": "boolean"
             }
@@ -2963,9 +2963,9 @@
             }
           },
           {
-            "description": "If set to `?trigger_back_channel_logout=true`, performs back channel logout for matching clients",
+            "description": "If set to `?trigger_backchannel_logout=true`, performs back-channel logout for matching clients",
             "in": "query",
-            "name": "trigger_back_channel_logout",
+            "name": "trigger_backchannel_logout",
             "schema": {
               "type": "boolean"
             }

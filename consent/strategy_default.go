@@ -679,14 +679,16 @@ func (s *DefaultStrategy) executeBackChannelLogoutForClients(ctx context.Context
 		//
 		// s.r.ConsentManager().GetForcedObfuscatedLoginSession(context.Background(), subject, <missing>)
 		// sub := s.obfuscateSubjectIdentifier(c, subject, )
-
+		if c.LoginSessionID == nil {
+			continue
+		}
 		t, _, err := s.r.OpenIDJWTStrategy().Generate(ctx, jwt.MapClaims{
 			"iss":    s.c.IssuerURL(ctx).String(),
 			"aud":    []string{c.LegacyClientID},
 			"iat":    time.Now().UTC().Unix(),
 			"jti":    uuid.New(),
 			"events": map[string]struct{}{"http://schemas.openid.net/event/backchannel-logout": {}},
-			"sid":    c.LoginSessionID,
+			"sid":    *c.LoginSessionID,
 		}, &jwt.Headers{
 			Extra: map[string]interface{}{"kid": openIDKeyID},
 		})
@@ -694,7 +696,7 @@ func (s *DefaultStrategy) executeBackChannelLogoutForClients(ctx context.Context
 			return err
 		}
 
-		tasks = append(tasks, task{url: c.BackChannelLogoutURI, clientID: c.GetID(), sessionID: c.LoginSessionID, token: t})
+		tasks = append(tasks, task{url: c.BackChannelLogoutURI, clientID: c.GetID(), sessionID: *c.LoginSessionID, token: t})
 	}
 
 	var execute = func(t task) {
@@ -1088,28 +1090,28 @@ func (s *DefaultStrategy) ExecuteBackChannelLogoutBySubject(ctx context.Context,
 	return s.executeBackChannelLogoutForClients(ctx, r, clients)
 }
 
-func (s *DefaultStrategy) ExecuteBackChannelLogoutByClient(ctx context.Context, r *http.Request, subject, client string) error {
+func (s *DefaultStrategy) ExecuteBackChannelLogoutByClient(ctx context.Context, r *http.Request, subject, clientId string) error {
 	clients, err := s.r.ConsentManager().ListUserAuthenticatedClientsWithBackChannelLogout(ctx, subject)
 	if err != nil {
 		return err
 	}
-	for i := len(clients) - 1; i >= 0; i-- {
-		if clients[i].LegacyClientID != client {
-			clients = append(clients[:i], clients[i+1:]...)
-		}
-	}
-	return s.executeBackChannelLogoutForClients(ctx, r, clients)
+	return s.executeBackChannelLogoutForClients(ctx, r, filterClients(clients, clientId))
 }
 
-func (s *DefaultStrategy) ExecuteBackChannelLogoutByClientSession(ctx context.Context, r *http.Request, subject, client, sid string) error {
+func (s *DefaultStrategy) ExecuteBackChannelLogoutByClientSession(ctx context.Context, r *http.Request, subject, clientId, sid string) error {
 	clients, err := s.r.ConsentManager().ListUserSessionAuthenticatedClientsWithBackChannelLogout(ctx, subject, sid)
 	if err != nil {
 		return err
 	}
-	for i := len(clients) - 1; i >= 0; i-- {
-		if clients[i].LegacyClientID != client {
-			clients = append(clients[:i], clients[i+1:]...)
+	return s.executeBackChannelLogoutForClients(ctx, r, filterClients(clients, clientId))
+}
+
+func filterClients(clients []client.LoginSessionClient, clientId string) []client.LoginSessionClient {
+	var result []client.LoginSessionClient
+	for _, clientValue := range clients {
+		if clientValue.LegacyClientID == clientId {
+			result = append(result, clientValue)
 		}
 	}
-	return s.executeBackChannelLogoutForClients(ctx, r, clients)
+	return result
 }

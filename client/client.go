@@ -311,7 +311,7 @@ type Client struct {
 // swagger:ignore
 type LoginSessionClient struct {
 	Client
-	LoginSessionID string `json:"login_session_id,omitempty" db:"login_session_id"`
+	LoginSessionID *string `json:"login_session_id,omitempty" db:"login_session_id"`
 }
 
 // OAuth 2.0 Client Token Lifespans

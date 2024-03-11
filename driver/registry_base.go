@@ -374,9 +374,8 @@ func (m *RegistryBase) AccessTokenJWTStrategy() jwk.JWTSigner {
 	if m.ats != nil {
 		return m.ats
 	}
-	if m.Config().AccessTokenStrategy(context.TODO()) == config.AccessTokenJWTStrategy {
-		m.ats = jwk.NewDefaultJWTSigner(m.Config(), m.r, x.OAuth2JWTKeyName)
-	}
+
+	m.ats = jwk.NewDefaultJWTSigner(m.Config(), m.r, x.OAuth2JWTKeyName)
 	return m.ats
 }
 

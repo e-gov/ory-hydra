@@ -1216,6 +1216,7 @@ func TestAuthCodeWithMockStrategy(t *testing.T) {
 									assert.Equal(t, r.Header.Get("Content-Type"), "application/json; charset=UTF-8")
 
 									expectedGrantedScopes := []string{"openid", "offline", "hydra.*"}
+									expectedRequestedScopes := []string{"openid", "offline", "hydra.*"}
 									expectedSubject := "foo"
 
 									exceptKeys := []string{
@@ -1241,6 +1242,7 @@ func TestAuthCodeWithMockStrategy(t *testing.T) {
 										require.NotEmpty(t, hookReq.Requester)
 										require.Equal(t, hookReq.Requester.ClientID, oauthConfig.ClientID)
 										require.ElementsMatch(t, hookReq.Requester.GrantedScopes, expectedGrantedScopes)
+										require.ElementsMatch(t, hookReq.RequestedScopes, expectedRequestedScopes)
 
 										snapshotx.SnapshotTExcept(t, hookReq, exceptKeys)
 									} else {

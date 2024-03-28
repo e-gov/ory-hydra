@@ -44,6 +44,8 @@ type RefreshTokenHookRequest struct {
 	GrantedScopes []string `json:"granted_scopes"`
 	// GrantedAudience is the list of audiences granted to the OAuth 2.0 client.
 	GrantedAudience []string `json:"granted_audience"`
+	// RequestedScopes is the list of scopes requested with the autentication request.
+	RequestedScopes []string `json:"requested_scopes"`
 }
 
 // RefreshTokenHook is an AccessRequestHook called for `refresh_token` grant type.
@@ -80,6 +82,7 @@ func RefreshTokenHook(reg interface {
 			ClientID:        requester.GetClient().GetID(),
 			GrantedScopes:   requester.GetGrantedScopes(),
 			GrantedAudience: requester.GetGrantedAudience(),
+			RequestedScopes: requester.GetRequestedScopes(),
 		}
 
 		reqBodyBytes, err := json.Marshal(&reqBody)

@@ -49,5 +49,10 @@
     "openid",
     "hydra.*"
   ],
-  "granted_audience": []
+  "granted_audience": [],
+  "requested_scopes": [
+    "hydra.*",
+    "offline",
+    "openid"
+  ]
 }

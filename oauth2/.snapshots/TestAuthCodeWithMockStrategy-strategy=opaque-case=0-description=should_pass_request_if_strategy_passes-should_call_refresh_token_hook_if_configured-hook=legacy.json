@@ -51,8 +51,9 @@
   ],
   "granted_audience": [],
   "requested_scopes": [
-    "hydra.*",
+    "openid",
     "offline",
-    "openid"
+    "hydra.*",
+    "representee.ABC123"
   ]
 }

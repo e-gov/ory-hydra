@@ -1216,7 +1216,7 @@ func TestAuthCodeWithMockStrategy(t *testing.T) {
 									assert.Equal(t, r.Header.Get("Content-Type"), "application/json; charset=UTF-8")
 
 									expectedGrantedScopes := []string{"openid", "offline", "hydra.*"}
-									expectedRequestedScopes := []string{"openid", "offline", "hydra.*"}
+									expectedRequestedScopes := []string{"openid", "offline", "hydra.*", "representee.ABC123"}
 									expectedSubject := "foo"
 
 									exceptKeys := []string{
@@ -1475,6 +1475,7 @@ func testRefresh(t *testing.T, token *oauth2.Token, u string, sleep bool) (*http
 	req, err := http.NewRequest("POST", oauthClientConfig.TokenURL, strings.NewReader(url.Values{
 		"grant_type":    []string{"refresh_token"},
 		"refresh_token": []string{token.RefreshToken},
+		"scope":         []string{"openid offline hydra.* representee.ABC123"},
 	}.Encode()))
 	require.NoError(t, err)
 

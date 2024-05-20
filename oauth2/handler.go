@@ -1035,6 +1035,13 @@ func (h *Handler) oauth2TokenExchange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.c.AccessTokenStrategy(ctx, client.AccessTokenStrategySource(accessRequest.GetClient())) == "jwt" {
+		jwtTokenParts := strings.Split(accessResponse.GetAccessToken(), ".")
+		if len(jwtTokenParts) == 3 {
+			h.r.Logger().WithField("govsso.session.oidc.access_token", jwtTokenParts[0]+"."+jwtTokenParts[1]).Info("Access-Token response")
+		}
+	}
+
 	h.r.Logger().
 		WithField("govsso.session.oidc.id_token", accessResponse.GetExtra("id_token")).
 		WithField("govsso.session.oidc.scope", accessResponse.GetExtra("scope")).

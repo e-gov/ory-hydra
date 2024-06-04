@@ -260,7 +260,6 @@ func TestAuthCodeWithDefaultStrategy(t *testing.T) {
 		assert.True(t, time.Now().After(time.Unix(i.Get("nbf").Int(), 0)), "%s", i)
 		assert.True(t, time.Now().Before(time.Unix(i.Get("exp").Int(), 0)), "%s", i)
 		requirex.EqualTime(t, expectedExp, time.Unix(i.Get("exp").Int(), 0), time.Second)
-		assert.EqualValues(t, `["hydra","offline","openid"]`, i.Get("scp").Raw, "%s", i)
 		return i
 	}
 
@@ -978,7 +977,6 @@ func TestAuthCodeWithMockStrategy(t *testing.T) {
 						assert.NotEmpty(t, data["iat"])
 						assert.NotEmpty(t, data["nbf"])
 						assert.EqualValues(t, data["nbf"], data["iat"])
-						assert.EqualValues(t, []interface{}{"offline", "openid", "hydra.*"}, data["scp"])
 					},
 				},
 				{

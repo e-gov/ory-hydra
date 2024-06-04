@@ -11,6 +11,7 @@ import (
 	foauth2 "github.com/ory/fosite/handler/oauth2"
 	"github.com/ory/hydra/v2/client"
 	"github.com/ory/hydra/v2/driver/config"
+	oauth2 "github.com/ory/hydra/v2/oauth2"
 )
 
 var _ foauth2.CoreStrategy = (*TokenStrategy)(nil)
@@ -19,11 +20,11 @@ var _ foauth2.CoreStrategy = (*TokenStrategy)(nil)
 type TokenStrategy struct {
 	c    *config.DefaultProvider
 	hmac *foauth2.HMACSHAStrategy
-	jwt  *foauth2.DefaultJWTStrategy
+	jwt  *oauth2.NoScopeJWTStrategy
 }
 
 // NewTokenStrategy returns a new TokenStrategy.
-func NewTokenStrategy(c *config.DefaultProvider, hmac *foauth2.HMACSHAStrategy, jwt *foauth2.DefaultJWTStrategy) *TokenStrategy {
+func NewTokenStrategy(c *config.DefaultProvider, hmac *foauth2.HMACSHAStrategy, jwt *oauth2.NoScopeJWTStrategy) *TokenStrategy {
 	return &TokenStrategy{c: c, hmac: hmac, jwt: jwt}
 }
 

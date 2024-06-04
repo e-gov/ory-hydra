@@ -8,14 +8,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ory/fosite/handler/oauth2"
+	foauth2 "github.com/ory/fosite/handler/oauth2"
+	"github.com/ory/hydra/v2/oauth2"
 )
 
 // Test that the generic signature function implements the same signature as the
 // HMAC and JWT strategies.
 func TestAccessTokenSignature(t *testing.T) {
-	t.Run("strategy=DefaultJWTStrategy", func(t *testing.T) {
-		strategy := new(oauth2.DefaultJWTStrategy)
+	t.Run("strategy=NoScopeJWTStrategy", func(t *testing.T) {
+		strategy := new(oauth2.NoScopeJWTStrategy)
 		for _, tc := range []struct{ token string }{
 			{""},
 			{"foo"},
@@ -31,7 +32,7 @@ func TestAccessTokenSignature(t *testing.T) {
 		}
 	})
 	t.Run("strategy=HMACStrategy", func(t *testing.T) {
-		strategy := new(oauth2.HMACSHAStrategy)
+		strategy := new(foauth2.HMACSHAStrategy)
 		for _, tc := range []struct{ token string }{
 			{""},
 			{"foo"},

@@ -108,7 +108,6 @@ func TestClientCredentials(t *testing.T) {
 
 		jwtClaims := gjson.ParseBytes(body)
 		assert.NotEmpty(t, jwtClaims.Get("jti").String())
-		assert.EqualValues(t, encodeOr(t, conf.Scopes, "[]"), jwtClaims.Get("scp").Raw, "%s", introspection.Raw)
 		check(jwtClaims)
 	}
 

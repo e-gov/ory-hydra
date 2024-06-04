@@ -53,7 +53,7 @@ func NewSessionWithCustomClaims(subject string, allowedTopLevelClaims []string) 
 
 func (s *Session) GetJWTClaims() jwt.JWTClaimsContainer {
 	//a slice of claims that are reserved and should not be overridden
-	var reservedClaims = []string{"iss", "sub", "aud", "exp", "nbf", "iat", "jti", "client_id", "scp"}
+	var reservedClaims = []string{"iss", "sub", "aud", "exp", "nbf", "iat", "jti", "client_id"}
 
 	//remove any reserved claims from the custom claims
 	allowedClaimsFromConfigWithoutReserved := stringslice.Filter(s.AllowedTopLevelClaims, func(s string) bool {
@@ -84,7 +84,7 @@ func (s *Session) GetJWTClaims() jwt.JWTClaimsContainer {
 		// The JTI MUST NOT BE FIXED or refreshing tokens will yield the SAME token
 		// JTI:       s.JTI,
 
-		// These are set by the DefaultJWTStrategy
+		// These are removed by the NoScopeJWTStrategy
 		// Scope:     s.Scope,
 
 		// Setting these here will cause the token to have the same iat/nbf values always

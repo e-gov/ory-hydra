@@ -79,7 +79,7 @@ func TestClientCredentials(t *testing.T) {
 		return string(out)
 	}
 
-	var inspectToken = func(t *testing.T, token *goauth2.Token, cl *hc.Client, conf clientcredentials.Config, strategy string, expectedExp time.Time, checkExtraClaims bool) {
+	var inspectToken = func(t *testing.T, token *goauth2.Token, cl *hc.Client, conf clientcredentials.Config, strategy string, expectedExp time.Time) {
 		introspection := testhelpers.IntrospectToken(t, &goauth2.Config{ClientID: cl.GetID(), ClientSecret: conf.ClientSecret}, token.AccessToken, admin)
 
 		check := func(res gjson.Result) {
@@ -91,10 +91,6 @@ func TestClientCredentials(t *testing.T) {
 			requirex.EqualTime(t, expectedExp, time.Unix(res.Get("exp").Int(), 0), time.Second)
 
 			assert.EqualValues(t, encodeOr(t, conf.EndpointParams["audience"], "[]"), res.Get("aud").Raw, "%s", res.Raw)
-
-			if checkExtraClaims {
-				require.True(t, res.Get("ext.hooked").Bool())
-			}
 		}
 
 		check(introspection)
@@ -116,10 +112,10 @@ func TestClientCredentials(t *testing.T) {
 		check(jwtClaims)
 	}
 
-	var getAndInspectToken = func(t *testing.T, cl *hc.Client, conf clientcredentials.Config, strategy string, expectedExp time.Time, checkExtraClaims bool) {
+	var getAndInspectToken = func(t *testing.T, cl *hc.Client, conf clientcredentials.Config, strategy string, expectedExp time.Time) {
 		token, err := getToken(t, conf)
 		require.NoError(t, err)
-		inspectToken(t, token, cl, conf, strategy, expectedExp, checkExtraClaims)
+		inspectToken(t, token, cl, conf, strategy, expectedExp)
 	}
 
 	t.Run("case=should fail because audience is not allowed", func(t *testing.T) {
@@ -142,7 +138,7 @@ func TestClientCredentials(t *testing.T) {
 				reg.Config().MustSet(ctx, config.KeyAccessTokenStrategy, strategy)
 
 				cl, conf := newClient(t)
-				getAndInspectToken(t, cl, conf, strategy, time.Now().Add(reg.Config().GetAccessTokenLifespan(ctx)), false)
+				getAndInspectToken(t, cl, conf, strategy, time.Now().Add(reg.Config().GetAccessTokenLifespan(ctx)))
 			}
 		}
 
@@ -157,7 +153,7 @@ func TestClientCredentials(t *testing.T) {
 
 				cl, conf := newClient(t)
 				conf.EndpointParams = url.Values{}
-				getAndInspectToken(t, cl, conf, strategy, time.Now().Add(reg.Config().GetAccessTokenLifespan(ctx)), false)
+				getAndInspectToken(t, cl, conf, strategy, time.Now().Add(reg.Config().GetAccessTokenLifespan(ctx)))
 			}
 		}
 
@@ -172,7 +168,7 @@ func TestClientCredentials(t *testing.T) {
 
 				cl, conf := newClient(t)
 				conf.Scopes = []string{}
-				getAndInspectToken(t, cl, conf, strategy, time.Now().Add(reg.Config().GetAccessTokenLifespan(ctx)), false)
+				getAndInspectToken(t, cl, conf, strategy, time.Now().Add(reg.Config().GetAccessTokenLifespan(ctx)))
 			}
 		}
 
@@ -196,7 +192,7 @@ func TestClientCredentials(t *testing.T) {
 
 				// We reset this so that introspectToken is going to check for the default scope.
 				conf.Scopes = defaultScope
-				inspectToken(t, token, cl, conf, strategy, time.Now().Add(reg.Config().GetAccessTokenLifespan(ctx)), false)
+				inspectToken(t, token, cl, conf, strategy, time.Now().Add(reg.Config().GetAccessTokenLifespan(ctx)))
 			}
 		}
 
@@ -219,7 +215,7 @@ func TestClientCredentials(t *testing.T) {
 					Audience:      []string{"https://api.ory.sh/"},
 				})
 				testhelpers.UpdateClientTokenLifespans(t, &goauth2.Config{ClientID: cl.GetID(), ClientSecret: conf.ClientSecret}, cl.GetID(), testhelpers.TestLifespans, admin)
-				getAndInspectToken(t, cl, conf, strategy, time.Now().Add(testhelpers.TestLifespans.ClientCredentialsGrantAccessTokenLifespan.Duration), false)
+				getAndInspectToken(t, cl, conf, strategy, time.Now().Add(testhelpers.TestLifespans.ClientCredentialsGrantAccessTokenLifespan.Duration))
 			}
 		}
 
@@ -301,7 +297,7 @@ func TestClientCredentials(t *testing.T) {
 					Scope:         scope,
 					Audience:      audience,
 				})
-				getAndInspectToken(t, cl, conf, strategy, time.Now().Add(reg.Config().GetAccessTokenLifespan(ctx)), true)
+				getAndInspectToken(t, cl, conf, strategy, time.Now().Add(reg.Config().GetAccessTokenLifespan(ctx)))
 			}
 		}
 

@@ -70,7 +70,7 @@ func TestJWTBearer(t *testing.T) {
 		return conf.Token(context.Background())
 	}
 
-	var inspectToken = func(t *testing.T, token *goauth2.Token, cl *hc.Client, strategy string, grant trust.Grant, checkExtraClaims bool) {
+	var inspectToken = func(t *testing.T, token *goauth2.Token, cl *hc.Client, strategy string, grant trust.Grant) {
 		introspection := testhelpers.IntrospectToken(t, &goauth2.Config{ClientID: cl.GetID(), ClientSecret: cl.Secret}, token.AccessToken, admin)
 
 		check := func(res gjson.Result) {
@@ -82,10 +82,6 @@ func TestJWTBearer(t *testing.T) {
 			assert.True(t, res.Get("exp").Int() >= res.Get("iat").Int()+int64(reg.Config().GetAccessTokenLifespan(ctx).Seconds()), "%s", res.Raw)
 
 			assert.EqualValues(t, fmt.Sprintf(`["%s"]`, reg.Config().OAuth2TokenURL(ctx).String()), res.Get("aud").Raw, "%s", res.Raw)
-
-			if checkExtraClaims {
-				require.True(t, res.Get("ext.hooked").Bool())
-			}
 		}
 
 		check(introspection)
@@ -257,7 +253,7 @@ func TestJWTBearer(t *testing.T) {
 				result, err := getToken(t, conf)
 				require.NoError(t, err)
 
-				inspectToken(t, result, client, strategy, trustGrant, false)
+				inspectToken(t, result, client, strategy, trustGrant)
 			}
 		}
 
@@ -297,7 +293,7 @@ func TestJWTBearer(t *testing.T) {
 				require.NoError(t, json.Unmarshal(body, &result))
 				assert.NotEmpty(t, result.AccessToken, "%s", body)
 
-				inspectToken(t, &result, client, strategy, trustGrant, false)
+				inspectToken(t, &result, client, strategy, trustGrant)
 			}
 		}
 
@@ -364,7 +360,7 @@ func TestJWTBearer(t *testing.T) {
 				result, err := getToken(t, conf)
 				require.NoError(t, err)
 
-				inspectToken(t, result, client, strategy, trustGrant, true)
+				inspectToken(t, result, client, strategy, trustGrant)
 			}
 		}
 
@@ -440,7 +436,7 @@ func TestJWTBearer(t *testing.T) {
 				result, err := getToken(t, conf)
 				require.NoError(t, err)
 
-				inspectToken(t, result, client, strategy, trustGrant, true)
+				inspectToken(t, result, client, strategy, trustGrant)
 			}
 		}
 

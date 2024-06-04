@@ -53,7 +53,7 @@ func NewSessionWithCustomClaims(subject string, allowedTopLevelClaims []string) 
 
 func (s *Session) GetJWTClaims() jwt.JWTClaimsContainer {
 	//a slice of claims that are reserved and should not be overridden
-	var reservedClaims = []string{"iss", "sub", "aud", "exp", "nbf", "iat", "jti", "client_id", "scp", "ext"}
+	var reservedClaims = []string{"iss", "sub", "aud", "exp", "nbf", "iat", "jti", "client_id", "scp"}
 
 	//remove any reserved claims from the custom claims
 	allowedClaimsFromConfigWithoutReserved := stringslice.Filter(s.AllowedTopLevelClaims, func(s string) bool {
@@ -69,9 +69,6 @@ func (s *Session) GetJWTClaims() jwt.JWTClaimsContainer {
 			topLevelExtraWithMirrorExt[allowedClaim] = cl
 		}
 	}
-
-	//for every other claim that was already reserved and for mirroring, add original extra under "ext"
-	topLevelExtraWithMirrorExt["ext"] = s.Extra
 
 	claims := &jwt.JWTClaims{
 		Subject: s.Subject,

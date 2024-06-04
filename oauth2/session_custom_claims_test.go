@@ -68,13 +68,6 @@ func TestCustomClaimsInSession(t *testing.T) {
 
 		require.Contains(t, claims, "foo")
 		assert.EqualValues(t, "bar", claims["foo"])
-
-		require.Contains(t, claims, "ext")
-		extClaims, ok := claims["ext"].(map[string]interface{})
-		require.True(t, ok)
-
-		require.Contains(t, extClaims, "foo")
-		assert.EqualValues(t, "bar", extClaims["foo"])
 	})
 	t.Run("only_non_reserved_claims_get_mirrored", func(t *testing.T) {
 		c.MustSet(ctx, config.KeyAllowedTopLevelClaims, []string{"foo", "iss", "sub"})
@@ -93,19 +86,6 @@ func TestCustomClaimsInSession(t *testing.T) {
 
 		require.Contains(t, claims, "foo")
 		assert.EqualValues(t, "bar", claims["foo"])
-
-		require.Contains(t, claims, "ext")
-		extClaims, ok := claims["ext"].(map[string]interface{})
-		require.True(t, ok)
-
-		require.Contains(t, extClaims, "foo")
-		assert.EqualValues(t, "bar", extClaims["foo"])
-
-		require.Contains(t, extClaims, "iss")
-		assert.EqualValues(t, "hydra.remote", extClaims["iss"])
-
-		require.Contains(t, extClaims, "sub")
-		assert.EqualValues(t, "another-alice", extClaims["sub"])
 	})
 	t.Run("no_custom_claims_in_config", func(t *testing.T) {
 		c.MustSet(ctx, config.KeyAllowedTopLevelClaims, []string{})
@@ -122,19 +102,6 @@ func TestCustomClaimsInSession(t *testing.T) {
 		assert.EqualValues(t, "hydra.localhost", claims["iss"])
 
 		assert.NotContains(t, claims, "foo")
-
-		require.Contains(t, claims, "ext")
-		extClaims, ok := claims["ext"].(map[string]interface{})
-		require.True(t, ok)
-
-		require.Contains(t, extClaims, "foo")
-		assert.EqualValues(t, "bar", extClaims["foo"])
-
-		require.Contains(t, extClaims, "sub")
-		assert.EqualValues(t, "another-alice", extClaims["sub"])
-
-		require.Contains(t, extClaims, "iss")
-		assert.EqualValues(t, "hydra.remote", extClaims["iss"])
 	})
 	t.Run("more_config_claims_than_given", func(t *testing.T) {
 		c.MustSet(ctx, config.KeyAllowedTopLevelClaims, []string{"foo", "baz", "bar", "iss"})
@@ -153,16 +120,6 @@ func TestCustomClaimsInSession(t *testing.T) {
 
 		require.Contains(t, claims, "foo")
 		assert.EqualValues(t, "foo_value", claims["foo"])
-
-		require.Contains(t, claims, "ext")
-		extClaims, ok := claims["ext"].(map[string]interface{})
-		require.True(t, ok)
-
-		require.Contains(t, extClaims, "foo")
-		assert.EqualValues(t, "foo_value", extClaims["foo"])
-
-		require.Contains(t, extClaims, "sub")
-		assert.EqualValues(t, "another-alice", extClaims["sub"])
 	})
 	t.Run("less_config_claims_than_given", func(t *testing.T) {
 		c.MustSet(ctx, config.KeyAllowedTopLevelClaims, []string{"foo", "sub"})
@@ -183,16 +140,6 @@ func TestCustomClaimsInSession(t *testing.T) {
 
 		assert.NotContains(t, claims, "bar")
 		assert.NotContains(t, claims, "baz")
-
-		require.Contains(t, claims, "ext")
-		extClaims, ok := claims["ext"].(map[string]interface{})
-		require.True(t, ok)
-
-		require.Contains(t, extClaims, "foo")
-		assert.EqualValues(t, "foo_value", extClaims["foo"])
-
-		require.Contains(t, extClaims, "sub")
-		assert.EqualValues(t, "another-alice", extClaims["sub"])
 	})
 	t.Run("unused_config_claims", func(t *testing.T) {
 		c.MustSet(ctx, config.KeyAllowedTopLevelClaims, []string{"foo", "bar"})
@@ -213,16 +160,6 @@ func TestCustomClaimsInSession(t *testing.T) {
 
 		assert.NotContains(t, claims, "bar")
 		assert.NotContains(t, claims, "baz")
-
-		require.Contains(t, claims, "ext")
-		extClaims, ok := claims["ext"].(map[string]interface{})
-		require.True(t, ok)
-
-		require.Contains(t, extClaims, "foo")
-		assert.EqualValues(t, "foo_value", extClaims["foo"])
-
-		require.Contains(t, extClaims, "sub")
-		assert.EqualValues(t, "another-alice", extClaims["sub"])
 	})
 	t.Run("config_claims_contain_reserved_claims", func(t *testing.T) {
 		c.MustSet(ctx, config.KeyAllowedTopLevelClaims, []string{"iss", "sub"})
@@ -238,15 +175,5 @@ func TestCustomClaimsInSession(t *testing.T) {
 		require.Contains(t, claims, "iss")
 		assert.EqualValues(t, "hydra.localhost", claims["iss"])
 		assert.NotEqualValues(t, "hydra.remote", claims["iss"])
-
-		require.Contains(t, claims, "ext")
-		extClaims, ok := claims["ext"].(map[string]interface{})
-		require.True(t, ok)
-
-		require.Contains(t, extClaims, "sub")
-		assert.EqualValues(t, "another-alice", extClaims["sub"])
-
-		require.Contains(t, extClaims, "iss")
-		assert.EqualValues(t, "hydra.remote", extClaims["iss"])
 	})
 }

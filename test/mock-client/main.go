@@ -174,11 +174,6 @@ func checkTokenResponse(token oauth2token) {
 		if fmt.Sprintf("%s", claims["sub"]) != "the-subject" {
 			log.Fatalf("Expected subject from access token to be %s but got %s", "the-subject", claims["sub"])
 		}
-
-		ext := claims["ext"].(map[string]interface{})
-		if ext["foo"] != expectedValue {
-			log.Fatalf("Expected extra field \"foo\" from access token to be \"%s\" but got %s", expectedValue, ext["foo"])
-		}
 	}
 
 	intro, resp, err := sdk.OAuth2Api.IntrospectOAuth2Token(context.Background()).Token(token.AccessToken).Execute()

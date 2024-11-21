@@ -333,8 +333,9 @@ func (m *RegistryBase) HTTPClient(ctx context.Context, opts ...httpx.ResilientOp
 		httpx.ResilientClientWithConnectionTimeout(30*time.Second),
 		httpx.ResilientClientWithClient(&http.Client{
 			Transport: &http.Transport{
-				TLSClientConfig: clientConfig,
-				Proxy:           http.ProxyFromEnvironment,
+				TLSClientConfig:   clientConfig,
+				Proxy:             http.ProxyFromEnvironment,
+				DisableKeepAlives: true,
 			},
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				return errors.New("unexpected redirect") // Using http.ErrUseLastResponse would result no retry

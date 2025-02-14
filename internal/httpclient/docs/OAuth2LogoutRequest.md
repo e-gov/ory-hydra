@@ -6,6 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Challenge** | Pointer to **string** | Challenge is the identifier (\&quot;logout challenge\&quot;) of the logout authentication request. It is used to identify the session. | [optional]
 **Client** | Pointer to [**OAuth2Client**](OAuth2Client.md) |  | [optional]
+**PostLogoutRedirectUri** | Pointer to **string** |  | [optional]
 **RequestUrl** | Pointer to **string** | RequestURL is the original Logout URL requested. | [optional]
 **RpInitiated** | Pointer to **bool** | RPInitiated is set to true if the request was initiated by a Relying Party (RP), also known as an OAuth 2.0 Client. | [optional]
 **Sid** | Pointer to **string** | SessionID is the login session ID that was requested to log out. | [optional]
@@ -80,6 +81,31 @@ SetClient sets Client field to given value.
 `func (o *OAuth2LogoutRequest) HasClient() bool`
 
 HasClient returns a boolean if a field has been set.
+
+### GetPostLogoutRedirectUri
+
+`func (o *OAuth2LogoutRequest) GetPostLogoutRedirectUri() string`
+
+GetPostLogoutRedirectUri returns the PostLogoutRedirectUri field if non-nil, zero value otherwise.
+
+### GetPostLogoutRedirectUriOk
+
+`func (o *OAuth2LogoutRequest) GetPostLogoutRedirectUriOk() (*string, bool)`
+
+GetPostLogoutRedirectUriOk returns a tuple with the PostLogoutRedirectUri field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetPostLogoutRedirectUri
+
+`func (o *OAuth2LogoutRequest) SetPostLogoutRedirectUri(v string)`
+
+SetPostLogoutRedirectUri sets PostLogoutRedirectUri field to given value.
+
+### HasPostLogoutRedirectUri
+
+`func (o *OAuth2LogoutRequest) HasPostLogoutRedirectUri() bool`
+
+HasPostLogoutRedirectUri returns a boolean if a field has been set.
 
 ### GetRequestUrl
 

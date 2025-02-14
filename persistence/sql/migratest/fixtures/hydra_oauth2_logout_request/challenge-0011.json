@@ -7,5 +7,6 @@
   "ui_locales": [
     "CA"
   ],
+  "post_logout_redirect_uri": "http://post_logout/0011",
   "client": null
 }

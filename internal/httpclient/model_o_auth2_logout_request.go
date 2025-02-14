@@ -20,6 +20,7 @@ type OAuth2LogoutRequest struct {
 	// Challenge is the identifier (\"logout challenge\") of the logout authentication request. It is used to identify the session.
 	Challenge *string `json:"challenge,omitempty"`
 	Client *OAuth2Client `json:"client,omitempty"`
+	PostLogoutRedirectUri *string `json:"post_logout_redirect_uri,omitempty"`
 	// RequestURL is the original Logout URL requested.
 	RequestUrl *string `json:"request_url,omitempty"`
 	// RPInitiated is set to true if the request was initiated by a Relying Party (RP), also known as an OAuth 2.0 Client.
@@ -110,6 +111,38 @@ func (o *OAuth2LogoutRequest) HasClient() bool {
 // SetClient gets a reference to the given OAuth2Client and assigns it to the Client field.
 func (o *OAuth2LogoutRequest) SetClient(v OAuth2Client) {
 	o.Client = &v
+}
+
+// GetPostLogoutRedirectUri returns the PostLogoutRedirectUri field value if set, zero value otherwise.
+func (o *OAuth2LogoutRequest) GetPostLogoutRedirectUri() string {
+	if o == nil || o.PostLogoutRedirectUri == nil {
+		var ret string
+		return ret
+	}
+	return *o.PostLogoutRedirectUri
+}
+
+// GetPostLogoutRedirectUriOk returns a tuple with the PostLogoutRedirectUri field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *OAuth2LogoutRequest) GetPostLogoutRedirectUriOk() (*string, bool) {
+	if o == nil || o.PostLogoutRedirectUri == nil {
+		return nil, false
+	}
+	return o.PostLogoutRedirectUri, true
+}
+
+// HasPostLogoutRedirectUri returns a boolean if a field has been set.
+func (o *OAuth2LogoutRequest) HasPostLogoutRedirectUri() bool {
+	if o != nil && o.PostLogoutRedirectUri != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetPostLogoutRedirectUri gets a reference to the given string and assigns it to the PostLogoutRedirectUri field.
+func (o *OAuth2LogoutRequest) SetPostLogoutRedirectUri(v string) {
+	o.PostLogoutRedirectUri = &v
 }
 
 // GetRequestUrl returns the RequestUrl field value if set, zero value otherwise.
@@ -279,6 +312,9 @@ func (o OAuth2LogoutRequest) MarshalJSON() ([]byte, error) {
 	}
 	if o.Client != nil {
 		toSerialize["client"] = o.Client
+	}
+	if o.PostLogoutRedirectUri != nil {
+		toSerialize["post_logout_redirect_uri"] = o.PostLogoutRedirectUri
 	}
 	if o.RequestUrl != nil {
 		toSerialize["request_url"] = o.RequestUrl

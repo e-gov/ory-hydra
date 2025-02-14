@@ -3468,6 +3468,7 @@ components:
       type: object
     oAuth2LogoutRequest:
       example:
+        post_logout_redirect_uri: post_logout_redirect_uri
         ui_locales:
         - ui_locales
         - ui_locales
@@ -3548,6 +3549,8 @@ components:
           type: string
         client:
           $ref: '#/components/schemas/oAuth2Client'
+        post_logout_redirect_uri:
+          type: string
         request_url:
           description: RequestURL is the original Logout URL requested.
           type: string

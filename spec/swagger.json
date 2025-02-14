@@ -2996,6 +2996,9 @@
         "client": {
           "$ref": "#/definitions/oAuth2Client"
         },
+        "post_logout_redirect_uri": {
+          "type": "string"
+        },
         "request_url": {
           "description": "RequestURL is the original Logout URL requested.",
           "type": "string"

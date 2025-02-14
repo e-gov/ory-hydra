@@ -1631,6 +1631,7 @@ func (s *PersisterTestSuite) TestRejectLogoutRequest() {
 	for k, r := range s.registries {
 		t.Run(k, func(t *testing.T) {
 			lr := newLogoutRequest()
+			lr.UiLocales = sqlxx.StringSliceJSONFormat{}
 			require.NoError(t, r.ConsentManager().CreateLogoutRequest(s.t1, lr))
 
 			require.Error(t, r.ConsentManager().RejectLogoutRequest(s.t2, lr.ID))

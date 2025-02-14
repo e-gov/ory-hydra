@@ -4,12 +4,13 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Challenge** | Pointer to **string** | Challenge is the identifier (\&quot;logout challenge\&quot;) of the logout authentication request. It is used to identify the session. | [optional] 
-**Client** | Pointer to [**OAuth2Client**](OAuth2Client.md) |  | [optional] 
-**RequestUrl** | Pointer to **string** | RequestURL is the original Logout URL requested. | [optional] 
-**RpInitiated** | Pointer to **bool** | RPInitiated is set to true if the request was initiated by a Relying Party (RP), also known as an OAuth 2.0 Client. | [optional] 
-**Sid** | Pointer to **string** | SessionID is the login session ID that was requested to log out. | [optional] 
-**Subject** | Pointer to **string** | Subject is the user for whom the logout was request. | [optional] 
+**Challenge** | Pointer to **string** | Challenge is the identifier (\&quot;logout challenge\&quot;) of the logout authentication request. It is used to identify the session. | [optional]
+**Client** | Pointer to [**OAuth2Client**](OAuth2Client.md) |  | [optional]
+**RequestUrl** | Pointer to **string** | RequestURL is the original Logout URL requested. | [optional]
+**RpInitiated** | Pointer to **bool** | RPInitiated is set to true if the request was initiated by a Relying Party (RP), also known as an OAuth 2.0 Client. | [optional]
+**Sid** | Pointer to **string** | SessionID is the login session ID that was requested to log out. | [optional]
+**Subject** | Pointer to **string** | Subject is the user for whom the logout was request. | [optional]
+**UiLocales** | Pointer to **[]string** |  | [optional]
 
 ## Methods
 
@@ -179,6 +180,31 @@ SetSubject sets Subject field to given value.
 `func (o *OAuth2LogoutRequest) HasSubject() bool`
 
 HasSubject returns a boolean if a field has been set.
+
+### GetUiLocales
+
+`func (o *OAuth2LogoutRequest) GetUiLocales() []string`
+
+GetUiLocales returns the UiLocales field if non-nil, zero value otherwise.
+
+### GetUiLocalesOk
+
+`func (o *OAuth2LogoutRequest) GetUiLocalesOk() (*[]string, bool)`
+
+GetUiLocalesOk returns a tuple with the UiLocales field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetUiLocales
+
+`func (o *OAuth2LogoutRequest) SetUiLocales(v []string)`
+
+SetUiLocales sets UiLocales field to given value.
+
+### HasUiLocales
+
+`func (o *OAuth2LogoutRequest) HasUiLocales() bool`
+
+HasUiLocales returns a boolean if a field has been set.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

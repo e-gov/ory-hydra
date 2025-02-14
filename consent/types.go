@@ -413,6 +413,8 @@ type LogoutRequest struct {
 	// the flow.
 	WasHandled bool `json:"-" db:"was_used"`
 
+	UiLocales sqlxx.StringSliceJSONFormat `json:"ui_locales" db:"ui_locales"`
+
 	Verifier              string         `json:"-" db:"verifier"`
 	PostLogoutRedirectURI string         `json:"-" db:"redir_url"`
 	Accepted              bool           `json:"-" db:"accepted"`

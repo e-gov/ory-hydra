@@ -104,6 +104,7 @@ func MockLogoutRequest(key string, withClient bool, network string) (c *LogoutRe
 		WasHandled:            false,
 		Accepted:              false,
 		Client:                cl,
+		UiLocales:             sqlxx.StringSliceJSONFormat{"CA"},
 	}
 }
 
@@ -1127,6 +1128,7 @@ func compareLogoutRequest(t *testing.T, a, b *LogoutRequest) {
 	assert.EqualValues(t, a.PostLogoutRedirectURI, b.PostLogoutRedirectURI)
 	assert.EqualValues(t, a.RPInitiated, b.RPInitiated)
 	assert.EqualValues(t, a.SessionID, b.SessionID)
+	assert.EqualValues(t, a.UiLocales, b.UiLocales)
 }
 
 func compareAuthenticationRequest(t *testing.T, a, b *LoginRequest) {

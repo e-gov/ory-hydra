@@ -3468,6 +3468,9 @@ components:
       type: object
     oAuth2LogoutRequest:
       example:
+        ui_locales:
+        - ui_locales
+        - ui_locales
         subject: subject
         challenge: challenge
         client:
@@ -3559,6 +3562,12 @@ components:
         subject:
           description: Subject is the user for whom the logout was request.
           type: string
+        ui_locales:
+          items:
+            type: string
+          title: "StringSliceJSONFormat represents []string{} which is encoded to/from\
+            \ JSON for SQL storage."
+          type: array
       title: Contains information about an ongoing logout request.
       type: object
     oAuth2RedirectTo:

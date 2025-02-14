@@ -4,5 +4,8 @@
   "sid": "session_id-0012",
   "request_url": "http://request/0012",
   "rp_initiated": true,
+  "ui_locales": [
+    "CA"
+  ],
   "client": null
 }

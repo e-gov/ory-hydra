@@ -3011,6 +3011,9 @@
         "subject": {
           "description": "Subject is the user for whom the logout was request.",
           "type": "string"
+        },
+        "ui_locales": {
+          "$ref": "#/definitions/StringSliceJSONFormat"
         }
       }
     },

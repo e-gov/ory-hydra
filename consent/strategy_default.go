@@ -750,6 +750,7 @@ func (s *DefaultStrategy) issueLogoutVerifier(ctx context.Context, w http.Respon
 	hint := r.Form.Get("id_token_hint")
 	state := r.Form.Get("state")
 	requestedRedir := r.Form.Get("post_logout_redirect_uri")
+	uiLocales := stringsx.Splitx(r.Form.Get("ui_locales"), " ")
 
 	if len(hint) == 0 {
 		// hint is not set, so this is an OP initiated logout
@@ -788,6 +789,7 @@ func (s *DefaultStrategy) issueLogoutVerifier(ctx context.Context, w http.Respon
 
 			// PostLogoutRedirectURI is set to the value from config.Provider().LogoutRedirectURL()
 			PostLogoutRedirectURI: redir,
+			UiLocales:             uiLocales,
 		}); err != nil {
 			return nil, err
 		}
@@ -908,6 +910,7 @@ func (s *DefaultStrategy) issueLogoutVerifier(ctx context.Context, w http.Respon
 		Verifier:    uuid.New(),
 		Client:      cl,
 		RPInitiated: true,
+		UiLocales:   uiLocales,
 
 		// PostLogoutRedirectURI is set to the value from config.Provider().LogoutRedirectURL()
 		PostLogoutRedirectURI: redir,

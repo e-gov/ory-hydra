@@ -18,8 +18,8 @@ import (
 // OAuth2LogoutRequest struct for OAuth2LogoutRequest
 type OAuth2LogoutRequest struct {
 	// Challenge is the identifier (\"logout challenge\") of the logout authentication request. It is used to identify the session.
-	Challenge *string       `json:"challenge,omitempty"`
-	Client    *OAuth2Client `json:"client,omitempty"`
+	Challenge *string `json:"challenge,omitempty"`
+	Client *OAuth2Client `json:"client,omitempty"`
 	// RequestURL is the original Logout URL requested.
 	RequestUrl *string `json:"request_url,omitempty"`
 	// RPInitiated is set to true if the request was initiated by a Relying Party (RP), also known as an OAuth 2.0 Client.
@@ -28,6 +28,7 @@ type OAuth2LogoutRequest struct {
 	Sid *string `json:"sid,omitempty"`
 	// Subject is the user for whom the logout was request.
 	Subject *string `json:"subject,omitempty"`
+	UiLocales []string `json:"ui_locales,omitempty"`
 }
 
 // NewOAuth2LogoutRequest instantiates a new OAuth2LogoutRequest object
@@ -239,6 +240,38 @@ func (o *OAuth2LogoutRequest) SetSubject(v string) {
 	o.Subject = &v
 }
 
+// GetUiLocales returns the UiLocales field value if set, zero value otherwise.
+func (o *OAuth2LogoutRequest) GetUiLocales() []string {
+	if o == nil || o.UiLocales == nil {
+		var ret []string
+		return ret
+	}
+	return o.UiLocales
+}
+
+// GetUiLocalesOk returns a tuple with the UiLocales field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *OAuth2LogoutRequest) GetUiLocalesOk() ([]string, bool) {
+	if o == nil || o.UiLocales == nil {
+		return nil, false
+	}
+	return o.UiLocales, true
+}
+
+// HasUiLocales returns a boolean if a field has been set.
+func (o *OAuth2LogoutRequest) HasUiLocales() bool {
+	if o != nil && o.UiLocales != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetUiLocales gets a reference to the given []string and assigns it to the UiLocales field.
+func (o *OAuth2LogoutRequest) SetUiLocales(v []string) {
+	o.UiLocales = v
+}
+
 func (o OAuth2LogoutRequest) MarshalJSON() ([]byte, error) {
 	toSerialize := map[string]interface{}{}
 	if o.Challenge != nil {
@@ -258,6 +291,9 @@ func (o OAuth2LogoutRequest) MarshalJSON() ([]byte, error) {
 	}
 	if o.Subject != nil {
 		toSerialize["subject"] = o.Subject
+	}
+	if o.UiLocales != nil {
+		toSerialize["ui_locales"] = o.UiLocales
 	}
 	return json.Marshal(toSerialize)
 }
@@ -297,3 +333,5 @@ func (v *NullableOAuth2LogoutRequest) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
+
+

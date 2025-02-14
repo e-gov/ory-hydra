@@ -978,6 +978,9 @@
           "subject": {
             "description": "Subject is the user for whom the logout was request.",
             "type": "string"
+          },
+          "ui_locales": {
+            "$ref": "#/components/schemas/StringSliceJSONFormat"
           }
         },
         "title": "Contains information about an ongoing logout request.",

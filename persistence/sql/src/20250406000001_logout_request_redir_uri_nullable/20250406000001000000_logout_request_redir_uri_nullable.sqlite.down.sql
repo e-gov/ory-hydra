@@ -1,0 +1,2 @@
+-- Do not support down migration for SQLite as it would be very hard to implement. In order to add a NOT NULL column,
+-- we would have to give it a DEFAULT value

@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ory/x/pointerx"
 	"testing"
 	"time"
 
@@ -100,7 +101,7 @@ func MockLogoutRequest(key string, withClient bool, network string) (c *LogoutRe
 		SessionID:             makeID("session", network, key),
 		RPInitiated:           true,
 		RequestURL:            "http://request-me/",
-		PostLogoutRedirectURI: "http://redirect-me/",
+		PostLogoutRedirectURI: pointerx.Ptr("http://redirect-me/"),
 		WasHandled:            false,
 		Accepted:              false,
 		Client:                cl,

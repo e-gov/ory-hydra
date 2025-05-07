@@ -6,6 +6,7 @@ package consent
 import (
 	"context"
 	"fmt"
+	"github.com/ory/x/pointerx"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -739,7 +740,7 @@ func (s *DefaultStrategy) issueLogoutVerifier(ctx context.Context, w http.Respon
 
 	// Per default, we're redirecting to the global redirect URL. This is assuming that we're not an RP-initiated
 	// logout flow.
-	redir := s.c.LogoutRedirectURL(ctx).String()
+	fallbackRedir := s.c.LogoutRedirectURL(ctx).String()
 
 	if err := r.ParseForm(); err != nil {
 		return nil, errorsx.WithStack(fosite.ErrInvalidRequest.
@@ -772,7 +773,7 @@ func (s *DefaultStrategy) issueLogoutVerifier(ctx context.Context, w http.Respon
 			s.r.AuditLogger().
 				WithRequest(r).
 				Info("User logout skipped because no authentication session exists.")
-			http.Redirect(w, r, redir, http.StatusFound)
+			http.Redirect(w, r, fallbackRedir, http.StatusFound)
 			return nil, errorsx.WithStack(ErrAbortOAuth2Request)
 		} else if err != nil {
 			return nil, err
@@ -786,10 +787,7 @@ func (s *DefaultStrategy) issueLogoutVerifier(ctx context.Context, w http.Respon
 			SessionID:   session.ID,
 			Verifier:    uuid.New(),
 			RPInitiated: false,
-
-			// PostLogoutRedirectURI is set to the value from config.Provider().LogoutRedirectURL()
-			PostLogoutRedirectURI: redir,
-			UiLocales:             uiLocales,
+			UiLocales:   uiLocales,
 		}); err != nil {
 			return nil, err
 		}
@@ -861,7 +859,7 @@ func (s *DefaultStrategy) issueLogoutVerifier(ctx context.Context, w http.Respon
 		return nil, errorsx.WithStack(fosite.ErrInvalidRequest.
 			WithHint("Logout failed because none of the listed audiences is a registered OAuth 2.0 Client."))
 	}
-
+	var redir *string
 	if len(requestedRedir) > 0 {
 		var f *url.URL
 		for _, w := range cl.PostLogoutRedirectURIs {
@@ -886,7 +884,7 @@ func (s *DefaultStrategy) issueLogoutVerifier(ctx context.Context, w http.Respon
 			params.Add("state", state)
 		}
 
-		redir = urlx.SetQuery(f, params).String()
+		redir = pointerx.Ptr(urlx.SetQuery(f, params).String())
 	}
 
 	// We do not really want to verify if the user (from id token hint) has a session here because it doesn't really matter.
@@ -895,7 +893,11 @@ func (s *DefaultStrategy) issueLogoutVerifier(ctx context.Context, w http.Respon
 	if errors.Is(err, x.ErrNotFound) {
 		// Such a session does not exist - maybe it has already been revoked? In any case, we can't do much except
 		// leaning back and redirecting back.
-		http.Redirect(w, r, redir, http.StatusFound)
+		if redir != nil {
+			http.Redirect(w, r, *redir, http.StatusFound)
+		} else {
+			http.Redirect(w, r, fallbackRedir, http.StatusFound)
+		}
 		return nil, errorsx.WithStack(ErrAbortOAuth2Request)
 	} else if err != nil {
 		return nil, err
@@ -949,6 +951,13 @@ func (s *DefaultStrategy) completeLogout(ctx context.Context, w http.ResponseWri
 		return nil, err
 	}
 
+	var redir string
+	if lr.PostLogoutRedirectURI != nil {
+		redir = *lr.PostLogoutRedirectURI
+	} else {
+		redir = s.c.LogoutRedirectURL(ctx).String()
+	}
+
 	if !lr.RPInitiated {
 		// If this is true it means that no id_token_hint was given, so the session id and subject id
 		// came from an original cookie.
@@ -962,7 +971,7 @@ func (s *DefaultStrategy) completeLogout(ctx context.Context, w http.ResponseWri
 			// We also won't call any front- or back-channel logouts because that would mean we had called them twice!
 
 			// OP initiated log out but no session was found. So let's just redirect back...
-			http.Redirect(w, r, lr.PostLogoutRedirectURI, http.StatusFound)
+			http.Redirect(w, r, redir, http.StatusFound)
 			return nil, errorsx.WithStack(ErrAbortOAuth2Request)
 		} else if err != nil {
 			return nil, err
@@ -973,7 +982,7 @@ func (s *DefaultStrategy) completeLogout(ctx context.Context, w http.ResponseWri
 			// and landing here. That could happen because the user signed in in another browser window. In that
 			// case there isn't really a lot to do because we don't want to sign out a different ID, so let's just
 			// go to the post redirect uri without actually doing anything!
-			http.Redirect(w, r, lr.PostLogoutRedirectURI, http.StatusFound)
+			http.Redirect(w, r, redir, http.StatusFound)
 			return nil, errorsx.WithStack(ErrAbortOAuth2Request)
 		}
 	}
@@ -1000,7 +1009,7 @@ func (s *DefaultStrategy) completeLogout(ctx context.Context, w http.ResponseWri
 		Info("User logout completed!")
 
 	return &LogoutResult{
-		RedirectTo:             lr.PostLogoutRedirectURI,
+		RedirectTo:             redir,
 		FrontChannelLogoutURLs: urls,
 	}, nil
 }

@@ -1,0 +1,2 @@
+DELETE FROM hydra_oauth2_logout_request WHERE redir_url IS NULL;
+ALTER TABLE hydra_oauth2_logout_request MODIFY text NOT NULL;

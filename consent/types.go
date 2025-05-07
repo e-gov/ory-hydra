@@ -416,7 +416,7 @@ type LogoutRequest struct {
 	UiLocales sqlxx.StringSliceJSONFormat `json:"ui_locales" db:"ui_locales"`
 
 	Verifier              string         `json:"-" db:"verifier"`
-	PostLogoutRedirectURI string         `json:"post_logout_redirect_uri" db:"redir_url"`
+	PostLogoutRedirectURI *string        `json:"post_logout_redirect_uri" db:"redir_url"`
 	Accepted              bool           `json:"-" db:"accepted"`
 	Rejected              bool           `db:"rejected" json:"-"`
 	ClientID              sql.NullString `json:"-" db:"client_id"`

@@ -597,7 +597,7 @@ type OAuth2ConsentRequest struct {
 	ForceSubjectIdentifier string         `json:"-"`
 	Verifier               string         `json:"-"`
 	CSRF                   string         `json:"-"`
-	AuthenticatedAt        sqlxx.NullTime `json:"-"`
+	AuthenticatedAt        sqlxx.NullTime `json:"authenticated_at"`
 	RequestedAt            time.Time      `json:"requested_at"`
 }
 

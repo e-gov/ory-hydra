@@ -18,6 +18,7 @@ import (
 
 	"github.com/ory/fosite"
 	"github.com/ory/hydra/v2/client"
+	"github.com/ory/hydra/v2/x"
 	"github.com/ory/x/sqlcon"
 	"github.com/ory/x/sqlxx"
 )
@@ -178,8 +179,8 @@ type AcceptOAuth2ConsentRequest struct {
 	RequestedAt     time.Time             `json:"-"`
 	AuthenticatedAt sqlxx.NullTime        `json:"-"`
 
-	SessionIDToken     sqlxx.MapStringInterface `json:"-" faker:"-"`
-	SessionAccessToken sqlxx.MapStringInterface `json:"-" faker:"-"`
+	SessionIDToken     x.MapStringInterface `json:"-" faker:"-"`
+	SessionAccessToken x.MapStringInterface `json:"-" faker:"-"`
 }
 
 func (r *AcceptOAuth2ConsentRequest) HasError() bool {
@@ -246,8 +247,8 @@ type OAuth2ConsentSession struct {
 	RequestedAt     time.Time           `json:"-" db:"requested_at"`
 	AuthenticatedAt sqlxx.NullTime      `json:"-" db:"authenticated_at"`
 
-	SessionIDToken     sqlxx.MapStringInterface `db:"session_id_token" json:"-"`
-	SessionAccessToken sqlxx.MapStringInterface `db:"session_access_token" json:"-"`
+	SessionIDToken     x.MapStringInterface `db:"session_id_token" json:"-"`
+	SessionAccessToken x.MapStringInterface `db:"session_access_token" json:"-"`
 }
 
 // HandledLoginRequest is the request payload used to accept a login request.

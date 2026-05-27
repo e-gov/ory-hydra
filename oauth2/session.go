@@ -4,6 +4,7 @@
 package oauth2
 
 import (
+	"bytes"
 	"encoding/json"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/ory/fosite"
 	"github.com/ory/fosite/handler/openid"
 	"github.com/ory/fosite/token/jwt"
+	"github.com/ory/hydra/v2/x"
 
 	"github.com/ory/x/stringslice"
 )
@@ -173,8 +175,20 @@ func (s *Session) UnmarshalJSON(original []byte) (err error) {
 	}
 
 	type t Session
-	if err := json.Unmarshal(transformed, (*t)(s)); err != nil {
+	dec := json.NewDecoder(bytes.NewReader(transformed))
+	dec.UseNumber()
+	if err := dec.Decode((*t)(s)); err != nil {
 		return errors.WithStack(err)
+	}
+
+	// Integer claims in either the access or ID token (e.g. a custom auth_time)
+	// would otherwise decode to float64 and be re-serialized by go-jose in
+	// scientific notation. UseNumber + ConvertJSONNumbers keep them as int64
+	// (or json.Number beyond int64) so reloaded sessions yield tokens with the
+	// original integer values.
+	x.ConvertJSONNumbers(s.Extra)
+	if s.DefaultSession != nil && s.DefaultSession.Claims != nil {
+		x.ConvertJSONNumbers(s.DefaultSession.Claims.Extra)
 	}
 
 	return nil

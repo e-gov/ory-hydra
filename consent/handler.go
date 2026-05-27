@@ -811,9 +811,14 @@ func (h *Handler) acceptOAuth2ConsentRequest(w http.ResponseWriter, r *http.Requ
 	var p AcceptOAuth2ConsentRequest
 	d := json.NewDecoder(r.Body)
 	d.DisallowUnknownFields()
+	d.UseNumber()
 	if err := d.Decode(&p); err != nil {
 		h.r.Writer().WriteErrorCode(w, r, http.StatusBadRequest, errorsx.WithStack(err))
 		return
+	}
+	if p.Session != nil {
+		x.ConvertJSONNumbers(p.Session.AccessToken)
+		x.ConvertJSONNumbers(p.Session.IDToken)
 	}
 
 	cr, err := h.r.ConsentManager().GetConsentRequest(r.Context(), challenge)

@@ -233,8 +233,8 @@ type Flow struct {
 	// recommend redirecting the user to `request_url` to re-initiate the flow.
 	ConsentWasHandled  bool                        `db:"consent_was_used"`
 	ConsentError       *consent.RequestDeniedError `db:"consent_error"`
-	SessionIDToken     sqlxx.MapStringInterface    `db:"session_id_token" faker:"-"`
-	SessionAccessToken sqlxx.MapStringInterface    `db:"session_access_token" faker:"-"`
+	SessionIDToken     x.MapStringInterface        `db:"session_id_token" faker:"-"`
+	SessionAccessToken x.MapStringInterface        `db:"session_access_token" faker:"-"`
 }
 
 func NewFlow(r *consent.LoginRequest) *Flow {

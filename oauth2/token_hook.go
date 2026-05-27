@@ -101,7 +101,9 @@ func executeHookAndUpdateSession(ctx context.Context, reg x.HTTPClientProvider, 
 	}
 
 	var respBody TokenHookResponse
-	if err := json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
+	dec := json.NewDecoder(resp.Body)
+	dec.UseNumber()
+	if err := dec.Decode(&respBody); err != nil {
 		return errorsx.WithStack(
 			fosite.ErrServerError.
 				WithWrap(err).
@@ -109,6 +111,8 @@ func executeHookAndUpdateSession(ctx context.Context, reg x.HTTPClientProvider, 
 				WithDebugf("Response from token hook could not be decoded: %s", err),
 		)
 	}
+	x.ConvertJSONNumbers(respBody.Session.AccessToken)
+	x.ConvertJSONNumbers(respBody.Session.IDToken)
 
 	// Overwrite existing session data (extra claims).
 	session.Extra = respBody.Session.AccessToken

@@ -184,7 +184,7 @@ func (s *Session) UnmarshalJSON(original []byte) (err error) {
 	// Integer claims in either the access or ID token (e.g. a custom auth_time)
 	// would otherwise decode to float64 and be re-serialized by go-jose in
 	// scientific notation. UseNumber + ConvertJSONNumbers keep them as int64
-	// (or json.Number beyond int64) so reloaded sessions yield tokens with the
+	// (or uint64 beyond int64) so reloaded sessions yield tokens with the
 	// original integer values.
 	x.ConvertJSONNumbers(s.Extra)
 	if s.DefaultSession != nil && s.DefaultSession.Claims != nil {

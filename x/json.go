@@ -6,6 +6,7 @@ package x
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -15,14 +16,10 @@ import (
 
 // ConvertJSONNumbers walks a map and replaces each json.Number with an int64 when it
 // fits, recursing into nested maps and slices. Values that do not fit an int64
-// (integers beyond 2^63 or decimals) are left as json.Number to preserve their
-// exact value — go-jose renders json.Number raw and unquoted — rather than
-// falling back to float64, which would re-lose precision for integers beyond
-// 2^53.
+// are converted to uint64 or float64 when possible, because go-jose renders
+// json.Number as a quoted string.
 func ConvertJSONNumbers(m map[string]any) {
-	for k, v := range m {
-		m[k] = convertJSONNumber(v)
-	}
+	convertJSONNumber(m)
 }
 
 func convertJSONNumber(v any) any {
@@ -30,6 +27,12 @@ func convertJSONNumber(v any) any {
 	case json.Number:
 		if i, err := n.Int64(); err == nil {
 			return i
+		}
+		if u, err := strconv.ParseUint(n.String(), 10, 64); err == nil {
+			return u
+		}
+		if f, err := n.Float64(); err == nil {
+			return f
 		}
 		return n
 	case map[string]any:
@@ -51,7 +54,7 @@ func convertJSONNumber(v any) any {
 // while preserving integer precision. Unlike sqlxx.MapStringInterface, its Scan
 // decodes with json.Decoder.UseNumber and then coerces numbers via
 // ConvertJSONNumbers, so integer claims survive a database round-trip as int64
-// (or json.Number beyond int64) instead of being collapsed to float64 and later
+// (or uint64 beyond int64) instead of being collapsed to float64 and later
 // re-serialized by go-jose in scientific notation.
 type MapStringInterface map[string]any
 
@@ -66,7 +69,7 @@ func (n *MapStringInterface) Scan(value any) error {
 	case []byte:
 		v = string(raw)
 	default:
-		return errors.Errorf("unsupported type %T for ClaimsMapStringInterface.Scan", value)
+		return errors.Errorf("unsupported type %T for MapStringInterface.Scan", value)
 	}
 	if len(v) == 0 {
 		return nil

@@ -186,9 +186,9 @@ func (s *Session) UnmarshalJSON(original []byte) (err error) {
 	// scientific notation. UseNumber + ConvertJSONNumbers keep them as int64
 	// (or uint64 beyond int64) so reloaded sessions yield tokens with the
 	// original integer values.
-	x.ConvertJSONNumbers(s.Extra)
+	s.Extra = x.ConvertJSONNumbers(s.Extra)
 	if s.DefaultSession != nil && s.DefaultSession.Claims != nil {
-		x.ConvertJSONNumbers(s.DefaultSession.Claims.Extra)
+		s.DefaultSession.Claims.Extra = x.ConvertJSONNumbers(s.DefaultSession.Claims.Extra)
 	}
 
 	return nil

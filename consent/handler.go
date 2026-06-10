@@ -817,8 +817,8 @@ func (h *Handler) acceptOAuth2ConsentRequest(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	if p.Session != nil {
-		x.ConvertJSONNumbers(p.Session.AccessToken)
-		x.ConvertJSONNumbers(p.Session.IDToken)
+		p.Session.AccessToken = x.ConvertJSONNumbers(p.Session.AccessToken)
+		p.Session.IDToken = x.ConvertJSONNumbers(p.Session.IDToken)
 	}
 
 	cr, err := h.r.ConsentManager().GetConsentRequest(r.Context(), challenge)

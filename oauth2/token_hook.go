@@ -111,8 +111,8 @@ func executeHookAndUpdateSession(ctx context.Context, reg x.HTTPClientProvider, 
 				WithDebugf("Response from token hook could not be decoded: %s", err),
 		)
 	}
-	x.ConvertJSONNumbers(respBody.Session.AccessToken)
-	x.ConvertJSONNumbers(respBody.Session.IDToken)
+	respBody.Session.AccessToken = x.ConvertJSONNumbers(respBody.Session.AccessToken)
+	respBody.Session.IDToken = x.ConvertJSONNumbers(respBody.Session.IDToken)
 
 	// Overwrite existing session data (extra claims).
 	session.Extra = respBody.Session.AccessToken

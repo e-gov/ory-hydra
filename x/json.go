@@ -14,12 +14,14 @@ import (
 	"github.com/ory/x/sqlxx"
 )
 
-// ConvertJSONNumbers walks a map and replaces each json.Number with an int64 when it
-// fits, recursing into nested maps and slices. Values that do not fit an int64
-// are converted to uint64 or float64 when possible, because go-jose renders
-// json.Number as a quoted string.
-func ConvertJSONNumbers(m map[string]any) {
-	convertJSONNumber(m)
+// ConvertJSONNumbers returns a copy of m in which each json.Number is replaced
+// with an int64 when it fits, recursing into nested maps and slices. Values
+// that do not fit an int64 are converted to uint64 or float64 when possible,
+// because go-jose renders json.Number as a quoted string. The input is not
+// modified; a nil map yields a nil map.
+func ConvertJSONNumbers(m map[string]any) map[string]any {
+	v, _ := convertJSONNumber(m).(map[string]any)
+	return v
 }
 
 func convertJSONNumber(v any) any {
@@ -36,15 +38,23 @@ func convertJSONNumber(v any) any {
 		}
 		return n
 	case map[string]any:
+		if n == nil {
+			return n
+		}
+		out := make(map[string]any, len(n))
 		for k, val := range n {
-			n[k] = convertJSONNumber(val)
+			out[k] = convertJSONNumber(val)
 		}
-		return n
+		return out
 	case []any:
-		for i, val := range n {
-			n[i] = convertJSONNumber(val)
+		if n == nil {
+			return n
 		}
-		return n
+		out := make([]any, len(n))
+		for i, val := range n {
+			out[i] = convertJSONNumber(val)
+		}
+		return out
 	default:
 		return v
 	}
@@ -80,7 +90,7 @@ func (n *MapStringInterface) Scan(value any) error {
 	if err := dec.Decode((*map[string]any)(n)); err != nil {
 		return errors.WithStack(err)
 	}
-	ConvertJSONNumbers(*n)
+	*n = ConvertJSONNumbers(*n)
 	return nil
 }
 

@@ -26,6 +26,7 @@ import (
 type Session struct {
 	*openid.DefaultSession    `json:"id_token"`
 	Extra                     map[string]interface{} `json:"extra"`
+	Scope                     []string               `json:"scope"`
 	KID                       string                 `json:"kid"`
 	ClientID                  string                 `json:"client_id"`
 	ConsentChallenge          string                 `json:"consent_challenge"`
@@ -55,7 +56,7 @@ func NewSessionWithCustomClaims(subject string, allowedTopLevelClaims []string) 
 
 func (s *Session) GetJWTClaims() jwt.JWTClaimsContainer {
 	//a slice of claims that are reserved and should not be overridden
-	var reservedClaims = []string{"iss", "sub", "aud", "exp", "nbf", "iat", "jti", "client_id"}
+	var reservedClaims = []string{"iss", "sub", "aud", "exp", "nbf", "iat", "jti", "client_id", "scope"}
 
 	//remove any reserved claims from the custom claims
 	allowedClaimsFromConfigWithoutReserved := stringslice.Filter(s.AllowedTopLevelClaims, func(s string) bool {

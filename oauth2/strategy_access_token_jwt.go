@@ -113,10 +113,14 @@ func (h *NoScopeJWTStrategy) generate(ctx context.Context, tokenType fosite.Toke
 	} else if jwtSession.GetJWTClaims() == nil {
 		return "", "", errors.New("GetTokenClaims() must not be nil")
 	} else {
+		var scope fosite.Arguments
+		if s, ok := requester.GetSession().(*Session); ok {
+			scope = s.Scope
+		}
 		claims := jwtSession.GetJWTClaims().
 			With(
 				jwtSession.GetExpiresAt(tokenType),
-				nil,
+				scope,
 				requester.GetGrantedAudience(),
 			).
 			WithDefaults(

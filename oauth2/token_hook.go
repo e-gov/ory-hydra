@@ -116,6 +116,17 @@ func executeHookAndUpdateSession(ctx context.Context, reg x.HTTPClientProvider, 
 
 	// Overwrite existing session data (extra claims).
 	session.Extra = respBody.Session.AccessToken
+	session.Scope = nil
+	if raw, ok := session.Extra["scope"].([]interface{}); ok {
+		delete(session.Extra, "scope")
+		scope := make([]string, 0, len(raw))
+		for _, s := range raw {
+			if s, ok := s.(string); ok {
+				scope = append(scope, s)
+			}
+		}
+		session.Scope = scope
+	}
 	session.RefreshRememberFor = respBody.Session.RefreshRememberFor
 	session.RememberFor = respBody.Session.RememberFor
 	session.RefreshConsentRememberFor = respBody.Session.RefreshConsentRememberFor

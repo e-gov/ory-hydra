@@ -390,6 +390,57 @@ func TestAuthCodeWithDefaultStrategy(t *testing.T) {
 		assertIDToken(t, token, conf, subject, nonce, time.Now().Add(reg.Config().GetIDTokenLifespan(ctx)))
 	})
 
+	t.Run("case=refresh token flow honors the audience parameter", func(t *testing.T) {
+		expectAud := "https://api.ory.sh/"
+		c, conf := newOAuth2Client(t, testhelpers.NewCallbackURL(t, "callback", testhelpers.HTTPServerNotImplementedHandler))
+		testhelpers.NewLoginConsentUI(t, reg.Config(),
+			acceptLoginHandler(t, c, subject, nil),
+			acceptConsentHandler(t, c, subject, nil))
+
+		code, _ := getAuthorizeCode(t, conf, nil, oauth2.SetAuthURLParam("nonce", nonce))
+		require.NotEmpty(t, code)
+
+		token, err := conf.Exchange(context.Background(), code)
+		require.NoError(t, err)
+		require.Empty(t, introspectAccessToken(t, conf, token, subject).Get("aud").Array())
+
+		refresh := func(t *testing.T, audience string) *http.Response {
+			req, err := http.NewRequest("POST", reg.Config().OAuth2TokenURL(ctx).String(), strings.NewReader(url.Values{
+				"grant_type":    []string{"refresh_token"},
+				"refresh_token": []string{token.RefreshToken},
+				"audience":      []string{audience},
+			}.Encode()))
+			require.NoError(t, err)
+
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			req.SetBasicAuth(conf.ClientID, conf.ClientSecret)
+
+			res, err := http.DefaultClient.Do(req)
+			require.NoError(t, err)
+			return res
+		}
+
+		// The refresh token is only rotated once the request succeeds, so the failing case must come first.
+		t.Run("followup=fails when the audience has not been whitelisted", func(t *testing.T) {
+			res := refresh(t, "https://not-ory-api/")
+			defer res.Body.Close()
+			assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+		})
+
+		t.Run("followup=grants the requested audience", func(t *testing.T) {
+			res := refresh(t, expectAud)
+			defer res.Body.Close()
+			require.Equal(t, http.StatusOK, res.StatusCode)
+
+			var refreshedToken oauth2.Token
+			require.NoError(t, json.NewDecoder(res.Body).Decode(&refreshedToken))
+
+			aud := introspectAccessToken(t, conf, &refreshedToken, subject).Get("aud").Array()
+			require.Len(t, aud, 1)
+			assert.EqualValues(t, expectAud, aud[0].String())
+		})
+	})
+
 	t.Run("case=respects client token lifespan configuration", func(t *testing.T) {
 		run := func(t *testing.T, strategy string, c *hc.Client, conf *oauth2.Config, expectedLifespans hc.Lifespans) {
 			testhelpers.NewLoginConsentUI(t, reg.Config(),

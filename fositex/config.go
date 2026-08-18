@@ -49,7 +49,7 @@ var defaultFactories = []factory{
 	compose.OAuth2AuthorizeExplicitFactory,
 	compose.OAuth2AuthorizeImplicitFactory,
 	compose.OAuth2ClientCredentialsGrantFactory,
-	compose.OAuth2RefreshTokenGrantFactory,
+	RefreshTokenGrantFactory,
 	compose.OpenIDConnectExplicitFactory,
 	compose.OpenIDConnectHybridFactory,
 	compose.OpenIDConnectImplicitFactory,

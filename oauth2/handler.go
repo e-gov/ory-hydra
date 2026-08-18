@@ -933,6 +933,33 @@ func (h *Handler) oauth2TokenExchange(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// The refresh token grant handler restores the requested and granted audience from the original request, so an
+	// `audience` parameter sent with the refresh request would otherwise be ignored. If the refresh request contains
+	// an `audience` parameter, it replaces the audience granted during the original request.
+	if accessRequest.GetGrantTypes().ExactOne("refresh_token") && accessRequest.GetRequestForm().Has("audience") {
+		requestedAudience := strings.Fields(accessRequest.GetRequestForm().Get("audience"))
+
+		if err := h.r.AudienceStrategy()(accessRequest.GetClient().GetAudience(), requestedAudience); err != nil {
+			h.logOrAudit(err, r)
+			h.r.OAuth2Provider().WriteAccessError(ctx, w, accessRequest, err)
+			return
+		}
+
+		ar, ok := accessRequest.(*fosite.AccessRequest)
+		if !ok {
+			err := errorsx.WithStack(fosite.ErrServerError.WithDebugf("Expected access request to be of type *fosite.AccessRequest but got %T.", accessRequest))
+			h.logOrAudit(err, r)
+			h.r.OAuth2Provider().WriteAccessError(ctx, w, accessRequest, err)
+			return
+		}
+
+		// Fosite has no API for resetting the granted audience, so it is replaced directly.
+		ar.GrantedAudience = fosite.Arguments{}
+		for _, audience := range requestedAudience {
+			ar.GrantAudience(audience)
+		}
+	}
+
 	sid, sidOk := session.DefaultSession.Claims.Extra["sid"].(string)
 	isRefreshTokenRequest := accessRequest.GetRequestForm().Has("refresh_token")
 	cr := consent.OAuth2ConsentRequest{

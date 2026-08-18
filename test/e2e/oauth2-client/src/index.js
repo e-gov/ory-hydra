@@ -102,17 +102,27 @@ app.get("/oauth2/code", async (req, res) => {
 
   const state = uuid.v4()
   const scope = req.query.scope || ""
+  const audience = req.query.audience
 
   req.session.credentials = credentials
   req.session.state = state
   req.session.scope = scope.split(" ")
 
+  const authorizeParams = {
+    redirect_uri: `${redirect_uri}/oauth2/callback`,
+    scope,
+    state,
+  }
+
+  if (audience) {
+    // Hydra/fosite expects a space-delimited list in the `audience` parameter.
+    authorizeParams.audience = Array.isArray(audience)
+      ? audience.join(" ")
+      : audience
+  }
+
   res.redirect(
-    oauth2.create(credentials).authorizationCode.authorizeURL({
-      redirect_uri: `${redirect_uri}/oauth2/callback`,
-      scope,
-      state,
-    }),
+    oauth2.create(credentials).authorizationCode.authorizeURL(authorizeParams),
   )
 })
 
@@ -153,10 +163,17 @@ app.get("/oauth2/callback", async (req, res) => {
 })
 
 app.get("/oauth2/refresh", function (req, res) {
+  const params = {}
+  const audience = req.query.audience
+  if (audience) {
+    // Hydra/fosite expects a space-delimited list in the `audience` parameter.
+    params.audience = Array.isArray(audience) ? audience.join(" ") : audience
+  }
+
   oauth2
     .create(req.session.credentials)
     .accessToken.create(req.session.oauth2_flow.token)
-    .refresh()
+    .refresh(params)
     .then((token) => {
       req.session.oauth2_flow = token // refresh returns {token:{access_token}} because why not...
       res.send({ result: "success", token: token.token })

@@ -48,17 +48,24 @@ Cypress.Commands.add(
         password = "foobar",
       } = {},
       prompt = "",
+      audience = [],
       createClient: doCreateClient = true,
     } = {},
     path = "oauth2",
   ) => {
     const run = (client) => {
+      const audiences = Array.isArray(audience) ? audience : [audience]
+      const audienceQuery =
+        audiences.length === 0
+          ? ""
+          : `&audience=${encodeURIComponent(audiences.join(" "))}`
+
       cy.visit(
         `${Cypress.env("client_url")}/${path}/code?client_id=${
           client_id || client.client_id
         }&client_secret=${client_secret || client.client_secret}&scope=${(
           scope || client.scope
-        ).replace(" ", "+")}&prompt=${prompt}`,
+        ).replace(" ", "+")}&prompt=${prompt}${audienceQuery}`,
         { failOnStatusCode: false },
       )
 
@@ -122,6 +129,7 @@ Cypress.Commands.add(
         username = "foo@bar.com",
         password = "foobar",
       } = {},
+      audience = [],
       createClient: doCreateClient = true,
     } = {},
   ) => {
@@ -139,6 +147,12 @@ Cypress.Commands.add(
       authURL.searchParams.set("state", state)
       authURL.searchParams.set("code_challenge", codeChallenge)
       authURL.searchParams.set("code_challenge_method", "S256")
+
+      const audiences = Array.isArray(audience) ? audience : [audience]
+      if (audiences.length > 0) {
+        // Hydra/fosite expects a space-delimited list in the `audience` parameter.
+        authURL.searchParams.set("audience", audiences.join(" "))
+      }
 
       cy.window().then((win) => {
         return win.open(authURL, "_self")
@@ -203,16 +217,24 @@ Cypress.Commands.add(
   },
 )
 
-Cypress.Commands.add("refreshTokenBrowser", (client, token) =>
-  cy.request({
+Cypress.Commands.add("refreshTokenBrowser", (client, token, audience = []) => {
+  const audiences = Array.isArray(audience) ? audience : [audience]
+  const body = {
+    grant_type: "refresh_token",
+    client_id: client.client_id,
+    refresh_token: token,
+  }
+
+  if (audiences.length > 0) {
+    // Hydra/fosite expects a space-delimited list in the `audience` parameter.
+    body.audience = audiences.join(" ")
+  }
+
+  return cy.request({
     url: `${Cypress.env("public_url")}/oauth2/token`,
     method: "POST",
     form: true,
-    body: {
-      grant_type: "refresh_token",
-      client_id: client.client_id,
-      refresh_token: token,
-    },
+    body,
     failOnStatusCode: false,
-  }),
-)
+  })
+})

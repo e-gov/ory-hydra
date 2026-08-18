@@ -407,14 +407,14 @@ func (m *RegistryBase) OAuth2ProviderConfig() fosite.Configurator {
 	hmacAtStrategy := m.OAuth2HMACStrategy()
 	oidcSigner := m.OpenIDJWTStrategy()
 	atSigner := m.AccessTokenJWTStrategy()
-	jwtAtStrategy := &oauth2.NoScopeJWTStrategy{
+	jwtAtStrategy := &oauth2.DefaultJWTStrategy{
 		Signer:          atSigner,
 		HMACSHAStrategy: hmacAtStrategy,
 		Config:          conf,
 	}
 
 	conf.LoadDefaultHanlders(&compose.CommonStrategy{
-		CoreStrategy: fositex.NewTokenStrategy(m.Config(), hmacAtStrategy, &oauth2.NoScopeJWTStrategy{
+		CoreStrategy: fositex.NewTokenStrategy(m.Config(), hmacAtStrategy, &oauth2.DefaultJWTStrategy{
 			Signer:          jwtAtStrategy,
 			HMACSHAStrategy: hmacAtStrategy,
 			Config:          conf,

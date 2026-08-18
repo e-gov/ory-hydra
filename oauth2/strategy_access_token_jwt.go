@@ -13,8 +13,16 @@ import (
 	"github.com/ory/x/errorsx"
 )
 
-// NoScopeJWTStrategy is a JWT RS256 strategy.
-type NoScopeJWTStrategy struct {
+// AuthHandoverScope is the only scope for which access tokens carry a `scope` claim. Access tokens
+// issued for any other request must not include a scope, so the claim is omitted entirely unless this
+// scope was requested.
+//
+// The scope is deliberately never granted - it marks the request rather than authorizing access - so
+// it must not be looked up in the granted scopes.
+const AuthHandoverScope = "auth_handover"
+
+// DefaultJWTStrategy is a JWT RS256 strategy.
+type DefaultJWTStrategy struct {
 	jwt.Signer
 	HMACSHAStrategy *foauth2.HMACSHAStrategy
 	Config          interface {
@@ -23,7 +31,7 @@ type NoScopeJWTStrategy struct {
 	}
 }
 
-func (h NoScopeJWTStrategy) signature(token string) string {
+func (h DefaultJWTStrategy) signature(token string) string {
 	split := strings.Split(token, ".")
 	if len(split) != 3 {
 		return ""
@@ -32,40 +40,40 @@ func (h NoScopeJWTStrategy) signature(token string) string {
 	return split[2]
 }
 
-func (h NoScopeJWTStrategy) AccessTokenSignature(ctx context.Context, token string) string {
+func (h DefaultJWTStrategy) AccessTokenSignature(ctx context.Context, token string) string {
 	return h.signature(token)
 }
 
-func (h *NoScopeJWTStrategy) GenerateAccessToken(ctx context.Context, requester fosite.Requester) (token string, signature string, err error) {
+func (h *DefaultJWTStrategy) GenerateAccessToken(ctx context.Context, requester fosite.Requester) (token string, signature string, err error) {
 	return h.generate(ctx, fosite.AccessToken, requester)
 }
 
-func (h *NoScopeJWTStrategy) ValidateAccessToken(ctx context.Context, _ fosite.Requester, token string) error {
+func (h *DefaultJWTStrategy) ValidateAccessToken(ctx context.Context, _ fosite.Requester, token string) error {
 	_, err := validate(ctx, h.Signer, token)
 	return err
 }
 
-func (h NoScopeJWTStrategy) RefreshTokenSignature(ctx context.Context, token string) string {
+func (h DefaultJWTStrategy) RefreshTokenSignature(ctx context.Context, token string) string {
 	return h.HMACSHAStrategy.RefreshTokenSignature(ctx, token)
 }
 
-func (h NoScopeJWTStrategy) AuthorizeCodeSignature(ctx context.Context, token string) string {
+func (h DefaultJWTStrategy) AuthorizeCodeSignature(ctx context.Context, token string) string {
 	return h.HMACSHAStrategy.AuthorizeCodeSignature(ctx, token)
 }
 
-func (h *NoScopeJWTStrategy) GenerateRefreshToken(ctx context.Context, req fosite.Requester) (token string, signature string, err error) {
+func (h *DefaultJWTStrategy) GenerateRefreshToken(ctx context.Context, req fosite.Requester) (token string, signature string, err error) {
 	return h.HMACSHAStrategy.GenerateRefreshToken(ctx, req)
 }
 
-func (h *NoScopeJWTStrategy) ValidateRefreshToken(ctx context.Context, req fosite.Requester, token string) error {
+func (h *DefaultJWTStrategy) ValidateRefreshToken(ctx context.Context, req fosite.Requester, token string) error {
 	return h.HMACSHAStrategy.ValidateRefreshToken(ctx, req, token)
 }
 
-func (h *NoScopeJWTStrategy) GenerateAuthorizeCode(ctx context.Context, req fosite.Requester) (token string, signature string, err error) {
+func (h *DefaultJWTStrategy) GenerateAuthorizeCode(ctx context.Context, req fosite.Requester) (token string, signature string, err error) {
 	return h.HMACSHAStrategy.GenerateAuthorizeCode(ctx, req)
 }
 
-func (h *NoScopeJWTStrategy) ValidateAuthorizeCode(ctx context.Context, req fosite.Requester, token string) error {
+func (h *DefaultJWTStrategy) ValidateAuthorizeCode(ctx context.Context, req fosite.Requester, token string) error {
 	return h.HMACSHAStrategy.ValidateAuthorizeCode(ctx, req, token)
 }
 
@@ -106,17 +114,47 @@ func toRFCErr(v *jwt.ValidationError) *fosite.RFC6749Error {
 	}
 }
 
-func (h *NoScopeJWTStrategy) generate(ctx context.Context, tokenType fosite.TokenType, requester fosite.Requester) (string, string, error) {
+// requestsAuthHandover reports whether the request asks for an auth handover token.
+//
+// The `scope` request parameter is authoritative wherever it is present. The refresh token grant
+// handler overwrites the requested scopes with those of the original authorize request, so a `scope`
+// parameter sent with a refresh request never reaches GetRequestedScopes() - the same reason the
+// `audience` parameter needs restoring in the token handler. Reading the form here also keeps this
+// check aligned with what the token hook sees in `request.payload`, which is what populates the
+// session scope in the first place.
+//
+// Where the parameter is absent - the `authorization_code` grant sends no scope to the token endpoint
+// - fosite has restored the scopes requested during the authorize request, so those are used instead.
+//
+// Either way this is a sufficient authorization check on its own: a client that is not allowed the
+// scope cannot request it, fosite rejects the request before a token is ever generated.
+func requestsAuthHandover(requester fosite.Requester) bool {
+	if raw := requester.GetRequestForm().Get("scope"); raw != "" {
+		return fosite.Arguments(strings.Fields(raw)).Has(AuthHandoverScope)
+	}
+
+	return requester.GetRequestedScopes().Has(AuthHandoverScope)
+}
+
+func (h *DefaultJWTStrategy) generate(ctx context.Context, tokenType fosite.TokenType, requester fosite.Requester) (string, string, error) {
 
 	if jwtSession, ok := requester.GetSession().(foauth2.JWTSessionContainer); !ok {
 		return "", "", errors.Errorf("Session must be of type JWTSessionContainer but got type: %T", requester.GetSession())
 	} else if jwtSession.GetJWTClaims() == nil {
 		return "", "", errors.New("GetTokenClaims() must not be nil")
 	} else {
+		// The scope claim is only emitted for auth handover tokens. It must stay nil for every other
+		// request, because fosite omits the claim for a nil scope but renders an empty one ("scope": "")
+		// for a non-nil empty slice.
+		var scope fosite.Arguments
+		if s, ok := requester.GetSession().(*Session); ok && len(s.Scope) > 0 &&
+			requestsAuthHandover(requester) {
+			scope = s.Scope
+		}
 		claims := jwtSession.GetJWTClaims().
 			With(
 				jwtSession.GetExpiresAt(tokenType),
-				nil,
+				scope,
 				requester.GetGrantedAudience(),
 			).
 			WithDefaults(

@@ -26,6 +26,7 @@ import (
 type Session struct {
 	*openid.DefaultSession    `json:"id_token"`
 	Extra                     map[string]interface{} `json:"extra"`
+	Scope                     []string               `json:"scope"`
 	KID                       string                 `json:"kid"`
 	ClientID                  string                 `json:"client_id"`
 	ConsentChallenge          string                 `json:"consent_challenge"`
@@ -55,7 +56,7 @@ func NewSessionWithCustomClaims(subject string, allowedTopLevelClaims []string) 
 
 func (s *Session) GetJWTClaims() jwt.JWTClaimsContainer {
 	//a slice of claims that are reserved and should not be overridden
-	var reservedClaims = []string{"iss", "sub", "aud", "exp", "nbf", "iat", "jti", "client_id"}
+	var reservedClaims = []string{"iss", "sub", "aud", "exp", "nbf", "iat", "jti", "client_id", "scope"}
 
 	//remove any reserved claims from the custom claims
 	allowedClaimsFromConfigWithoutReserved := stringslice.Filter(s.AllowedTopLevelClaims, func(s string) bool {
@@ -86,7 +87,8 @@ func (s *Session) GetJWTClaims() jwt.JWTClaimsContainer {
 		// The JTI MUST NOT BE FIXED or refreshing tokens will yield the SAME token
 		// JTI:       s.JTI,
 
-		// These are removed by the NoScopeJWTStrategy
+		// No need to set the scope because that's being done by the DefaultJWTStrategy
+		// from the session's Scope field.
 		// Scope:     s.Scope,
 
 		// Setting these here will cause the token to have the same iat/nbf values always

@@ -20,11 +20,11 @@ var _ foauth2.CoreStrategy = (*TokenStrategy)(nil)
 type TokenStrategy struct {
 	c    *config.DefaultProvider
 	hmac *foauth2.HMACSHAStrategy
-	jwt  *oauth2.NoScopeJWTStrategy
+	jwt  *oauth2.DefaultJWTStrategy
 }
 
 // NewTokenStrategy returns a new TokenStrategy.
-func NewTokenStrategy(c *config.DefaultProvider, hmac *foauth2.HMACSHAStrategy, jwt *oauth2.NoScopeJWTStrategy) *TokenStrategy {
+func NewTokenStrategy(c *config.DefaultProvider, hmac *foauth2.HMACSHAStrategy, jwt *oauth2.DefaultJWTStrategy) *TokenStrategy {
 	return &TokenStrategy{c: c, hmac: hmac, jwt: jwt}
 }
 

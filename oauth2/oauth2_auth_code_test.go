@@ -441,6 +441,92 @@ func TestAuthCodeWithDefaultStrategy(t *testing.T) {
 		})
 	})
 
+	t.Run("case=refresh token flow shortens the lifespan of an auth handover token", func(t *testing.T) {
+		cb := testhelpers.NewCallbackURL(t, "callback", testhelpers.HTTPServerNotImplementedHandler)
+		secret := uuid.New()
+		c := &hc.Client{
+			Secret:        secret,
+			RedirectURIs:  []string{cb},
+			ResponseTypes: []string{"id_token", "code", "token"},
+			GrantTypes:    []string{"refresh_token", "authorization_code"},
+			// The auth handover scope is only ever requested with a refresh request, never during
+			// the authorize request, so it is deliberately left out of the client's configuration
+			// below - the refresh grant does not check the `scope` parameter against the client.
+			Scope: "hydra offline openid",
+		}
+		require.NoError(t, reg.ClientManager().CreateClient(ctx, c))
+		conf := &oauth2.Config{
+			ClientID:     c.GetID(),
+			ClientSecret: secret,
+			Endpoint: oauth2.Endpoint{
+				AuthURL:   reg.Config().OAuth2AuthURL(ctx).String(),
+				TokenURL:  reg.Config().OAuth2TokenURL(ctx).String(),
+				AuthStyle: oauth2.AuthStyleInHeader,
+			},
+			Scopes: strings.Split(c.Scope, " "),
+		}
+		testhelpers.NewLoginConsentUI(t, reg.Config(),
+			acceptLoginHandler(t, c, subject, nil),
+			acceptConsentHandler(t, c, subject, nil))
+
+		code, _ := getAuthorizeCode(t, conf, nil, oauth2.SetAuthURLParam("nonce", nonce))
+		require.NotEmpty(t, code)
+
+		token, err := conf.Exchange(context.Background(), code)
+		require.NoError(t, err)
+		require.NotEmpty(t, token.RefreshToken)
+
+		refreshToken := token.RefreshToken
+		// Each refresh rotates the refresh token, so the followups must run in order.
+		refresh := func(t *testing.T, scope string) gjson.Result {
+			values := url.Values{
+				"grant_type":    []string{"refresh_token"},
+				"refresh_token": []string{refreshToken},
+			}
+			if scope != "" {
+				values.Set("scope", scope)
+			}
+
+			req, err := http.NewRequest("POST", reg.Config().OAuth2TokenURL(ctx).String(), strings.NewReader(values.Encode()))
+			require.NoError(t, err)
+
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			req.SetBasicAuth(conf.ClientID, conf.ClientSecret)
+
+			res, err := http.DefaultClient.Do(req)
+			require.NoError(t, err)
+			defer res.Body.Close()
+			require.Equal(t, http.StatusOK, res.StatusCode)
+
+			body := gjson.ParseBytes(ioutilx.MustReadAll(res.Body))
+			refreshToken = body.Get("refresh_token").String()
+			require.NotEmpty(t, refreshToken)
+			return body
+		}
+
+		t.Run("followup=keeps the configured lifespan without the auth handover scope", func(t *testing.T) {
+			body := refresh(t, "")
+
+			expiresIn := time.Duration(body.Get("expires_in").Int()) * time.Second
+			requirex.EqualDuration(t, reg.Config().GetAccessTokenLifespan(ctx), expiresIn, time.Second*5)
+
+			exp := time.Unix(introspectAccessToken(t, conf,
+				&oauth2.Token{AccessToken: body.Get("access_token").String()}, subject).Get("exp").Int(), 0)
+			requirex.EqualTime(t, time.Now().Add(reg.Config().GetAccessTokenLifespan(ctx)), exp, time.Second*5)
+		})
+
+		t.Run("followup=shortens the lifespan with the auth handover scope", func(t *testing.T) {
+			body := refresh(t, hydraoauth2.AuthHandoverScope)
+
+			expiresIn := time.Duration(body.Get("expires_in").Int()) * time.Second
+			requirex.EqualDuration(t, hydraoauth2.AuthHandoverTokenLifespan, expiresIn, time.Second*5)
+
+			exp := time.Unix(introspectAccessToken(t, conf,
+				&oauth2.Token{AccessToken: body.Get("access_token").String()}, subject).Get("exp").Int(), 0)
+			requirex.EqualTime(t, time.Now().Add(hydraoauth2.AuthHandoverTokenLifespan), exp, time.Second*5)
+		})
+	})
+
 	t.Run("case=respects client token lifespan configuration", func(t *testing.T) {
 		run := func(t *testing.T, strategy string, c *hc.Client, conf *oauth2.Config, expectedLifespans hc.Lifespans) {
 			testhelpers.NewLoginConsentUI(t, reg.Config(),

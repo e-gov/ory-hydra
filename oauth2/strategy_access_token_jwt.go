@@ -21,6 +21,11 @@ import (
 // it must not be looked up in the granted scopes.
 const AuthHandoverScope = "auth_handover"
 
+// AuthHandoverTokenLifespan is the lifetime of an auth handover token. It overrides the client's
+// access token lifespan, because an auth handover token is only carried from one application to
+// another and must not stay usable any longer than that takes.
+const AuthHandoverTokenLifespan = time.Minute
+
 // DefaultJWTStrategy is a JWT RS256 strategy.
 type DefaultJWTStrategy struct {
 	jwt.Signer

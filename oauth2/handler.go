@@ -1000,6 +1000,16 @@ func (h *Handler) oauth2TokenExchange(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// An auth handover token is short-lived regardless of the client's access token lifespan. The
+	// expiry is set here, after the hooks, because the grant handler has already set it from the
+	// client's lifespan when the access request was created, and the access token is only generated
+	// later, in NewAccessResponse. The token response's `expires_in` follows the same session value.
+	if requestsAuthHandover(accessRequest) {
+		accessRequest.GetSession().SetExpiresAt(
+			fosite.AccessToken,
+			time.Now().UTC().Add(AuthHandoverTokenLifespan).Round(time.Second))
+	}
+
 	session, _ = accessRequest.GetSession().(*Session)
 	if isRefreshTokenRequest && sidOk && len(sid) != 0 {
 		if session.RefreshRememberFor {

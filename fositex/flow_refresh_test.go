@@ -29,9 +29,10 @@ func TestRefreshTokenGrantHandler(t *testing.T) {
 		Audience:   fosite.Arguments{"https://api.ory.sh/", "https://other.ory.sh/"},
 	}
 
-	// handleRefresh performs a refresh token request with the given form values against a grant that was originally
-	// granted the "https://api.ory.sh/" audience.
-	handleRefresh := func(t *testing.T, form url.Values) (fosite.AccessRequester, error) {
+	// refresh performs a refresh token request with the given form values against a grant that was originally granted
+	// the "https://api.ory.sh/" audience. When populate is true, the token endpoint response is populated as well,
+	// which rotates the refresh token and stores the sessions of the issued tokens.
+	refresh := func(t *testing.T, form url.Values, populate bool) (fosite.AccessRequester, *storage.MemoryStore, error) {
 		store := storage.NewMemoryStore()
 		handler := fositex.RefreshTokenGrantFactory(config, store, strategy).(*fositex.RefreshTokenGrantHandler)
 
@@ -61,7 +62,34 @@ func TestRefreshTokenGrantHandler(t *testing.T) {
 		// This is what fosite.Fosite.NewAccessRequest does before it calls the token endpoint handlers.
 		request.SetRequestedAudience(fosite.GetAudiences(form))
 
-		return request, handler.HandleTokenEndpointRequest(ctx, request)
+		if err := handler.HandleTokenEndpointRequest(ctx, request); err != nil {
+			return request, store, err
+		}
+		if !populate {
+			return request, store, nil
+		}
+
+		return request, store, handler.PopulateTokenEndpointResponse(ctx, request, fosite.NewAccessResponse())
+	}
+
+	// handleRefresh performs a refresh token request without populating the token endpoint response.
+	handleRefresh := func(t *testing.T, form url.Values) (fosite.AccessRequester, error) {
+		request, _, err := refresh(t, form, false)
+		return request, err
+	}
+
+	// storedRefreshTokenSession returns the session of the refresh token that rotation has just created. Rotation
+	// leaves the original refresh token behind as an inactive session, which the store does not return.
+	storedRefreshTokenSession := func(t *testing.T, store *storage.MemoryStore) fosite.Requester {
+		var sessions []fosite.Requester
+		for signature := range store.RefreshTokens {
+			session, err := store.GetRefreshTokenSession(ctx, signature, nil)
+			if err == nil {
+				sessions = append(sessions, session)
+			}
+		}
+		require.Len(t, sessions, 1)
+		return sessions[0]
 	}
 
 	t.Run("case=keeps the original audience when no audience is requested", func(t *testing.T) {
@@ -95,5 +123,28 @@ func TestRefreshTokenGrantHandler(t *testing.T) {
 
 		assert.ErrorIs(t, err, fosite.ErrInvalidRequest)
 		assert.Empty(t, request.GetGrantedAudience())
+	})
+
+	t.Run("case=does not store the requested audience on the rotated refresh token", func(t *testing.T) {
+		request, store, err := refresh(t, url.Values{"audience": {"https://other.ory.sh/"}}, true)
+		require.NoError(t, err)
+
+		// The tokens issued for this request are addressed to the requested audience ...
+		assert.EqualValues(t, fosite.Arguments{"https://other.ory.sh/"}, request.GetGrantedAudience())
+
+		// ... but the next refresh must restore the audience of the original request, not the requested one.
+		stored := storedRefreshTokenSession(t, store)
+		assert.EqualValues(t, fosite.Arguments{"https://api.ory.sh/"}, stored.GetGrantedAudience())
+		assert.EqualValues(t, fosite.Arguments{"https://api.ory.sh/"}, stored.GetRequestedAudience())
+		assert.EqualValues(t, fosite.Arguments{"openid", "offline"}, stored.GetGrantedScopes())
+	})
+
+	t.Run("case=stores the original audience on the rotated refresh token when no audience is requested", func(t *testing.T) {
+		_, store, err := refresh(t, url.Values{}, true)
+		require.NoError(t, err)
+
+		stored := storedRefreshTokenSession(t, store)
+		assert.EqualValues(t, fosite.Arguments{"https://api.ory.sh/"}, stored.GetGrantedAudience())
+		assert.EqualValues(t, fosite.Arguments{"https://api.ory.sh/"}, stored.GetRequestedAudience())
 	})
 }

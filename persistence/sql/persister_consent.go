@@ -842,7 +842,11 @@ func (p *Persister) GetLogoutRequest(ctx context.Context, challenge string) (*co
 	defer span.End()
 
 	var lr consent.LogoutRequest
-	return &lr, sqlcon.HandleError(p.QueryWithNetwork(ctx).Where("challenge = ? AND rejected = FALSE", challenge).First(&lr))
+	if err := p.QueryWithNetwork(ctx).Where("challenge = ? AND rejected = FALSE", challenge).First(&lr); err != nil {
+		// sqlx allocates nil pointer fields (e.g. PostLogoutRedirectURI) before detecting that no row was found.
+		return &consent.LogoutRequest{}, sqlcon.HandleError(err)
+	}
+	return &lr, nil
 }
 
 func (p *Persister) VerifyAndInvalidateLogoutRequest(ctx context.Context, verifier string) (*consent.LogoutRequest, error) {
@@ -850,7 +854,7 @@ func (p *Persister) VerifyAndInvalidateLogoutRequest(ctx context.Context, verifi
 	defer span.End()
 
 	var lr consent.LogoutRequest
-	return &lr, p.transaction(ctx, func(ctx context.Context, c *pop.Connection) error {
+	if err := p.transaction(ctx, func(ctx context.Context, c *pop.Connection) error {
 		if count, err := c.RawQuery(
 			"UPDATE hydra_oauth2_logout_request SET was_used=TRUE WHERE nid = ? AND verifier=? AND was_used=FALSE AND accepted=TRUE AND rejected=FALSE",
 			p.NetworkID(ctx),
@@ -867,7 +871,11 @@ func (p *Persister) VerifyAndInvalidateLogoutRequest(ctx context.Context, verifi
 		}
 
 		return nil
-	})
+	}); err != nil {
+		// sqlx allocates nil pointer fields (e.g. PostLogoutRedirectURI) before detecting that no row was found.
+		return &consent.LogoutRequest{}, err
+	}
+	return &lr, nil
 }
 
 func (p *Persister) FlushInactiveLoginConsentRequests(ctx context.Context, notAfter time.Time, limit int, batchSize int) error {

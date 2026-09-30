@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/ory/hydra/v2/jwk"
 	"github.com/ory/x/contextx"
@@ -63,7 +64,7 @@ func TestKeyManager_HsmKeySetPrefix(t *testing.T) {
 	hsmContext := NewMockContext(ctrl)
 	defer ctrl.Finish()
 	l := logrusx.New("", "")
-	c := config.MustNew(context.Background(), l, configx.SkipValidation())
+	c := config.MustNew(context.Background(), l, configx.SkipValidation(), configx.WithValue(config.HSMKeySetCacheTTL, "0s"))
 	keySetPrefix := "application_specific_prefix."
 	c.MustSet(context.Background(), config.HSMKeySetPrefix, keySetPrefix)
 	m := hsm.NewKeyManager(hsmContext, c)
@@ -349,7 +350,7 @@ func TestKeyManager_GetKeySet(t *testing.T) {
 	hsmContext := NewMockContext(ctrl)
 	defer ctrl.Finish()
 	l := logrusx.New("", "")
-	c := config.MustNew(context.Background(), l, configx.SkipValidation())
+	c := config.MustNew(context.Background(), l, configx.SkipValidation(), configx.WithValue(config.HSMKeySetCacheTTL, "0s"))
 	m := hsm.NewKeyManager(hsmContext, c)
 
 	rsaKey, err := rsa.GenerateKey(rand.Reader, 4096)
@@ -490,6 +491,132 @@ func TestKeyManager_GetKeySet(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestKeyManager_GetKeySetCache(t *testing.T) {
+	rsaKey, err := rsa.GenerateKey(rand.Reader, 4096)
+	require.NoError(t, err)
+	kid := uuid.New()
+
+	setup := func(t *testing.T, ttl string) (*hsm.KeyManager, *MockContext, *MockSignerDecrypter, *time.Time) {
+		ctrl := gomock.NewController(t)
+		t.Cleanup(ctrl.Finish)
+		hsmContext := NewMockContext(ctrl)
+		keyPair := NewMockSignerDecrypter(ctrl)
+		keyPair.EXPECT().Public().Return(&rsaKey.PublicKey).AnyTimes()
+		c := config.MustNew(context.Background(), logrusx.New("", ""), configx.SkipValidation())
+		if ttl != "" {
+			c.MustSet(context.Background(), config.HSMKeySetCacheTTL, ttl)
+		}
+		m := hsm.NewKeyManager(hsmContext, c)
+		now := time.Now()
+		m.SetNow(func() time.Time { return now })
+		return m, hsmContext, keyPair, &now
+	}
+	expectRead := func(hsmContext *MockContext, keyPair *MockSignerDecrypter, times int) {
+		hsmContext.EXPECT().FindKeyPairs(gomock.Nil(), gomock.Eq([]byte(x.OpenIDConnectKeyName))).Return([]crypto11.Signer{keyPair}, nil).Times(times)
+		hsmContext.EXPECT().GetAttribute(gomock.Eq(keyPair), gomock.Eq(crypto11.CkaId)).Return(pkcs11.NewAttribute(pkcs11.CKA_ID, []byte(kid)), nil).Times(times)
+		hsmContext.EXPECT().GetAttribute(gomock.Eq(keyPair), gomock.Eq(crypto11.CkaDecrypt)).Return(nil, nil).Times(times)
+	}
+
+	t.Run("case=cached for 5 minutes by default", func(t *testing.T) {
+		m, hsmContext, keyPair, now := setup(t, "")
+		expectRead(hsmContext, keyPair, 1)
+
+		_, err := m.GetKeySet(context.TODO(), x.OpenIDConnectKeyName)
+		require.NoError(t, err)
+		*now = now.Add(5*time.Minute - time.Second)
+		_, err = m.GetKeySet(context.TODO(), x.OpenIDConnectKeyName)
+		require.NoError(t, err)
+
+		expectRead(hsmContext, keyPair, 1)
+		*now = now.Add(time.Second)
+		_, err = m.GetKeySet(context.TODO(), x.OpenIDConnectKeyName)
+		require.NoError(t, err)
+	})
+
+	t.Run("case=disabled with 0s", func(t *testing.T) {
+		m, hsmContext, keyPair, _ := setup(t, "0s")
+		expectRead(hsmContext, keyPair, 2)
+
+		for i := 0; i < 2; i++ {
+			got, err := m.GetKeySet(context.TODO(), x.OpenIDConnectKeyName)
+			require.NoError(t, err)
+			assert.Equal(t, expectedKeySet(keyPair, kid, "RS256", "sig"), got)
+		}
+	})
+
+	t.Run("case=cached until ttl expires", func(t *testing.T) {
+		m, hsmContext, keyPair, now := setup(t, "1m")
+		expectRead(hsmContext, keyPair, 1)
+
+		for i := 0; i < 2; i++ {
+			got, err := m.GetKeySet(context.TODO(), x.OpenIDConnectKeyName)
+			require.NoError(t, err)
+			assert.Equal(t, expectedKeySet(keyPair, kid, "RS256", "sig"), got)
+		}
+
+		*now = now.Add(59 * time.Second)
+		_, err := m.GetKeySet(context.TODO(), x.OpenIDConnectKeyName)
+		require.NoError(t, err)
+
+		expectRead(hsmContext, keyPair, 1)
+		*now = now.Add(time.Second)
+		got, err := m.GetKeySet(context.TODO(), x.OpenIDConnectKeyName)
+		require.NoError(t, err)
+		assert.Equal(t, expectedKeySet(keyPair, kid, "RS256", "sig"), got)
+	})
+
+	t.Run("case=errors are not cached", func(t *testing.T) {
+		m, hsmContext, keyPair, _ := setup(t, "1m")
+		gomock.InOrder(
+			hsmContext.EXPECT().FindKeyPairs(gomock.Nil(), gomock.Eq([]byte(x.OpenIDConnectKeyName))).Return(nil, errors.New("hsm error")),
+			hsmContext.EXPECT().FindKeyPairs(gomock.Nil(), gomock.Eq([]byte(x.OpenIDConnectKeyName))).Return(nil, nil),
+			hsmContext.EXPECT().FindKeyPairs(gomock.Nil(), gomock.Eq([]byte(x.OpenIDConnectKeyName))).Return([]crypto11.Signer{keyPair}, nil),
+		)
+		hsmContext.EXPECT().GetAttribute(gomock.Eq(keyPair), gomock.Eq(crypto11.CkaId)).Return(pkcs11.NewAttribute(pkcs11.CKA_ID, []byte(kid)), nil)
+		hsmContext.EXPECT().GetAttribute(gomock.Eq(keyPair), gomock.Eq(crypto11.CkaDecrypt)).Return(nil, nil)
+
+		_, err := m.GetKeySet(context.TODO(), x.OpenIDConnectKeyName)
+		assert.EqualError(t, err, "hsm error")
+		_, err = m.GetKeySet(context.TODO(), x.OpenIDConnectKeyName)
+		assert.ErrorIs(t, err, x.ErrNotFound)
+		got, err := m.GetKeySet(context.TODO(), x.OpenIDConnectKeyName)
+		require.NoError(t, err)
+		assert.Equal(t, expectedKeySet(keyPair, kid, "RS256", "sig"), got)
+	})
+
+	t.Run("case=modifying returned key set does not modify cache", func(t *testing.T) {
+		m, hsmContext, keyPair, _ := setup(t, "1m")
+		expectRead(hsmContext, keyPair, 1)
+
+		got, err := m.GetKeySet(context.TODO(), x.OpenIDConnectKeyName)
+		require.NoError(t, err)
+		got.Keys[0].KeyID = "modified"
+		got.Keys = append(got.Keys, got.Keys[0])
+
+		got, err = m.GetKeySet(context.TODO(), x.OpenIDConnectKeyName)
+		require.NoError(t, err)
+		assert.Equal(t, expectedKeySet(keyPair, kid, "RS256", "sig"), got)
+		got.Keys[0].KeyID = "modified"
+
+		got, err = m.GetKeySet(context.TODO(), x.OpenIDConnectKeyName)
+		require.NoError(t, err)
+		assert.Equal(t, expectedKeySet(keyPair, kid, "RS256", "sig"), got)
+	})
+
+	t.Run("case=cached per key set", func(t *testing.T) {
+		m, hsmContext, keyPair, _ := setup(t, "1m")
+		expectRead(hsmContext, keyPair, 1)
+		hsmContext.EXPECT().FindKeyPairs(gomock.Nil(), gomock.Eq([]byte(x.OAuth2JWTKeyName))).Return(nil, nil).Times(2)
+
+		for i := 0; i < 2; i++ {
+			_, err := m.GetKeySet(context.TODO(), x.OpenIDConnectKeyName)
+			require.NoError(t, err)
+			_, err = m.GetKeySet(context.TODO(), x.OAuth2JWTKeyName)
+			assert.ErrorIs(t, err, x.ErrNotFound)
+		}
+	})
 }
 
 func TestKeyManager_DeleteKey(t *testing.T) {
@@ -681,6 +808,122 @@ func TestKeyManager_GetWellKnownKeySet(t *testing.T) {
 		if !reflect.DeepEqual(got, expectedKeySet) {
 			t.Errorf("GetKey() got = %v, want %v", got, expectedKeySet)
 		}
+	})
+}
+
+func TestKeyManager_GetWellKnownKeySetCacheDisabled(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	hsmContext := NewMockContext(ctrl)
+	defer ctrl.Finish()
+	l := logrusx.New("", "")
+	c := config.MustNew(context.Background(), l, configx.SkipValidation(), configx.WithValue(config.KeyDevelopmentMode, true))
+	c.MustSet(context.Background(), config.HSMKeySetCacheTTL, "0s")
+	m := hsm.NewKeyManager(hsmContext, c)
+	rsaKey, err := rsa.GenerateKey(rand.Reader, 512)
+	require.NoError(t, err)
+	keyPair := NewMockSignerDecrypter(ctrl)
+	keyPair.EXPECT().Public().Return(&rsaKey.PublicKey).AnyTimes()
+	kid := uuid.New()
+
+	hsmContext.EXPECT().FindKeyPairs(gomock.Nil(), gomock.Eq([]byte(x.OAuth2JWTKeyName))).Return(nil, nil).Times(2)
+	hsmContext.EXPECT().FindKeyPairs(gomock.Nil(), gomock.Eq([]byte(x.OpenIDConnectKeyName))).Return([]crypto11.Signer{keyPair}, nil).Times(2)
+	hsmContext.EXPECT().GetAttribute(gomock.Eq(keyPair), gomock.Eq(crypto11.CkaId)).Return(pkcs11.NewAttribute(pkcs11.CKA_ID, []byte(kid)), nil).Times(2)
+	hsmContext.EXPECT().GetAttribute(gomock.Eq(keyPair), gomock.Eq(crypto11.CkaDecrypt)).Return(nil, nil).Times(2)
+
+	for i := 0; i < 2; i++ {
+		got, err := m.GetWellKnownKeys(context.TODO())
+		require.NoError(t, err)
+		assert.Len(t, got.Keys, 1)
+		assert.Equal(t, kid, got.Keys[0].KeyID)
+		assert.Equal(t, keyPair.Public(), got.Keys[0].Key)
+	}
+}
+
+func TestKeyManager_GetWellKnownKeySetCacheTTL(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	hsmContext := NewMockContext(ctrl)
+	defer ctrl.Finish()
+	l := logrusx.New("", "")
+	c := config.MustNew(context.Background(), l, configx.SkipValidation(), configx.WithValue(config.KeyDevelopmentMode, true))
+	c.MustSet(context.Background(), config.HSMKeySetCacheTTL, "1m")
+	m := hsm.NewKeyManager(hsmContext, c)
+	now := time.Now()
+	m.SetNow(func() time.Time { return now })
+	// Not found is never cached, so it is read on every request.
+	hsmContext.EXPECT().FindKeyPairs(gomock.Nil(), gomock.Eq([]byte(x.OAuth2JWTKeyName))).Return(nil, nil).AnyTimes()
+
+	oldRsaKey, err := rsa.GenerateKey(rand.Reader, 512)
+	require.NoError(t, err)
+	oldKey := NewMockSignerDecrypter(ctrl)
+	oldKey.EXPECT().Public().Return(&oldRsaKey.PublicKey).AnyTimes()
+	oldKeyId := uuid.New()
+	newRsaKey, err := rsa.GenerateKey(rand.Reader, 512)
+	require.NoError(t, err)
+	newKey := NewMockSignerDecrypter(ctrl)
+	newKey.EXPECT().Public().Return(&newRsaKey.PublicKey).AnyTimes()
+	newKeyId := uuid.New()
+
+	expectRead := func(keyPair *MockSignerDecrypter, kid string) {
+		hsmContext.EXPECT().FindKeyPairs(gomock.Nil(), gomock.Eq([]byte(x.OpenIDConnectKeyName))).Return([]crypto11.Signer{keyPair}, nil)
+		hsmContext.EXPECT().GetAttribute(gomock.Eq(keyPair), gomock.Eq(crypto11.CkaId)).Return(pkcs11.NewAttribute(pkcs11.CKA_ID, []byte(kid)), nil)
+		hsmContext.EXPECT().GetAttribute(gomock.Eq(keyPair), gomock.Eq(crypto11.CkaDecrypt)).Return(nil, nil)
+	}
+	expectedPublicKeySet := func(keyPair *MockSignerDecrypter, kid string) *jose.JSONWebKeySet {
+		return &jose.JSONWebKeySet{Keys: []jose.JSONWebKey{{
+			Algorithm:                   "RS256",
+			Use:                         "sig",
+			Key:                         keyPair.Public(),
+			KeyID:                       kid,
+			Certificates:                []*x509.Certificate{},
+			CertificateThumbprintSHA1:   []uint8{},
+			CertificateThumbprintSHA256: []uint8{},
+		}}}
+	}
+
+	t.Run("case=read once and shared with GetKeySet", func(t *testing.T) {
+		expectRead(oldKey, oldKeyId)
+
+		for i := 0; i < 2; i++ {
+			got, err := m.GetWellKnownKeys(context.TODO())
+			require.NoError(t, err)
+			assert.Equal(t, expectedPublicKeySet(oldKey, oldKeyId), got)
+		}
+		got, err := m.GetKeySet(context.TODO(), x.OpenIDConnectKeyName)
+		require.NoError(t, err)
+		assert.Equal(t, expectedKeySet(oldKey, oldKeyId, "RS256", "sig"), got)
+	})
+
+	t.Run("case=rotated key is served after ttl expires", func(t *testing.T) {
+		now = now.Add(59 * time.Second)
+		got, err := m.GetWellKnownKeys(context.TODO())
+		require.NoError(t, err)
+		assert.Equal(t, expectedPublicKeySet(oldKey, oldKeyId), got)
+
+		expectRead(newKey, newKeyId)
+		now = now.Add(time.Second)
+		got, err = m.GetWellKnownKeys(context.TODO())
+		require.NoError(t, err)
+		assert.Equal(t, expectedPublicKeySet(newKey, newKeyId), got)
+		signingKeys, err := m.GetKeySet(context.TODO(), x.OpenIDConnectKeyName)
+		require.NoError(t, err)
+		assert.Equal(t, expectedKeySet(newKey, newKeyId, "RS256", "sig"), signingKeys)
+	})
+
+	t.Run("case=errors are not cached", func(t *testing.T) {
+		now = now.Add(time.Minute)
+		hsmContext.EXPECT().FindKeyPairs(gomock.Nil(), gomock.Eq([]byte(x.OpenIDConnectKeyName))).Return(nil, errors.New("hsm error"))
+		_, err := m.GetWellKnownKeys(context.TODO())
+		assert.EqualError(t, err, "hsm error")
+
+		hsmContext.EXPECT().FindKeyPairs(gomock.Nil(), gomock.Eq([]byte(x.OpenIDConnectKeyName))).Return(nil, nil)
+		got, err := m.GetWellKnownKeys(context.TODO())
+		require.NoError(t, err)
+		assert.Empty(t, got.Keys)
+
+		expectRead(newKey, newKeyId)
+		got, err = m.GetWellKnownKeys(context.TODO())
+		require.NoError(t, err)
+		assert.Equal(t, expectedPublicKeySet(newKey, newKeyId), got)
 	})
 }
 

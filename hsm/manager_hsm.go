@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/ory/hydra/v2/driver/config"
 	"github.com/ory/x/otelx"
@@ -38,9 +39,48 @@ const tracingComponent = "github.com/ory/hydra/hsm"
 type KeyManager struct {
 	jwk.Manager
 	Context
-	c             config.DefaultProvider
-	keySetCacheMu sync.RWMutex
-	keySetCache   map[string]jose.JSONWebKeySet
+	c           config.DefaultProvider
+	keySetCache *keySetCache
+}
+
+// keySetCache caches key sets read from Hardware Security Module for hsm.key_set_cache_ttl. It is keyed by the prefixed
+// key set name and is safe for concurrent use. Cached key sets are copied on put and get and never modified in place.
+type keySetCache struct {
+	mu      sync.RWMutex
+	entries map[string]cachedKeySet
+	now     func() time.Time
+}
+
+type cachedKeySet struct {
+	keys      []jose.JSONWebKey
+	expiresAt time.Time
+}
+
+func newKeySetCache() *keySetCache {
+	return &keySetCache{
+		entries: make(map[string]cachedKeySet),
+		now:     time.Now,
+	}
+}
+
+// get returns a copy of the cached key set, so that callers modifying the returned key set do not affect the cache.
+func (c *keySetCache) get(set string) (*jose.JSONWebKeySet, bool) {
+	c.mu.RLock()
+	cached, ok := c.entries[set]
+	c.mu.RUnlock()
+	if !ok || !c.now().Before(cached.expiresAt) {
+		return nil, false
+	}
+	return &jose.JSONWebKeySet{Keys: append([]jose.JSONWebKey(nil), cached.keys...)}, true
+}
+
+func (c *keySetCache) put(set string, keys *jose.JSONWebKeySet, ttl time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.entries[set] = cachedKeySet{
+		keys:      append([]jose.JSONWebKey(nil), keys.Keys...),
+		expiresAt: c.now().Add(ttl),
+	}
 }
 
 var ErrPreGeneratedKeys = &fosite.RFC6749Error{
@@ -53,7 +93,7 @@ func NewKeyManager(hsm Context, config *config.DefaultProvider) *KeyManager {
 	return &KeyManager{
 		Context:     hsm,
 		c:           *config,
-		keySetCache: make(map[string]jose.JSONWebKeySet),
+		keySetCache: newKeySetCache(),
 	}
 }
 
@@ -99,6 +139,25 @@ func (m *KeyManager) GetKeySet(ctx context.Context, set string) (*jose.JSONWebKe
 
 	set = m.prefixKeySet(set)
 
+	ttl := m.c.HSMKeySetCacheTTL()
+	if ttl <= 0 {
+		return m.findKeySet(ctx, set)
+	}
+
+	// Key sets are read from Hardware Security Module without holding the cache lock, so that a slow read does not block
+	// cache hits. Concurrent cache misses may each read the key set; the last one read is cached.
+	if keys, ok := m.keySetCache.get(set); ok {
+		return keys, nil
+	}
+	keys, err := m.findKeySet(ctx, set)
+	if err != nil {
+		return nil, err
+	}
+	m.keySetCache.put(set, keys, ttl)
+	return keys, nil
+}
+
+func (m *KeyManager) findKeySet(ctx context.Context, set string) (*jose.JSONWebKeySet, error) {
 	keyPairs, err := m.FindKeyPairs(nil, []byte(set))
 	if err != nil {
 		return nil, err
@@ -122,20 +181,14 @@ func (m *KeyManager) GetKeySet(ctx context.Context, set string) (*jose.JSONWebKe
 	}, nil
 }
 
+// GetWellKnownKeys returns public keys of the well known key sets. Key sets are read through GetKeySet, so that
+// /.well-known/jwks.json and token signing share the key set cache and notice keys added to or removed from Hardware
+// Security Module at the same time.
 func (m *KeyManager) GetWellKnownKeys(ctx context.Context) (*jose.JSONWebKeySet, error) {
 	var jwks jose.JSONWebKeySet
 	for _, set := range stringslice.Unique(m.c.WellKnownKeys(ctx)) {
-		m.keySetCacheMu.RLock()
-		cachedSet, ok := m.keySetCache[set]
-		m.keySetCacheMu.RUnlock()
-		if ok {
-			jwks.Keys = append(jwks.Keys, cachedSet.Keys...)
-		} else if keys, err := m.GetKeySet(ctx, set); err == nil {
-			keys = jwk.ExcludePrivateKeys(keys)
-			jwks.Keys = append(jwks.Keys, keys.Keys...)
-			m.keySetCacheMu.Lock()
-			m.keySetCache[set] = *keys
-			m.keySetCacheMu.Unlock()
+		if keys, err := m.GetKeySet(ctx, set); err == nil {
+			jwks.Keys = append(jwks.Keys, jwk.ExcludePrivateKeys(keys).Keys...)
 		} else if !errors.Is(err, x.ErrNotFound) {
 			return nil, err
 		}

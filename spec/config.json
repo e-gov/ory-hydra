@@ -589,6 +589,15 @@
               "$ref": "#/definitions/duration"
             }
           ]
+        },
+        "key_set_cache_ttl": {
+          "description": "Sets how long JSON Web Key Sets read from HSM are cached in memory, reducing the load on HSM when signing tokens and serving `/.well-known/jwks.json`. Keys added to or removed from HSM are noticed after the cache entry expires. Failed reads are not cached. `0s` disables the cache.",
+          "default": "5m",
+          "allOf": [
+            {
+              "$ref": "#/definitions/duration"
+            }
+          ]
         }
       }
     },

@@ -14,7 +14,9 @@ import (
 	"encoding/pem"
 	"io"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/pborman/uuid"
@@ -225,7 +227,7 @@ func TestGetOrGenerateKeys(t *testing.T) {
 
 	t.Run("Test_Helper/Run_GetOrGenerateKeys_With_GenerateAndPersistKeySetError", func(t *testing.T) {
 		keyManager := km(t)
-		keyManager.EXPECT().GetKeySet(gomock.Any(), gomock.Eq(setId)).Return(nil, errors.Wrap(x.ErrNotFound, ""))
+		keyManager.EXPECT().GetKeySet(gomock.Any(), gomock.Eq(setId)).Return(nil, errors.Wrap(x.ErrNotFound, "")).Times(2)
 		keyManager.EXPECT().GenerateAndPersistKeySet(gomock.Any(), gomock.Eq(setId), gomock.Eq(keyId), gomock.Eq("RS256"), gomock.Eq("sig")).Return(nil, errors.New("GetKeySetError"))
 		privKey, err := jwk.GetOrGenerateKeys(context.TODO(), reg, keyManager, setId, keyId, "RS256")
 		assert.Nil(t, privKey)
@@ -234,7 +236,7 @@ func TestGetOrGenerateKeys(t *testing.T) {
 
 	t.Run("Test_Helper/Run_GetOrGenerateKeys_With_GenerateAndPersistKeySetError", func(t *testing.T) {
 		keyManager := km(t)
-		keyManager.EXPECT().GetKeySet(gomock.Any(), gomock.Eq(setId)).Return(keySetWithoutPrivateKey, nil)
+		keyManager.EXPECT().GetKeySet(gomock.Any(), gomock.Eq(setId)).Return(keySetWithoutPrivateKey, nil).Times(2)
 		keyManager.EXPECT().GenerateAndPersistKeySet(gomock.Any(), gomock.Eq(setId), gomock.Eq(keyId), gomock.Eq("RS256"), gomock.Eq("sig")).Return(nil, errors.New("GetKeySetError"))
 		privKey, err := jwk.GetOrGenerateKeys(context.TODO(), reg, keyManager, setId, keyId, "RS256")
 		assert.Nil(t, privKey)
@@ -243,7 +245,7 @@ func TestGetOrGenerateKeys(t *testing.T) {
 
 	t.Run("Test_Helper/Run_GetOrGenerateKeys_With_GetKeySet_ContainsMissingPrivateKey", func(t *testing.T) {
 		keyManager := km(t)
-		keyManager.EXPECT().GetKeySet(gomock.Any(), gomock.Eq(setId)).Return(keySetWithoutPrivateKey, nil)
+		keyManager.EXPECT().GetKeySet(gomock.Any(), gomock.Eq(setId)).Return(keySetWithoutPrivateKey, nil).Times(2)
 		keyManager.EXPECT().GenerateAndPersistKeySet(gomock.Any(), gomock.Eq(setId), gomock.Eq(keyId), gomock.Eq("RS256"), gomock.Eq("sig")).Return(keySet, nil)
 		privKey, err := jwk.GetOrGenerateKeys(context.TODO(), reg, keyManager, setId, keyId, "RS256")
 		assert.NoError(t, err)
@@ -252,10 +254,95 @@ func TestGetOrGenerateKeys(t *testing.T) {
 
 	t.Run("Test_Helper/Run_GetOrGenerateKeys_With_GenerateAndPersistKeySet_ContainsMissingPrivateKey", func(t *testing.T) {
 		keyManager := km(t)
-		keyManager.EXPECT().GetKeySet(gomock.Any(), gomock.Eq(setId)).Return(keySetWithoutPrivateKey, nil)
+		keyManager.EXPECT().GetKeySet(gomock.Any(), gomock.Eq(setId)).Return(keySetWithoutPrivateKey, nil).Times(2)
 		keyManager.EXPECT().GenerateAndPersistKeySet(gomock.Any(), gomock.Eq(setId), gomock.Eq(keyId), gomock.Eq("RS256"), gomock.Eq("sig")).Return(keySetWithoutPrivateKey, nil).Times(1)
 		privKey, err := jwk.GetOrGenerateKeys(context.TODO(), reg, keyManager, setId, keyId, "RS256")
 		assert.Nil(t, privKey)
 		assert.EqualError(t, err, "key not found")
+	})
+
+	t.Run("Test_Helper/Run_GetOrGenerateKeys_With_ExistingKeySet", func(t *testing.T) {
+		keyManager := km(t)
+		keyManager.EXPECT().GetKeySet(gomock.Any(), gomock.Eq(setId)).Return(keySet, nil)
+		privKey, err := jwk.GetOrGenerateKeys(context.TODO(), reg, keyManager, setId, keyId, "RS256")
+		assert.NoError(t, err)
+		assert.Equal(t, privKey, &keySet.Keys[0])
+	})
+
+	t.Run("Test_Helper/Run_GetOrGenerateKeys_With_KeySetGeneratedWhileWaitingForLock", func(t *testing.T) {
+		keyManager := km(t)
+		gomock.InOrder(
+			keyManager.EXPECT().GetKeySet(gomock.Any(), gomock.Eq(setId)).Return(nil, errors.Wrap(x.ErrNotFound, "")),
+			keyManager.EXPECT().GetKeySet(gomock.Any(), gomock.Eq(setId)).Return(keySet, nil),
+		)
+		privKey, err := jwk.GetOrGenerateKeys(context.TODO(), reg, keyManager, setId, keyId, "RS256")
+		assert.NoError(t, err)
+		assert.Equal(t, privKey, &keySet.Keys[0])
+	})
+
+	t.Run("Test_Helper/Run_GetOrGenerateKeys_With_BlockedGetKeySet_DoesNotBlockOtherReads", func(t *testing.T) {
+		keyManager := km(t)
+		blockedSetId := uuid.NewUUID().String()
+		var calls atomic.Int32
+		unblock := make(chan struct{})
+		keyManager.EXPECT().GetKeySet(gomock.Any(), gomock.Eq(blockedSetId)).DoAndReturn(func(context.Context, string) (*jose.JSONWebKeySet, error) {
+			if calls.Add(1) == 1 {
+				<-unblock
+				return nil, errors.New("GetKeySetError")
+			}
+			return keySet, nil
+		}).Times(2)
+
+		blockedErr := make(chan error)
+		go func() {
+			_, err := jwk.GetOrGenerateKeys(context.TODO(), reg, keyManager, blockedSetId, keyId, "RS256")
+			blockedErr <- err
+		}()
+		require.Eventually(t, func() bool { return calls.Load() == 1 }, time.Second, time.Millisecond)
+
+		privKey, err := jwk.GetOrGenerateKeys(context.TODO(), reg, keyManager, blockedSetId, keyId, "RS256")
+		assert.NoError(t, err)
+		assert.Equal(t, privKey, &keySet.Keys[0])
+
+		close(unblock)
+		assert.EqualError(t, <-blockedErr, "GetKeySetError")
+	})
+}
+
+func TestEnsureKeySetsExist(t *testing.T) {
+	keySet, _ := jwk.GenerateJWK(context.Background(), jose.RS256, "kid", "sig")
+	keySetWithoutPrivateKey := &jose.JSONWebKeySet{
+		Keys: []jose.JSONWebKey{keySet.Keys[0].Public()},
+	}
+
+	km := func(t *testing.T) *MockManager {
+		ctrl := gomock.NewController(t)
+		t.Cleanup(ctrl.Finish)
+		return NewMockManager(ctrl)
+	}
+
+	t.Run("case=all key sets exist", func(t *testing.T) {
+		keyManager := km(t)
+		keyManager.EXPECT().GetKeySet(gomock.Any(), gomock.Eq("set1")).Return(keySet, nil)
+		keyManager.EXPECT().GetKeySet(gomock.Any(), gomock.Eq("set2")).Return(keySet, nil)
+		assert.NoError(t, jwk.EnsureKeySetsExist(context.TODO(), keyManager, "set1", "set2"))
+	})
+
+	t.Run("case=key sets missing or without private key", func(t *testing.T) {
+		keyManager := km(t)
+		keyManager.EXPECT().GetKeySet(gomock.Any(), gomock.Eq("set1")).Return(nil, errors.WithStack(x.ErrNotFound))
+		keyManager.EXPECT().GetKeySet(gomock.Any(), gomock.Eq("set2")).Return(keySet, nil)
+		keyManager.EXPECT().GetKeySet(gomock.Any(), gomock.Eq("set3")).Return(keySetWithoutPrivateKey, nil)
+		err := jwk.EnsureKeySetsExist(context.TODO(), keyManager, "set1", "set2", "set3")
+		assert.ErrorIs(t, err, jwk.ErrKeySetsNotFound)
+		assert.EqualError(t, err, "JSON Web Key Sets do not exist or contain no private key: set1, set3")
+	})
+
+	t.Run("case=GetKeySet error", func(t *testing.T) {
+		keyManager := km(t)
+		keyManager.EXPECT().GetKeySet(gomock.Any(), gomock.Eq("set1")).Return(nil, errors.New("GetKeySetError"))
+		err := jwk.EnsureKeySetsExist(context.TODO(), keyManager, "set1", "set2")
+		assert.NotErrorIs(t, err, jwk.ErrKeySetsNotFound)
+		assert.EqualError(t, err, "GetKeySetError")
 	})
 }

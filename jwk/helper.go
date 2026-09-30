@@ -22,14 +22,14 @@ import (
 	jose "gopkg.in/square/go-jose.v2"
 )
 
-var mapLock sync.RWMutex
-var locks = map[string]*sync.RWMutex{}
+var mapLock sync.Mutex
+var locks = map[string]*sync.Mutex{}
 
-func getLock(set string) *sync.RWMutex {
+func getLock(set string) *sync.Mutex {
 	mapLock.Lock()
 	defer mapLock.Unlock()
 	if _, ok := locks[set]; !ok {
-		locks[set] = new(sync.RWMutex)
+		locks[set] = new(sync.Mutex)
 	}
 	return locks[set]
 }
@@ -39,38 +39,46 @@ func EnsureAsymmetricKeypairExists(ctx context.Context, r InternalRegistry, alg,
 	return err
 }
 
+// GetOrGenerateKeys returns the private key of the given key set, generating the key set when it does not exist or
+// contains no private key. Reads are not serialized, the per set lock is only held while generating.
 func GetOrGenerateKeys(ctx context.Context, r InternalRegistry, m Manager, set, kid, alg string) (private *jose.JSONWebKey, err error) {
-	getLock(set).Lock()
-	defer getLock(set).Unlock()
+	if privKey, err := getPrivateKey(ctx, m, set); !errors.Is(err, errPrivateKeyNotFound) {
+		return privKey, err
+	}
 
+	lock := getLock(set)
+	lock.Lock()
+	defer lock.Unlock()
+
+	// Re-check, the key set may have been generated while waiting for the lock.
+	if privKey, err := getPrivateKey(ctx, m, set); !errors.Is(err, errPrivateKeyNotFound) {
+		return privKey, err
+	}
+
+	r.Logger().WithField("jwks", set).Warnf("JSON Web Key Set \"%s\" does not exist yet or contains no private key, generating new key pair...", set)
+	keys, err := m.GenerateAndPersistKeySet(ctx, set, kid, alg, "sig")
+	if err != nil {
+		return nil, err
+	}
+
+	return FindPrivateKey(keys)
+}
+
+var errPrivateKeyNotFound = errors.New("private key not found")
+
+func getPrivateKey(ctx context.Context, m Manager, set string) (*jose.JSONWebKey, error) {
 	keys, err := m.GetKeySet(ctx, set)
-	if errors.Is(err, x.ErrNotFound) || keys != nil && len(keys.Keys) == 0 {
-		r.Logger().Warnf("JSON Web Key Set \"%s\" does not exist yet, generating new key pair...", set)
-		keys, err = m.GenerateAndPersistKeySet(ctx, set, kid, alg, "sig")
-		if err != nil {
-			return nil, err
-		}
+	if errors.Is(err, x.ErrNotFound) {
+		return nil, errPrivateKeyNotFound
 	} else if err != nil {
 		return nil, err
 	}
 
-	privKey, privKeyErr := FindPrivateKey(keys)
-	if privKeyErr == nil {
-		return privKey, nil
-	} else {
-		r.Logger().WithField("jwks", set).Warnf("JSON Web Key not found in JSON Web Key Set %s, generating new key pair...", set)
-
-		keys, err = m.GenerateAndPersistKeySet(ctx, set, kid, alg, "sig")
-		if err != nil {
-			return nil, err
-		}
-
-		privKey, err := FindPrivateKey(keys)
-		if err != nil {
-			return nil, err
-		}
-		return privKey, nil
+	privKey, err := FindPrivateKey(keys)
+	if err != nil {
+		return nil, errPrivateKeyNotFound
 	}
+	return privKey, nil
 }
 
 func First(keys []jose.JSONWebKey) *jose.JSONWebKey {

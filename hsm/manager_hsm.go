@@ -14,7 +14,6 @@ import (
 	"crypto/x509"
 	"fmt"
 	"net/http"
-	"sync"
 
 	"github.com/ory/hydra/v2/driver/config"
 	"github.com/ory/x/otelx"
@@ -22,12 +21,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/pborman/uuid"
-
 	"github.com/ory/fosite"
 	"github.com/ory/hydra/v2/jwk"
-
-	"github.com/miekg/pkcs11"
 
 	"github.com/ory/hydra/v2/x"
 
@@ -41,7 +36,6 @@ const tracingComponent = "github.com/ory/hydra/hsm"
 
 type KeyManager struct {
 	jwk.Manager
-	sync.RWMutex
 	Context
 	c           config.DefaultProvider
 	keySetCache map[string]jose.JSONWebKeySet
@@ -50,7 +44,7 @@ type KeyManager struct {
 var ErrPreGeneratedKeys = &fosite.RFC6749Error{
 	CodeField:        http.StatusBadRequest,
 	ErrorField:       http.StatusText(http.StatusBadRequest),
-	DescriptionField: "Cannot add/update pre generated keys on Hardware Security Module",
+	DescriptionField: "Generating/adding/updating/deleting keys on the Hardware Security Module is not implemented.",
 }
 
 func NewKeyManager(hsm Context, config *config.DefaultProvider) *KeyManager {
@@ -61,66 +55,8 @@ func NewKeyManager(hsm Context, config *config.DefaultProvider) *KeyManager {
 	}
 }
 
-func (m *KeyManager) GenerateAndPersistKeySet(ctx context.Context, set, kid, alg, use string) (*jose.JSONWebKeySet, error) {
-	ctx, span := otel.GetTracerProvider().Tracer(tracingComponent).Start(ctx, "hsm.GenerateAndPersistKeySet")
-	defer span.End()
-	attrs := map[string]string{
-		"set": set,
-		"kid": kid,
-		"alg": alg,
-		"use": use,
-	}
-	span.SetAttributes(otelx.StringAttrs(attrs)...)
-
-	m.Lock()
-	defer m.Unlock()
-
-	set = m.prefixKeySet(set)
-
-	err := m.deleteExistingKeySet(set)
-	if err != nil {
-		return nil, err
-	}
-	m.evictKeySet(set)
-
-	if len(kid) == 0 {
-		kid = uuid.New()
-	}
-
-	privateAttrSet, publicAttrSet, err := getKeyPairAttributes(kid, set, use)
-	if err != nil {
-		return nil, err
-	}
-
-	switch {
-	case alg == "RS256":
-		key, err := m.GenerateRSAKeyPairWithAttributes(publicAttrSet, privateAttrSet, 4096)
-		if err != nil {
-			return nil, err
-		}
-		return createKeySet(key, kid, alg, use), nil
-	case alg == "ES256":
-		key, err := m.GenerateECDSAKeyPairWithAttributes(publicAttrSet, privateAttrSet, elliptic.P256())
-		if err != nil {
-			return nil, err
-		}
-		return createKeySet(key, kid, alg, use), nil
-	case alg == "ES512":
-		key, err := m.GenerateECDSAKeyPairWithAttributes(publicAttrSet, privateAttrSet, elliptic.P521())
-		if err != nil {
-			return nil, err
-		}
-		return createKeySet(key, kid, alg, use), nil
-
-	// NOTE:
-	//	- HS256, HS512 not supported. Makes sense only if shared HSM is used between Hydra and authenticating client.
-	//	- EdDSA not supported. As of now PKCS#11 v2.4 doesn't support EdDSA keys using curve Ed25519. However,
-	//	  PKCS#11 3.0 (https://docs.oasis-open.org/pkcs11/pkcs11-curr/v3.0/pkcs11-curr-v3.0.html)
-	//	  contains support for EdDSA.
-
-	default:
-		return nil, errors.WithStack(jwk.ErrUnsupportedKeyAlgorithm)
-	}
+func (m *KeyManager) GenerateAndPersistKeySet(_ context.Context, _, _, _, _ string) (*jose.JSONWebKeySet, error) {
+	return nil, errors.WithStack(ErrPreGeneratedKeys)
 }
 
 func (m *KeyManager) GetKey(ctx context.Context, set, kid string) (*jose.JSONWebKeySet, error) {
@@ -131,9 +67,6 @@ func (m *KeyManager) GetKey(ctx context.Context, set, kid string) (*jose.JSONWeb
 		"kid": kid,
 	}
 	span.SetAttributes(otelx.StringAttrs(attrs)...)
-
-	m.RLock()
-	defer m.RUnlock()
 
 	set = m.prefixKeySet(set)
 
@@ -161,9 +94,6 @@ func (m *KeyManager) GetKeySet(ctx context.Context, set string) (*jose.JSONWebKe
 		"set": set,
 	}
 	span.SetAttributes(otelx.StringAttrs(attrs)...)
-
-	m.RLock()
-	defer m.RUnlock()
 
 	set = m.prefixKeySet(set)
 
@@ -206,52 +136,41 @@ func (m *KeyManager) GetWellKnownKeys(ctx context.Context) (*jose.JSONWebKeySet,
 	return &jwks, nil
 }
 
+// DeleteKey never deletes keys on Hardware Security Module. It returns x.ErrNotFound if the key does not exist on Hardware
+// Security Module, so that keys stored in software key manager can still be deleted, and ErrPreGeneratedKeys otherwise.
 func (m *KeyManager) DeleteKey(ctx context.Context, set, kid string) error {
-	ctx, span := otel.GetTracerProvider().Tracer(tracingComponent).Start(ctx, "hsm.DeleteKey")
+	_, span := otel.GetTracerProvider().Tracer(tracingComponent).Start(ctx, "hsm.DeleteKey")
 	defer span.End()
 	attrs := map[string]string{
 		"set": set,
 		"kid": kid,
 	}
 	span.SetAttributes(otelx.StringAttrs(attrs)...)
-	m.Lock()
-	defer m.Unlock()
 
-	set = m.prefixKeySet(set)
-
-	keyPair, err := m.FindKeyPair([]byte(kid), []byte(set))
+	keyPair, err := m.FindKeyPair([]byte(kid), []byte(m.prefixKeySet(set)))
 	if err != nil {
 		return err
 	}
 
-	if keyPair != nil {
-		err = keyPair.Delete()
-		if err != nil {
-			return err
-		}
-	} else {
+	if keyPair == nil {
 		return errors.WithStack(x.ErrNotFound)
 	}
 
-	m.evictKeySet(set)
-
-	return nil
+	return errors.WithStack(ErrPreGeneratedKeys)
 }
 
+// DeleteKeySet never deletes keys on Hardware Security Module. It returns x.ErrNotFound if the key set does not exist on
+// Hardware Security Module, so that key sets stored in software key manager can still be deleted, and ErrPreGeneratedKeys
+// otherwise.
 func (m *KeyManager) DeleteKeySet(ctx context.Context, set string) error {
-	ctx, span := otel.GetTracerProvider().Tracer(tracingComponent).Start(ctx, "hsm.DeleteKeySet")
+	_, span := otel.GetTracerProvider().Tracer(tracingComponent).Start(ctx, "hsm.DeleteKeySet")
 	defer span.End()
 	attrs := map[string]string{
 		"set": set,
 	}
 	span.SetAttributes(otelx.StringAttrs(attrs)...)
 
-	m.Lock()
-	defer m.Unlock()
-
-	set = m.prefixKeySet(set)
-
-	keyPairs, err := m.FindKeyPairs(nil, []byte(set))
+	keyPairs, err := m.FindKeyPairs(nil, []byte(m.prefixKeySet(set)))
 	if err != nil {
 		return err
 	}
@@ -260,16 +179,7 @@ func (m *KeyManager) DeleteKeySet(ctx context.Context, set string) error {
 		return errors.WithStack(x.ErrNotFound)
 	}
 
-	for _, keyPair := range keyPairs {
-		err = keyPair.Delete()
-		if err != nil {
-			return err
-		}
-	}
-
-	m.evictKeySet(set)
-
-	return nil
+	return errors.WithStack(ErrPreGeneratedKeys)
 }
 
 func (m *KeyManager) AddKey(_ context.Context, _ string, _ *jose.JSONWebKey) error {
@@ -332,54 +242,6 @@ func (m *KeyManager) getKeySetAttributes(ctx context.Context, key crypto11.Signe
 	return string(kid), alg, use, nil
 }
 
-func getKeyPairAttributes(kid string, set string, use string) (crypto11.AttributeSet, crypto11.AttributeSet, error) {
-
-	privateAttrSet, err := crypto11.NewAttributeSetWithIDAndLabel([]byte(kid), []byte(set))
-	if err != nil {
-		return nil, nil, err
-	}
-
-	publicAttrSet, err := crypto11.NewAttributeSetWithIDAndLabel([]byte(kid), []byte(set))
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if len(use) == 0 || use == "sig" {
-		publicAttrSet.AddIfNotPresent([]*pkcs11.Attribute{
-			pkcs11.NewAttribute(pkcs11.CKA_VERIFY, true),
-			pkcs11.NewAttribute(pkcs11.CKA_ENCRYPT, false),
-		})
-		privateAttrSet.AddIfNotPresent([]*pkcs11.Attribute{
-			pkcs11.NewAttribute(pkcs11.CKA_SIGN, true),
-			pkcs11.NewAttribute(pkcs11.CKA_DECRYPT, false),
-		})
-	} else {
-		publicAttrSet.AddIfNotPresent([]*pkcs11.Attribute{
-			pkcs11.NewAttribute(pkcs11.CKA_VERIFY, false),
-			pkcs11.NewAttribute(pkcs11.CKA_ENCRYPT, true),
-		})
-		privateAttrSet.AddIfNotPresent([]*pkcs11.Attribute{
-			pkcs11.NewAttribute(pkcs11.CKA_SIGN, false),
-			pkcs11.NewAttribute(pkcs11.CKA_DECRYPT, true),
-		})
-	}
-
-	return privateAttrSet, publicAttrSet, nil
-}
-
-func (m *KeyManager) deleteExistingKeySet(set string) error {
-	existingKeyPairs, err := m.FindKeyPairs(nil, []byte(set))
-	if err != nil {
-		return err
-	}
-	if len(existingKeyPairs) != 0 {
-		for _, keyPair := range existingKeyPairs {
-			_ = keyPair.Delete()
-		}
-	}
-	return nil
-}
-
 func createKeySet(key crypto11.Signer, kid, alg, use string) *jose.JSONWebKeySet {
 	return &jose.JSONWebKeySet{
 		Keys: createKeys(key, kid, alg, use),
@@ -400,10 +262,4 @@ func createKeys(key crypto11.Signer, kid, alg, use string) []jose.JSONWebKey {
 
 func (m *KeyManager) prefixKeySet(set string) string {
 	return fmt.Sprintf("%s%s", m.c.HSMKeySetPrefix(), set)
-}
-
-func (m *KeyManager) evictKeySet(set string) {
-	if _, ok := m.keySetCache[set]; ok {
-		delete(m.keySetCache, set)
-	}
 }

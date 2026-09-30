@@ -8,7 +8,6 @@ package hsm
 
 import (
 	"context"
-	"sync"
 
 	"github.com/ory/hydra/v2/driver/config"
 	"github.com/ory/x/logrusx"
@@ -25,7 +24,6 @@ type Context interface {
 
 type KeyManager struct {
 	jwk.Manager
-	sync.RWMutex
 	Context
 	KeySetPrefix string
 }

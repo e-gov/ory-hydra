@@ -7,8 +7,6 @@
 package hsm
 
 import (
-	"crypto/elliptic"
-
 	"github.com/ThalesIgnite/crypto11"
 
 	"github.com/ory/hydra/v2/driver/config"
@@ -16,8 +14,6 @@ import (
 )
 
 type Context interface {
-	GenerateRSAKeyPairWithAttributes(public, private crypto11.AttributeSet, bits int) (crypto11.SignerDecrypter, error)
-	GenerateECDSAKeyPairWithAttributes(public, private crypto11.AttributeSet, curve elliptic.Curve) (crypto11.Signer, error)
 	FindKeyPair(id []byte, label []byte) (crypto11.Signer, error)
 	FindKeyPairs(id []byte, label []byte) (signer []crypto11.Signer, err error)
 	GetAttribute(key interface{}, attribute crypto11.AttributeType) (a *crypto11.Attribute, err error)

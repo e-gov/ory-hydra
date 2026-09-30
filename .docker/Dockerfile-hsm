@@ -20,14 +20,18 @@ RUN go build -tags sqlite,json1,hsm -o /usr/bin/hydra
 
 FROM builder as test-hsm
 ENV HSM_ENABLED=true
-ENV HSM_LIBRARY=/usr/lib/softhsm/pkcs11-logger-x64.so
+# Ory Hydra and hsm-generate-keys.sh load SoftHSM through OpenSC's pkcs11-spy, which logs all PKCS#11 calls to
+# PKCS11SPY_OUTPUT. The end of the log is printed when tests fail.
+ENV HSM_LIBRARY=/usr/lib/pkcs11-spy.so
+ENV PKCS11SPY=/usr/lib/softhsm/libsofthsm2.so
+ENV PKCS11SPY_OUTPUT=/tmp/pkcs11-spy.log
 ENV HSM_TOKEN_LABEL=hydra
 ENV HSM_PIN=1234
 
 RUN apk --no-cache --upgrade --latest add softhsm opensc; \
     pkcs11-tool --module /usr/lib/softhsm/libsofthsm2.so --slot 0 --init-token --so-pin 0000 --init-pin --pin 1234 --label hydra; \
-    HSM_LIBRARY=/usr/lib/softhsm/libsofthsm2.so ./scripts/hsm-generate-keys.sh; \
-    go test -p 1 -v -failfast -short -tags=sqlite,hsm ./...
+    ./scripts/hsm-generate-keys.sh; \
+    go test -p 1 -v -failfast -short -tags=sqlite,hsm ./... || { tail -n 500 "$PKCS11SPY_OUTPUT"; exit 1; }
 
 FROM alpine:3.15
 
@@ -44,8 +48,10 @@ RUN addgroup -S ory; \
 
 COPY --from=build-hydra /usr/bin/hydra /usr/bin/hydra
 
+# To log all PKCS#11 calls, set HSM_LIBRARY=/usr/lib/pkcs11-spy.so. OpenSC's pkcs11-spy then forwards the calls to
+# PKCS11SPY and logs them to PKCS11SPY_OUTPUT.
 ENV PKCS11SPY=/usr/lib/softhsm/libsofthsm2.so
-ENV PKCS11SPY_OUTPUT=/usr/lib/softhsm/pkcs11-spy.log
+ENV PKCS11SPY_OUTPUT=/home/ory/pkcs11-spy.log
 
 # By creating the sqlite folder as the ory user, the mounted volume will be owned by ory:ory, which
 # is required for read/write of SQLite.

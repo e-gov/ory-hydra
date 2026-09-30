@@ -71,35 +71,35 @@ func testRegistry(t *testing.T, ctx context.Context, k string, t1 driver.Registr
 			{alg: "ES512", skip: false},
 			{alg: "HS256", skip: true},
 			{alg: "HS512", skip: true},
-			{alg: "EdDSA", skip: t1.Config().HSMEnabled()},
+			{alg: "EdDSA", skip: false},
 		} {
 			t.Run("key_generator="+tc.alg, func(t *testing.T) {
 				if tc.skip {
 					t.Skipf("Skipping test. Not applicable for alg: %s", tc.alg)
 				}
 				if t1.Config().HSMEnabled() {
-					t.Run("TestManagerGenerateAndPersistKeySet", jwk.TestHelperManagerGenerateAndPersistKeySet(t1.KeyManager(), tc.alg, false))
-					// We don't support NID isolation with HSM at the moment
-					// t.Run("TestManagerGenerateAndPersistKeySet", jwk.TestHelperManagerNIDIsolationKeySet(t1.KeyManager(), t2.KeyManager(), tc.alg))
-				} else {
-					kid, err := uuid.NewV4()
-					require.NoError(t, err)
-					ks, err := jwk.GenerateJWK(context.Background(), jose.SignatureAlgorithm(tc.alg), kid.String(), "sig")
-					require.NoError(t, err)
-					t.Run("TestManagerKey", jwk.TestHelperManagerKey(t1.KeyManager(), tc.alg, ks, kid.String()))
-					t.Run("Parallel", func(t *testing.T) {
-						t.Run("TestManagerKeySet", jwk.TestHelperManagerKeySet(t1.KeyManager(), tc.alg, ks, kid.String(), parallel))
-						t.Run("TestManagerKeySet", jwk.TestHelperManagerKeySet(t2.KeyManager(), tc.alg, ks, kid.String(), parallel))
-					})
-					t.Run("Parallel", func(t *testing.T) {
-						t.Run("TestManagerGenerateAndPersistKeySet", jwk.TestHelperManagerGenerateAndPersistKeySet(t1.KeyManager(), tc.alg, parallel))
-						t.Run("TestManagerGenerateAndPersistKeySet", jwk.TestHelperManagerGenerateAndPersistKeySet(t2.KeyManager(), tc.alg, parallel))
-					})
+					t.Skip("Skipping test. Keys cannot be generated, added, updated or deleted when Hardware Security Module is enabled")
 				}
+				kid, err := uuid.NewV4()
+				require.NoError(t, err)
+				ks, err := jwk.GenerateJWK(context.Background(), jose.SignatureAlgorithm(tc.alg), kid.String(), "sig")
+				require.NoError(t, err)
+				t.Run("TestManagerKey", jwk.TestHelperManagerKey(t1.KeyManager(), tc.alg, ks, kid.String()))
+				t.Run("Parallel", func(t *testing.T) {
+					t.Run("TestManagerKeySet", jwk.TestHelperManagerKeySet(t1.KeyManager(), tc.alg, ks, kid.String(), parallel))
+					t.Run("TestManagerKeySet", jwk.TestHelperManagerKeySet(t2.KeyManager(), tc.alg, ks, kid.String(), parallel))
+				})
+				t.Run("Parallel", func(t *testing.T) {
+					t.Run("TestManagerGenerateAndPersistKeySet", jwk.TestHelperManagerGenerateAndPersistKeySet(t1.KeyManager(), tc.alg, parallel))
+					t.Run("TestManagerGenerateAndPersistKeySet", jwk.TestHelperManagerGenerateAndPersistKeySet(t2.KeyManager(), tc.alg, parallel))
+				})
 			})
 		}
 
 		t.Run("TestManagerGenerateAndPersistKeySetWithUnsupportedKeyGenerator", func(t *testing.T) {
+			if t1.Config().HSMEnabled() {
+				t.Skip("Skipping test. Keys cannot be generated when Hardware Security Module is enabled")
+			}
 			_, err := t1.KeyManager().GenerateAndPersistKeySet(context.TODO(), "foo", "bar", "UNKNOWN", "sig")
 			require.Error(t, err)
 			assert.IsType(t, errors.WithStack(jwk.ErrUnsupportedKeyAlgorithm), err)
@@ -108,12 +108,12 @@ func testRegistry(t *testing.T, ctx context.Context, k string, t1 driver.Registr
 
 	t.Run("package=grant/trust/manager="+k, func(t *testing.T) {
 		t.Run("parallel-boundary", func(t *testing.T) {
-			t.Run("case=create-get-delete/network=t1", trust.TestHelperGrantManagerCreateGetDeleteGrant(t1.GrantManager(), t1.KeyManager(), parallel))
-			t.Run("case=create-get-delete/network=t2", trust.TestHelperGrantManagerCreateGetDeleteGrant(t2.GrantManager(), t2.KeyManager(), parallel))
+			t.Run("case=create-get-delete/network=t1", trust.TestHelperGrantManagerCreateGetDeleteGrant(t1.GrantManager(), t1.SoftwareKeyManager(), parallel))
+			t.Run("case=create-get-delete/network=t2", trust.TestHelperGrantManagerCreateGetDeleteGrant(t2.GrantManager(), t2.SoftwareKeyManager(), parallel))
 		})
 		t.Run("parallel-boundary", func(t *testing.T) {
-			t.Run("case=errors", trust.TestHelperGrantManagerErrors(t1.GrantManager(), t1.KeyManager(), parallel))
-			t.Run("case=errors", trust.TestHelperGrantManagerErrors(t2.GrantManager(), t2.KeyManager(), parallel))
+			t.Run("case=errors", trust.TestHelperGrantManagerErrors(t1.GrantManager(), t1.SoftwareKeyManager(), parallel))
+			t.Run("case=errors", trust.TestHelperGrantManagerErrors(t2.GrantManager(), t2.SoftwareKeyManager(), parallel))
 		})
 	})
 }

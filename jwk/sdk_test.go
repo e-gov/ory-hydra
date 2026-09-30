@@ -39,6 +39,55 @@ func TestJWKSDK(t *testing.T) {
 	sdk := hydra.NewAPIClient(hydra.NewConfiguration())
 	sdk.GetConfig().Servers = hydra.ServerConfigurations{{URL: server.URL}}
 
+	if conf.HSMEnabled() {
+		t.Run("CreateJwkSet is rejected", func(t *testing.T) {
+			_, res, err := sdk.JwkApi.CreateJsonWebKeySet(ctx, "set-foo").CreateJsonWebKeySet(hydra.CreateJsonWebKeySet{
+				Alg: "RS256",
+				Kid: "key-bar",
+				Use: "sig",
+			}).Execute()
+			require.Error(t, err)
+			assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+		})
+
+		t.Run("DeleteJwkSetKey is rejected for key on Hardware Security Module", func(t *testing.T) {
+			keys, _, err := sdk.JwkApi.GetJsonWebKeySet(ctx, x.OpenIDConnectKeyName).Execute()
+			require.NoError(t, err)
+			require.NotEmpty(t, keys.Keys)
+
+			res, err := sdk.JwkApi.DeleteJsonWebKey(ctx, x.OpenIDConnectKeyName, keys.Keys[0].Kid).Execute()
+			require.Error(t, err)
+			assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+		})
+
+		t.Run("DeleteJwkSet is rejected for key set on Hardware Security Module", func(t *testing.T) {
+			res, err := sdk.JwkApi.DeleteJsonWebKeySet(ctx, x.OpenIDConnectKeyName).Execute()
+			require.Error(t, err)
+			assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+		})
+
+		t.Run("DeleteJwkSetKey and DeleteJwkSet succeed for keys in software key manager", func(t *testing.T) {
+			keys, err := GenerateJWK(ctx, "RS256", "key-bar", "sig")
+			require.NoError(t, err)
+			require.NoError(t, reg.SoftwareKeyManager().AddKeySet(ctx, "set-foo", keys))
+			require.NoError(t, reg.SoftwareKeyManager().AddKeySet(ctx, "set-foo2", keys))
+
+			_, err = sdk.JwkApi.DeleteJsonWebKey(ctx, "set-foo", "key-bar").Execute()
+			require.NoError(t, err)
+			_, res, err := sdk.JwkApi.GetJsonWebKey(ctx, "set-foo", "key-bar").Execute()
+			require.Error(t, err)
+			assert.Equal(t, http.StatusNotFound, res.StatusCode)
+
+			_, err = sdk.JwkApi.DeleteJsonWebKeySet(ctx, "set-foo2").Execute()
+			require.NoError(t, err)
+			_, res, err = sdk.JwkApi.GetJsonWebKeySet(ctx, "set-foo2").Execute()
+			require.Error(t, err)
+			assert.Equal(t, http.StatusNotFound, res.StatusCode)
+		})
+
+		t.Skip("Skipping test. Keys cannot be generated when Hardware Security Module is enabled")
+	}
+
 	expectedKid := "key-bar"
 	t.Run("JSON Web Key", func(t *testing.T) {
 		t.Run("CreateJwkSetKey", func(t *testing.T) {
@@ -67,9 +116,6 @@ func TestJWKSDK(t *testing.T) {
 		})
 
 		t.Run("UpdateJwkSetKey", func(t *testing.T) {
-			if conf.HSMEnabled() {
-				t.Skip("Skipping test. Keys cannot be updated when Hardware Security Module is enabled")
-			}
 			require.Len(t, resultKeys.Keys, 1)
 			resultKeys.Keys[0].Alg = "ES256"
 
@@ -107,21 +153,12 @@ func TestJWKSDK(t *testing.T) {
 		resultKeys, _, err := sdk.JwkApi.GetJsonWebKeySet(ctx, "set-foo2").Execute()
 		t.Run("GetJwkSet after create", func(t *testing.T) {
 			require.NoError(t, err)
-			if conf.HSMEnabled() {
-				require.Len(t, resultKeys.Keys, 1)
-				assert.Equal(t, expectedKid, resultKeys.Keys[0].Kid)
-				assert.Equal(t, "RS256", resultKeys.Keys[0].Alg)
-			} else {
-				require.Len(t, resultKeys.Keys, 1)
-				assert.Equal(t, expectedKid, resultKeys.Keys[0].Kid)
-				assert.Equal(t, "RS256", resultKeys.Keys[0].Alg)
-			}
+			require.Len(t, resultKeys.Keys, 1)
+			assert.Equal(t, expectedKid, resultKeys.Keys[0].Kid)
+			assert.Equal(t, "RS256", resultKeys.Keys[0].Alg)
 		})
 
 		t.Run("UpdateJwkSet", func(t *testing.T) {
-			if conf.HSMEnabled() {
-				t.Skip("Skipping test. Keys cannot be updated when Hardware Security Module is enabled")
-			}
 			require.Len(t, resultKeys.Keys, 1)
 			resultKeys.Keys[0].Alg = "ES256"
 

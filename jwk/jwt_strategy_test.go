@@ -24,7 +24,9 @@ func TestJWTStrategy(t *testing.T) {
 		t.Run("case="+alg, func(t *testing.T) {
 			conf := internal.NewConfigurationWithDefaults()
 			reg := internal.NewRegistryMemory(t, conf, &contextx.Default{})
-			m := reg.KeyManager()
+			// Keys cannot be generated on Hardware Security Module, use the software key manager which is also used as
+			// fallback by the key manager when Hardware Security Module is enabled.
+			m := reg.SoftwareKeyManager()
 
 			_, err := m.GenerateAndPersistKeySet(context.Background(), "foo-set", "foo", alg, "sig")
 			require.NoError(t, err)

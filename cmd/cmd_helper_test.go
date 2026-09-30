@@ -84,7 +84,9 @@ func createClient(t *testing.T, reg driver.Registry, c *client.Client) *client.C
 }
 
 func createJWK(t *testing.T, reg driver.Registry, set string, alg string) jose.JSONWebKey {
-	c, err := reg.KeyManager().GenerateAndPersistKeySet(context.Background(), set, "", alg, "sig")
+	// Keys cannot be generated on Hardware Security Module, use the software key manager which is also used as fallback
+	// by the key manager when Hardware Security Module is enabled.
+	c, err := reg.SoftwareKeyManager().GenerateAndPersistKeySet(context.Background(), set, "", alg, "sig")
 	require.NoError(t, err)
 	return c.Keys[0]
 }

@@ -26,9 +26,10 @@ type Context interface {
 
 func NewContext(c *config.DefaultProvider, l *logrusx.Logger) Context {
 	config11 := &crypto11.Config{
-		Path:        c.HSMLibraryPath(),
-		Pin:         c.HSMPin(),
-		MaxSessions: *c.HSMMaxSessions(),
+		Path:            c.HSMLibraryPath(),
+		Pin:             c.HSMPin(),
+		MaxSessions:     *c.HSMMaxSessions(),
+		PoolWaitTimeout: c.HSMPoolWaitTimeout(),
 	}
 
 	if c.HSMTokenLabel() != "" {

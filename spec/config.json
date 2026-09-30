@@ -580,6 +580,15 @@
         "max_sessions": {
           "type": "integer",
           "description": "Maximum number of concurrent sessions to open. If zero, 1024 is used."
+        },
+        "pool_wait_timeout": {
+          "description": "Sets the timeout for requesting a PKCS#11 session from the session pool. `0s` means infinite timeout.",
+          "default": "0s",
+          "allOf": [
+            {
+              "$ref": "#/definitions/duration"
+            }
+          ]
         }
       }
     },

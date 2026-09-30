@@ -39,6 +39,7 @@ const (
 	HSMKeySetPrefix                              = "hsm.key_set_prefix"
 	HSMTokenLabel                                = "hsm.token_label" // #nosec G101
 	HSMMaxSessions                               = "hsm.max_sessions"
+	HSMPoolWaitTimeout                           = "hsm.pool_wait_timeout"
 	KeyWellKnownKeys                             = "webfinger.jwks.broadcast_keys"
 	KeyOAuth2ClientRegistrationURL               = "webfinger.oidc_discovery.client_registration_url"
 	KeyOAuth2TokenURL                            = "webfinger.oidc_discovery.token_url" // #nosec G101
@@ -508,6 +509,10 @@ func (p *DefaultProvider) HSMTokenLabel() string {
 func (p *DefaultProvider) HSMMaxSessions() *int {
 	n := p.getProvider(contextx.RootContext).Int(HSMMaxSessions)
 	return &n
+}
+
+func (p *DefaultProvider) HSMPoolWaitTimeout() time.Duration {
+	return p.getProvider(contextx.RootContext).DurationF(HSMPoolWaitTimeout, 0)
 }
 
 func (p *DefaultProvider) GetGrantTypeJWTBearerIDOptional(ctx context.Context) bool {

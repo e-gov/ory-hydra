@@ -73,6 +73,7 @@ type Registry interface {
 	WithOAuth2Provider(f fosite.OAuth2Provider)
 	WithConsentStrategy(c consent.Strategy)
 	WithHsmContext(h hsm.Context)
+	HSMContext() hsm.Context
 }
 
 func NewRegistryFromDSN(ctx context.Context, c *config.DefaultProvider, l *logrusx.Logger, skipNetworkInit bool, migrate bool, ctxer contextx.Contextualizer) (Registry, error) {

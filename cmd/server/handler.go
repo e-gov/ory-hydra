@@ -28,6 +28,7 @@ import (
 	"github.com/ory/x/reqlog"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/pkg/errors"
 	"github.com/rs/cors"
 	"github.com/spf13/cobra"
 	"github.com/urfave/negroni"
@@ -227,6 +228,16 @@ func setup(ctx context.Context, d driver.Registry, cmd *cobra.Command) (admin *h
 
 		if err != nil {
 			d.Logger().WithError(err).Fatal("Couldn't set GOMAXPROCS")
+		}
+	}
+
+	if d.Config().HSMEnabled() {
+		if err := ensureHSMKeySets(ctx, d); errors.Is(err, jwk.ErrKeySetsNotFound) {
+			d.Logger().WithError(err).WithField("key_set_prefix", d.Config().HSMKeySetPrefix()).
+				Fatal("Required JSON Web Key Sets are not available on Hardware Security Module. Keys are not generated on Hardware Security Module and have to be created beforehand.")
+		} else if err != nil {
+			d.Logger().WithError(err).WithField("key_set_prefix", d.Config().HSMKeySetPrefix()).
+				Fatal("Unable to verify that required JSON Web Key Sets exist on Hardware Security Module.")
 		}
 	}
 

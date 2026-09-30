@@ -10,6 +10,8 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/ory/x/josex"
@@ -63,6 +65,25 @@ func GetOrGenerateKeys(ctx context.Context, r InternalRegistry, m Manager, set, 
 
 	return FindPrivateKey(keys)
 }
+
+// EnsureKeySetsExist returns an error if any of the given key sets does not exist or contains no private key.
+func EnsureKeySetsExist(ctx context.Context, m Manager, sets ...string) error {
+	var missing []string
+	for _, set := range sets {
+		if _, err := getPrivateKey(ctx, m, set); errors.Is(err, errPrivateKeyNotFound) {
+			missing = append(missing, set)
+		} else if err != nil {
+			return err
+		}
+	}
+	if len(missing) > 0 {
+		return errors.WithStack(fmt.Errorf("%w: %s", ErrKeySetsNotFound, strings.Join(missing, ", ")))
+	}
+	return nil
+}
+
+// ErrKeySetsNotFound is returned by EnsureKeySetsExist when key sets do not exist or contain no private key.
+var ErrKeySetsNotFound = errors.New("JSON Web Key Sets do not exist or contain no private key")
 
 var errPrivateKeyNotFound = errors.New("private key not found")
 

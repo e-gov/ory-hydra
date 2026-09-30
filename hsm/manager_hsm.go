@@ -14,6 +14,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/ory/hydra/v2/driver/config"
 	"github.com/ory/x/otelx"
@@ -37,8 +38,9 @@ const tracingComponent = "github.com/ory/hydra/hsm"
 type KeyManager struct {
 	jwk.Manager
 	Context
-	c           config.DefaultProvider
-	keySetCache map[string]jose.JSONWebKeySet
+	c             config.DefaultProvider
+	keySetCacheMu sync.RWMutex
+	keySetCache   map[string]jose.JSONWebKeySet
 }
 
 var ErrPreGeneratedKeys = &fosite.RFC6749Error{
@@ -123,12 +125,17 @@ func (m *KeyManager) GetKeySet(ctx context.Context, set string) (*jose.JSONWebKe
 func (m *KeyManager) GetWellKnownKeys(ctx context.Context) (*jose.JSONWebKeySet, error) {
 	var jwks jose.JSONWebKeySet
 	for _, set := range stringslice.Unique(m.c.WellKnownKeys(ctx)) {
-		if cachedSet, ok := m.keySetCache[set]; ok {
+		m.keySetCacheMu.RLock()
+		cachedSet, ok := m.keySetCache[set]
+		m.keySetCacheMu.RUnlock()
+		if ok {
 			jwks.Keys = append(jwks.Keys, cachedSet.Keys...)
 		} else if keys, err := m.GetKeySet(ctx, set); err == nil {
 			keys = jwk.ExcludePrivateKeys(keys)
 			jwks.Keys = append(jwks.Keys, keys.Keys...)
+			m.keySetCacheMu.Lock()
 			m.keySetCache[set] = *keys
+			m.keySetCacheMu.Unlock()
 		} else if !errors.Is(err, x.ErrNotFound) {
 			return nil, err
 		}

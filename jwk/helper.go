@@ -15,6 +15,8 @@ import (
 	"sync"
 
 	"github.com/ory/x/josex"
+	"github.com/ory/x/otelx"
+	"go.opentelemetry.io/otel"
 
 	"github.com/ory/x/errorsx"
 
@@ -44,6 +46,15 @@ func EnsureAsymmetricKeypairExists(ctx context.Context, r InternalRegistry, alg,
 // GetOrGenerateKeys returns the private key of the given key set, generating the key set when it does not exist or
 // contains no private key. Reads are not serialized, the per set lock is only held while generating.
 func GetOrGenerateKeys(ctx context.Context, r InternalRegistry, m Manager, set, kid, alg string) (private *jose.JSONWebKey, err error) {
+	ctx, span := otel.GetTracerProvider().Tracer(tracingComponent).Start(ctx, "jwk.GetOrGenerateKeys")
+	defer span.End()
+	attrs := map[string]string{
+		"set": set,
+		"kid": kid,
+		"alg": alg,
+	}
+	span.SetAttributes(otelx.StringAttrs(attrs)...)
+
 	if privKey, err := getPrivateKey(ctx, m, set); !errors.Is(err, errPrivateKeyNotFound) {
 		return privKey, err
 	}

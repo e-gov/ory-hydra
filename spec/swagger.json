@@ -1405,6 +1405,47 @@
             }
           }
         }
+      },
+      "get": {
+        "description": "This endpoint returns the identity and authentication claims (subject, given_name, family_name, birthdate,\nphone_number, phone_number_verified, auth_time, amr, acr) of a login session. The values are taken from the most recently granted consent of the\nlogin session. If the login session is unknown or has no granted consent, the endpoint returns 404 Not Found.",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "schemes": [
+          "http",
+          "https"
+        ],
+        "tags": [
+          "oAuth2"
+        ],
+        "summary": "Get OAuth 2.0 Login Session Claims",
+        "operationId": "getOAuth2LoginSessionClaims",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Login Session ID\n\nThe login session ID (sid) to get the claims for.",
+            "name": "sid",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "loginSessionClaims",
+            "schema": {
+              "$ref": "#/definitions/loginSessionClaims"
+            }
+          },
+          "default": {
+            "description": "errorOAuth2",
+            "schema": {
+              "$ref": "#/definitions/errorOAuth2"
+            }
+          }
+        }
       }
     },
     "/admin/oauth2/introspect": {
@@ -2579,6 +2620,48 @@
           "items": {
             "$ref": "#/definitions/jsonWebKey"
           }
+        }
+      }
+    },
+    "loginSessionClaims": {
+      "description": "Identity and authentication claims of a login session, taken from its most recently granted consent.",
+      "type": "object",
+      "title": "Login Session Claims",
+      "properties": {
+        "acr": {
+          "description": "ACR is the Authentication Context Class Reference value of the login session.",
+          "type": "string"
+        },
+        "amr": {
+          "description": "AMR is the Authentication Methods References value of the login session.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "auth_time": {
+          "description": "AuthTime is the time (in seconds since the Unix epoch) when the end-user authenticated.",
+          "type": "integer",
+          "format": "int64"
+        },
+        "birthdate": {
+          "description": "Birthdate is the birthdate claim set in the consent session's ID token data."
+        },
+        "family_name": {
+          "description": "FamilyName is the family_name claim set in the consent session's ID token data."
+        },
+        "given_name": {
+          "description": "GivenName is the given_name claim set in the consent session's ID token data."
+        },
+        "phone_number": {
+          "description": "PhoneNumber is the phone_number claim set in the consent session's ID token data."
+        },
+        "phone_number_verified": {
+          "description": "PhoneNumberVerified is the phone_number_verified claim set in the consent session's ID token data."
+        },
+        "subject": {
+          "description": "Subject is the subject of the login session.",
+          "type": "string"
         }
       }
     },

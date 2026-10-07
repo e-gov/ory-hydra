@@ -1397,6 +1397,126 @@ func (a *OAuth2ApiService) GetOAuth2LoginRequestExecute(r ApiGetOAuth2LoginReque
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
+type ApiGetOAuth2LoginSessionClaimsRequest struct {
+	ctx        context.Context
+	ApiService *OAuth2ApiService
+	sid        *string
+}
+
+// Login Session ID  The login session ID (sid) to get the claims for.
+func (r ApiGetOAuth2LoginSessionClaimsRequest) Sid(sid string) ApiGetOAuth2LoginSessionClaimsRequest {
+	r.sid = &sid
+	return r
+}
+
+func (r ApiGetOAuth2LoginSessionClaimsRequest) Execute() (*LoginSessionClaims, *http.Response, error) {
+	return r.ApiService.GetOAuth2LoginSessionClaimsExecute(r)
+}
+
+/*
+GetOAuth2LoginSessionClaims Get OAuth 2.0 Login Session Claims
+
+This endpoint returns the identity and authentication claims (subject, given_name, family_name, birthdate,
+phone_number, phone_number_verified, auth_time, amr, acr) of a login session. The values are taken from the most recently granted consent of the
+login session. If the login session is unknown or has no granted consent, the endpoint returns 404 Not Found.
+
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiGetOAuth2LoginSessionClaimsRequest
+*/
+func (a *OAuth2ApiService) GetOAuth2LoginSessionClaims(ctx context.Context) ApiGetOAuth2LoginSessionClaimsRequest {
+	return ApiGetOAuth2LoginSessionClaimsRequest{
+		ApiService: a,
+		ctx:        ctx,
+	}
+}
+
+// Execute executes the request
+//
+//	@return LoginSessionClaims
+func (a *OAuth2ApiService) GetOAuth2LoginSessionClaimsExecute(r ApiGetOAuth2LoginSessionClaimsRequest) (*LoginSessionClaims, *http.Response, error) {
+	var (
+		localVarHTTPMethod  = http.MethodGet
+		localVarPostBody    interface{}
+		formFiles           []formFile
+		localVarReturnValue *LoginSessionClaims
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "OAuth2ApiService.GetOAuth2LoginSessionClaims")
+	if err != nil {
+		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/admin/oauth2/auth/sessions/login"
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+	if r.sid == nil {
+		return localVarReturnValue, nil, reportError("sid is required and must be specified")
+	}
+
+	localVarQueryParams.Add("sid", parameterToString(*r.sid, ""))
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"application/json"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return localVarReturnValue, nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	localVarBody, err := ioutil.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = ioutil.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		var v ErrorOAuth2
+		err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+		if err != nil {
+			newErr.error = err.Error()
+			return localVarReturnValue, localVarHTTPResponse, newErr
+		}
+		newErr.model = v
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	err = a.client.decode(&localVarReturnValue, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: err.Error(),
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	return localVarReturnValue, localVarHTTPResponse, nil
+}
+
 type ApiGetOAuth2LogoutRequestRequest struct {
 	ctx             context.Context
 	ApiService      *OAuth2ApiService

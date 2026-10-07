@@ -15,6 +15,7 @@ Method | HTTP request | Description
 [**GetOAuth2Client**](OAuth2Api.md#GetOAuth2Client) | **Get** /admin/clients/{id} | Get an OAuth 2.0 Client
 [**GetOAuth2ConsentRequest**](OAuth2Api.md#GetOAuth2ConsentRequest) | **Get** /admin/oauth2/auth/requests/consent | Get OAuth 2.0 Consent Request
 [**GetOAuth2LoginRequest**](OAuth2Api.md#GetOAuth2LoginRequest) | **Get** /admin/oauth2/auth/requests/login | Get OAuth 2.0 Login Request
+[**GetOAuth2LoginSessionClaims**](OAuth2Api.md#GetOAuth2LoginSessionClaims) | **Get** /admin/oauth2/auth/sessions/login | Get OAuth 2.0 Login Session Claims
 [**GetOAuth2LogoutRequest**](OAuth2Api.md#GetOAuth2LogoutRequest) | **Get** /admin/oauth2/auth/requests/logout | Get OAuth 2.0 Session Logout Request
 [**GetTrustedOAuth2JwtGrantIssuer**](OAuth2Api.md#GetTrustedOAuth2JwtGrantIssuer) | **Get** /admin/trust/grants/jwt-bearer/issuers/{id} | Get Trusted OAuth2 JWT Bearer Grant Type Issuer
 [**IntrospectOAuth2Token**](OAuth2Api.md#IntrospectOAuth2Token) | **Post** /admin/oauth2/introspect | Introspect OAuth2 Access and Refresh Tokens
@@ -763,6 +764,72 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**OAuth2LoginRequest**](OAuth2LoginRequest.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
+[[Back to Model list]](../README.md#documentation-for-models)
+[[Back to README]](../README.md)
+
+
+## GetOAuth2LoginSessionClaims
+
+> LoginSessionClaims GetOAuth2LoginSessionClaims(ctx).Sid(sid).Execute()
+
+Get OAuth 2.0 Login Session Claims
+
+
+
+### Example
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    openapiclient "./openapi"
+)
+
+func main() {
+    sid := "sid_example" // string | Login Session ID  The login session ID (sid) to get the claims for.
+
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    resp, r, err := apiClient.OAuth2Api.GetOAuth2LoginSessionClaims(context.Background()).Sid(sid).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `OAuth2Api.GetOAuth2LoginSessionClaims``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+    // response from `GetOAuth2LoginSessionClaims`: LoginSessionClaims
+    fmt.Fprintf(os.Stdout, "Response from `OAuth2Api.GetOAuth2LoginSessionClaims`: %v\n", resp)
+}
+```
+
+### Path Parameters
+
+
+
+### Other Parameters
+
+Other parameters are passed through a pointer to a apiGetOAuth2LoginSessionClaimsRequest struct via the builder pattern
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **sid** | **string** | Login Session ID  The login session ID (sid) to get the claims for. |
+
+### Return type
+
+[**LoginSessionClaims**](LoginSessionClaims.md)
 
 ### Authorization
 

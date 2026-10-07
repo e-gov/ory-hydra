@@ -807,6 +807,54 @@ func (s *PersisterTestSuite) TestFindSubjectsGrantedConsentRequests() {
 	}
 }
 
+func (s *PersisterTestSuite) TestGetLoginSessionClaims() {
+	t := s.T()
+	for k, r := range s.registries {
+		t.Run(k, func(t *testing.T) {
+			sessionID := uuid.Must(uuid.NewV4()).String()
+			client := &client.Client{LegacyClientID: "client-id"}
+			f := newFlow(s.t1NID, client.LegacyClientID, "sub", sqlxx.NullString(sessionID))
+			require.NoError(t, r.Persister().CreateLoginSession(s.t1, &consent.LoginSession{ID: sessionID}))
+			require.NoError(t, r.Persister().CreateClient(s.t1, client))
+			require.NoError(t, r.Persister().Connection(context.Background()).Create(f))
+
+			req := &consent.OAuth2ConsentRequest{
+				ID:             "consent-request-id",
+				LoginChallenge: sqlxx.NullString(f.ID),
+				Skip:           false,
+				Verifier:       "verifier",
+				CSRF:           "csrf",
+			}
+
+			hcr := &consent.AcceptOAuth2ConsentRequest{
+				ID:        req.ID,
+				HandledAt: sqlxx.NullTime(time.Now()),
+				Remember:  true,
+				Session:   &consent.AcceptOAuth2ConsentRequestSession{IDToken: map[string]interface{}{"given_name": "given", "phone_number": "+37200000766", "phone_number_verified": true}},
+			}
+			require.NoError(t, r.Persister().CreateConsentRequest(s.t1, req))
+			_, err := r.Persister().HandleConsentRequest(s.t1, hcr)
+			require.NoError(t, err)
+
+			actual, err := r.Persister().GetLoginSessionClaims(s.t2, sessionID)
+			require.ErrorIs(t, err, x.ErrNotFound)
+			require.Nil(t, actual)
+
+			actual, err = r.Persister().GetLoginSessionClaims(s.t1, sessionID)
+			require.NoError(t, err)
+			require.Equal(t, "sub", actual.Subject)
+			require.Equal(t, "given", actual.GivenName)
+			require.Equal(t, "+37200000766", actual.PhoneNumber)
+			require.Equal(t, true, actual.PhoneNumberVerified)
+
+			require.NoError(t, r.Persister().DeleteLoginSession(s.t1, sessionID))
+			actual, err = r.Persister().GetLoginSessionClaims(s.t1, sessionID)
+			require.ErrorIs(t, err, x.ErrNotFound)
+			require.Nil(t, actual)
+		})
+	}
+}
+
 func (s *PersisterTestSuite) TestFlushInactiveAccessTokens() {
 	t := s.T()
 	for k, r := range s.registries {

@@ -641,3 +641,139 @@ func TestExtendConsentRequest(t *testing.T) {
 		require.InDelta(t, expectedRememberFor, cr.RememberFor, 1)
 	})
 }
+
+func TestGetLoginSessionClaims(t *testing.T) {
+	conf := internal.NewConfigurationWithDefaults()
+	reg := internal.NewRegistryMemory(t, conf, &contextx.Default{})
+	h := NewHandler(reg, conf)
+	r := x.NewRouterAdmin(conf.AdminURL)
+	h.SetRoutes(r)
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+
+	cl := &client.Client{LegacyClientID: "claims-client"}
+	require.NoError(t, reg.ClientManager().CreateClient(context.Background(), cl))
+
+	authTime := time.Now().UTC().Add(-time.Hour).Truncate(time.Second)
+
+	createLoginSession := func(t *testing.T, sid string) {
+		require.NoError(t, reg.ConsentManager().CreateLoginSession(context.Background(), &LoginSession{ID: sid, Subject: "subject-1"}))
+	}
+
+	performFlow := func(t *testing.T, sid, flowId string, requestedAt time.Time, acr string, amr []string, idToken map[string]interface{}, consentErr *RequestDeniedError) {
+		lr := &LoginRequest{
+			ID:          "claims-login-challenge-" + flowId,
+			Subject:     "subject-1",
+			Client:      cl,
+			RequestURL:  "http://192.0.2.1",
+			Verifier:    "claims-login-verifier-" + flowId,
+			SessionID:   sqlxx.NullString(sid),
+			RequestedAt: requestedAt,
+		}
+		require.NoError(t, reg.ConsentManager().CreateLoginRequest(context.Background(), lr))
+		_, err := reg.ConsentManager().HandleLoginRequest(context.Background(), lr.ID, &HandledLoginRequest{
+			ID:              lr.ID,
+			Subject:         "subject-1",
+			ACR:             acr,
+			AMR:             amr,
+			AuthenticatedAt: sqlxx.NullTime(authTime),
+			RequestedAt:     requestedAt,
+			LoginRequest:    lr,
+		})
+		require.NoError(t, err)
+
+		cr := &OAuth2ConsentRequest{
+			Client:         cl,
+			ID:             "claims-consent-challenge-" + flowId,
+			Verifier:       "claims-consent-verifier-" + flowId,
+			CSRF:           "claims-consent-csrf-" + flowId,
+			Subject:        "subject-1",
+			LoginChallenge: sqlxx.NullString(lr.ID),
+			LoginSessionID: sqlxx.NullString(sid),
+		}
+		require.NoError(t, reg.ConsentManager().CreateConsentRequest(context.Background(), cr))
+		_, err = reg.ConsentManager().HandleConsentRequest(context.Background(), &AcceptOAuth2ConsentRequest{
+			ConsentRequest: cr,
+			ID:             cr.ID,
+			WasHandled:     true,
+			HandledAt:      sqlxx.NullTime(time.Now().UTC()),
+			Session:        &AcceptOAuth2ConsentRequestSession{IDToken: idToken},
+			Error:          consentErr,
+		})
+		require.NoError(t, err)
+	}
+
+	get := func(t *testing.T, sid *string) (int, gjson.Result) {
+		u, err := url.Parse(ts.URL + "/admin" + SessionsPath + "/login")
+		require.NoError(t, err)
+		if sid != nil {
+			u.RawQuery = url.Values{"sid": {*sid}}.Encode()
+		}
+		res, err := http.Get(u.String())
+		require.NoError(t, err)
+		defer res.Body.Close()
+		var b bytes.Buffer
+		_, err = b.ReadFrom(res.Body)
+		require.NoError(t, err)
+		return res.StatusCode, gjson.Parse(b.String())
+	}
+
+	t.Run("case=returns claims of the latest granted consent", func(t *testing.T) {
+		sid := "claims-login-session-1"
+		createLoginSession(t, sid)
+		performFlow(t, sid, "1a", time.Now().UTC().Add(-2*time.Minute), "acr-old", []string{"pwd"}, map[string]interface{}{
+			"given_name": "Old", "family_name": "Name", "birthdate": "1990-01-01",
+		}, nil)
+		performFlow(t, sid, "1b", time.Now().UTC().Add(-time.Minute), "acr-new", []string{"mID", "smartid"}, map[string]interface{}{
+			"given_name": "Mari", "family_name": "Maasikas", "birthdate": "1985-05-05",
+			"phone_number": "+37200000766", "phone_number_verified": true, "other": "ignored",
+		}, nil)
+
+		status, body := get(t, &sid)
+		require.Equal(t, http.StatusOK, status, body.Raw)
+		assert.Equal(t, "subject-1", body.Get("subject").String())
+		assert.Equal(t, "Mari", body.Get("given_name").String())
+		assert.Equal(t, "Maasikas", body.Get("family_name").String())
+		assert.Equal(t, "1985-05-05", body.Get("birthdate").String())
+		assert.Equal(t, "+37200000766", body.Get("phone_number").String())
+		assert.True(t, body.Get("phone_number_verified").Bool())
+		assert.Equal(t, authTime.Unix(), body.Get("auth_time").Int())
+		assert.Equal(t, "acr-new", body.Get("acr").String())
+		assert.Equal(t, `["mID","smartid"]`, body.Get("amr").Raw)
+		assert.False(t, body.Get("other").Exists())
+	})
+
+	t.Run("case=omits claims missing from the id token session", func(t *testing.T) {
+		sid := "claims-login-session-2"
+		createLoginSession(t, sid)
+		performFlow(t, sid, "2", time.Now().UTC(), "acr", []string{"pwd"}, map[string]interface{}{"given_name": "Mari"}, nil)
+
+		status, body := get(t, &sid)
+		require.Equal(t, http.StatusOK, status, body.Raw)
+		assert.Equal(t, "Mari", body.Get("given_name").String())
+		assert.False(t, body.Get("family_name").Exists())
+		assert.False(t, body.Get("birthdate").Exists())
+		assert.False(t, body.Get("phone_number").Exists())
+		assert.False(t, body.Get("phone_number_verified").Exists())
+	})
+
+	t.Run("case=rejected consent is not returned", func(t *testing.T) {
+		sid := "claims-login-session-3"
+		createLoginSession(t, sid)
+		performFlow(t, sid, "3", time.Now().UTC(), "acr", nil, map[string]interface{}{"given_name": "Mari"}, &RequestDeniedError{Name: "access_denied"})
+
+		status, _ := get(t, &sid)
+		assert.Equal(t, http.StatusNotFound, status)
+	})
+
+	t.Run("case=unknown sid", func(t *testing.T) {
+		sid := "claims-login-session-does-not-exist"
+		status, _ := get(t, &sid)
+		assert.Equal(t, http.StatusNotFound, status)
+	})
+
+	t.Run("case=missing sid", func(t *testing.T) {
+		status, _ := get(t, nil)
+		assert.Equal(t, http.StatusBadRequest, status)
+	})
+}

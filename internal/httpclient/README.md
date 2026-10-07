@@ -100,6 +100,7 @@ Class | Method | HTTP request | Description
 *OAuth2Api* | [**GetOAuth2Client**](docs/OAuth2Api.md#getoauth2client) | **Get** /admin/clients/{id} | Get an OAuth 2.0 Client
 *OAuth2Api* | [**GetOAuth2ConsentRequest**](docs/OAuth2Api.md#getoauth2consentrequest) | **Get** /admin/oauth2/auth/requests/consent | Get OAuth 2.0 Consent Request
 *OAuth2Api* | [**GetOAuth2LoginRequest**](docs/OAuth2Api.md#getoauth2loginrequest) | **Get** /admin/oauth2/auth/requests/login | Get OAuth 2.0 Login Request
+*OAuth2Api* | [**GetOAuth2LoginSessionClaims**](docs/OAuth2Api.md#getoauth2loginsessionclaims) | **Get** /admin/oauth2/auth/sessions/login | Get OAuth 2.0 Login Session Claims
 *OAuth2Api* | [**GetOAuth2LogoutRequest**](docs/OAuth2Api.md#getoauth2logoutrequest) | **Get** /admin/oauth2/auth/requests/logout | Get OAuth 2.0 Session Logout Request
 *OAuth2Api* | [**GetTrustedOAuth2JwtGrantIssuer**](docs/OAuth2Api.md#gettrustedoauth2jwtgrantissuer) | **Get** /admin/trust/grants/jwt-bearer/issuers/{id} | Get Trusted OAuth2 JWT Bearer Grant Type Issuer
 *OAuth2Api* | [**IntrospectOAuth2Token**](docs/OAuth2Api.md#introspectoauth2token) | **Post** /admin/oauth2/introspect | Introspect OAuth2 Access and Refresh Tokens
@@ -145,6 +146,7 @@ Class | Method | HTTP request | Description
  - [JsonPatch](docs/JsonPatch.md)
  - [JsonWebKey](docs/JsonWebKey.md)
  - [JsonWebKeySet](docs/JsonWebKeySet.md)
+ - [LoginSessionClaims](docs/LoginSessionClaims.md)
  - [OAuth2Client](docs/OAuth2Client.md)
  - [OAuth2ClientTokenLifespans](docs/OAuth2ClientTokenLifespans.md)
  - [OAuth2ConsentRequest](docs/OAuth2ConsentRequest.md)

@@ -179,3 +179,63 @@ func TestGenerateAccessTokenScopeClaim(t *testing.T) {
 		})
 	}
 }
+
+// An auth handover token must not carry the `sub` claim, however the handover was requested. Every
+// other access token keeps it.
+func TestGenerateAccessTokenSubjectClaim(t *testing.T) {
+	ctx := context.Background()
+	strategy := newTestJWTStrategy(t)
+
+	for _, tc := range []struct {
+		name            string
+		scopeParameter  string
+		requestedScopes []string
+		expectSubject   bool
+	}{
+		{
+			name:            "auth handover requested",
+			requestedScopes: []string{"openid", AuthHandoverScope},
+		},
+		{
+			name:            "auth handover in the scope parameter only",
+			scopeParameter:  AuthHandoverScope,
+			requestedScopes: []string{"openid", "offline_access"},
+		},
+		{
+			name:            "scope parameter without auth handover",
+			scopeParameter:  "openid",
+			requestedScopes: []string{AuthHandoverScope},
+			expectSubject:   true,
+		},
+		{
+			name:            "auth handover not requested",
+			requestedScopes: []string{"openid", "offline_access"},
+			expectSubject:   true,
+		},
+	} {
+		t.Run("case="+tc.name, func(t *testing.T) {
+			session := NewSession("foo")
+			session.SetExpiresAt(fosite.AccessToken, time.Now().UTC().Add(time.Hour))
+			// A `sub` set through the token hook must not survive either.
+			session.Extra = map[string]interface{}{"sub": "bar"}
+
+			request := fosite.NewAccessRequest(session)
+			request.SetRequestedScopes(tc.requestedScopes)
+			if tc.scopeParameter != "" {
+				request.Form = url.Values{"scope": {tc.scopeParameter}}
+			}
+
+			token, _, err := strategy.GenerateAccessToken(ctx, request)
+			require.NoError(t, err)
+
+			claims := accessTokenClaims(t, token)
+			if tc.expectSubject {
+				assert.Equal(t, "foo", claims["sub"])
+			} else {
+				assert.NotContains(t, claims, "sub")
+			}
+			// The session itself keeps its subject for introspection and later grants.
+			assert.Equal(t, "foo", session.Subject)
+		})
+	}
+}

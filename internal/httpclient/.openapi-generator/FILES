@@ -26,6 +26,7 @@ docs/JsonPatch.md
 docs/JsonWebKey.md
 docs/JsonWebKeySet.md
 docs/JwkApi.md
+docs/LoginSessionClaims.md
 docs/MetadataApi.md
 docs/OAuth2Api.md
 docs/OAuth2Client.md
@@ -71,6 +72,7 @@ model_is_ready_503_response.go
 model_json_patch.go
 model_json_web_key.go
 model_json_web_key_set.go
+model_login_session_claims.go
 model_o_auth2_client.go
 model_o_auth2_client_token_lifespans.go
 model_o_auth2_consent_request.go

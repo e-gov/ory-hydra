@@ -602,6 +602,40 @@ type OAuth2ConsentRequest struct {
 	RequestedAt            time.Time      `json:"requested_at"`
 }
 
+// Login Session Claims
+//
+// Identity and authentication claims of a login session, taken from its most recently granted consent.
+//
+// swagger:model loginSessionClaims
+type LoginSessionClaims struct {
+	// Subject is the subject of the login session.
+	Subject string `json:"subject,omitempty"`
+
+	// GivenName is the given_name claim set in the consent session's ID token data.
+	GivenName interface{} `json:"given_name,omitempty"`
+
+	// FamilyName is the family_name claim set in the consent session's ID token data.
+	FamilyName interface{} `json:"family_name,omitempty"`
+
+	// Birthdate is the birthdate claim set in the consent session's ID token data.
+	Birthdate interface{} `json:"birthdate,omitempty"`
+
+	// PhoneNumber is the phone_number claim set in the consent session's ID token data.
+	PhoneNumber interface{} `json:"phone_number,omitempty"`
+
+	// PhoneNumberVerified is the phone_number_verified claim set in the consent session's ID token data.
+	PhoneNumberVerified interface{} `json:"phone_number_verified,omitempty"`
+
+	// AuthTime is the time (in seconds since the Unix epoch) when the end-user authenticated.
+	AuthTime int64 `json:"auth_time,omitempty"`
+
+	// AMR is the Authentication Methods References value of the login session.
+	AMR []string `json:"amr,omitempty"`
+
+	// ACR is the Authentication Context Class Reference value of the login session.
+	ACR string `json:"acr,omitempty"`
+}
+
 // Pass session data to a consent request.
 //
 // swagger:model acceptOAuth2ConsentRequestSession

@@ -662,6 +662,45 @@ nid = ?`, flow.FlowStateConsentUsed, flow.FlowStateConsentUnused,
 	return p.filterExpiredConsentRequests(ctx, rs, includeExpiredStrategy)
 }
 
+func (p *Persister) GetLoginSessionClaims(ctx context.Context, sid string) (*consent.LoginSessionClaims, error) {
+	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.GetLoginSessionClaims")
+	defer span.End()
+
+	var f flow.Flow
+	if err := p.Connection(ctx).
+		Where(
+			strings.TrimSpace(fmt.Sprintf(`
+(state = %d OR state = %d) AND
+login_session_id = ? AND
+consent_error='{}' AND
+nid = ? AND
+EXISTS (SELECT 1 FROM hydra_oauth2_authentication_session WHERE id = ? AND nid = ?)`, flow.FlowStateConsentUsed, flow.FlowStateConsentUnused,
+			)),
+			sid, p.NetworkID(ctx), sid, p.NetworkID(ctx)).
+		Order("requested_at DESC").
+		First(&f); errors.Is(err, sql.ErrNoRows) {
+		return nil, errorsx.WithStack(x.ErrNotFound)
+	} else if err != nil {
+		return nil, sqlcon.HandleError(err)
+	}
+
+	claims := &consent.LoginSessionClaims{
+		Subject:             f.Subject,
+		GivenName:           f.SessionIDToken["given_name"],
+		FamilyName:          f.SessionIDToken["family_name"],
+		Birthdate:           f.SessionIDToken["birthdate"],
+		PhoneNumber:         f.SessionIDToken["phone_number"],
+		PhoneNumberVerified: f.SessionIDToken["phone_number_verified"],
+		AMR:                 f.AMR,
+		ACR:                 f.ACR,
+	}
+	if authTime := time.Time(f.LoginAuthenticatedAt); !authTime.IsZero() {
+		claims.AuthTime = authTime.Unix()
+	}
+
+	return claims, nil
+}
+
 func (p *Persister) CountSubjectsGrantedConsentRequests(ctx context.Context, subject string) (int, error) {
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.CountSubjectsGrantedConsentRequests")
 	defer span.End()

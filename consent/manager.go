@@ -42,6 +42,7 @@ type Manager interface {
 	FindSubjectsGrantedConsentRequests(ctx context.Context, user string, includeExpiredStrategy IncludeExpiredStrategy, limit, offset int) ([]AcceptOAuth2ConsentRequest, error)
 	FindSubjectsSessionGrantedConsentRequests(ctx context.Context, user, sid string, includeExpiredStrategy IncludeExpiredStrategy, limit, offset int) ([]AcceptOAuth2ConsentRequest, error)
 	CountSubjectsGrantedConsentRequests(ctx context.Context, user string) (int, error)
+	GetLoginSessionLatestConsent(ctx context.Context, sid string) (*AcceptOAuth2ConsentRequest, error)
 
 	// Cookie management
 	GetRememberedLoginSession(ctx context.Context, id string) (*LoginSession, error)

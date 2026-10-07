@@ -19,6 +19,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/ory/fosite"
+	"github.com/ory/fosite/token/jwt"
 	"github.com/ory/hydra/v2/driver/config"
 	"github.com/ory/hydra/v2/x"
 	"github.com/ory/x/errorsx"
@@ -59,6 +60,7 @@ func (h *Handler) SetRoutes(admin *httprouterx.RouterAdmin) {
 	admin.PUT(ConsentPath+"/reject", h.rejectOAuth2ConsentRequest)
 
 	admin.DELETE(SessionsPath+"/login", h.revokeOAuth2LoginSessions)
+	admin.GET(SessionsPath+"/login", h.getOAuth2LoginSessionClaims)
 	admin.GET(SessionsPath+"/consent", h.listOAuth2ConsentSessions)
 	admin.DELETE(SessionsPath+"/consent", h.revokeOAuth2ConsentSessions)
 	admin.PUT(SessionsPath+"/consent", h.expireOAuth2ConsentSessions)
@@ -355,6 +357,78 @@ func (h *Handler) listOAuth2ConsentSessions(w http.ResponseWriter, r *http.Reque
 
 	x.PaginationHeader(w, r.URL, int64(n), itemsPerPage, itemsPerPage*page)
 	h.r.Writer().Write(w, r, a)
+}
+
+// Get OAuth 2.0 Login Session Claims Parameters
+//
+// swagger:parameters getOAuth2LoginSessionClaims
+type getOAuth2LoginSessionClaims struct {
+	// Login Session ID
+	//
+	// The login session ID (sid) to get the claims for.
+	//
+	// in: query
+	// required: true
+	SessionID string `json:"sid"`
+}
+
+// swagger:route GET /admin/oauth2/auth/sessions/login oAuth2 getOAuth2LoginSessionClaims
+//
+// # Get OAuth 2.0 Login Session Claims
+//
+// This endpoint returns the ID token claims of a login session, as they would be issued to the client of the most
+// recently granted consent of the login session: iss, sub, aud, auth_time, rat, acr, amr, sid and all claims set in
+// the consent session's ID token data. Claims that are specific to a single token (iat, exp, jti, nonce, at_hash,
+// c_hash) are not included. If the login session is unknown or has no granted consent, the endpoint returns
+// 404 Not Found.
+//
+//	Consumes:
+//	- application/json
+//
+//	Produces:
+//	- application/json
+//
+//	Schemes: http, https
+//
+//	Responses:
+//	  200: loginSessionIdTokenClaims
+//	  default: errorOAuth2
+func (h *Handler) getOAuth2LoginSessionClaims(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	sid := r.URL.Query().Get("sid")
+	if sid == "" {
+		h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrInvalidRequest.WithHint(`Query parameter 'sid' is not defined but should have been.`)))
+		return
+	}
+
+	session, err := h.r.ConsentManager().GetLoginSessionLatestConsent(r.Context(), sid)
+	if err != nil {
+		h.r.Writer().WriteError(w, r, err)
+		return
+	}
+
+	subject, err := h.r.ConsentStrategy().ObfuscateSubjectIdentifier(r.Context(), session.ConsentRequest.Client, session.ConsentRequest.Subject, session.ConsentRequest.ForceSubjectIdentifier)
+	if err != nil {
+		h.r.Writer().WriteError(w, r, err)
+		return
+	}
+
+	claims := &jwt.IDTokenClaims{
+		Subject:                             subject,
+		Issuer:                              h.c.IssuerURL(r.Context()).String(),
+		Audience:                            []string{session.ConsentRequest.Client.GetID()},
+		AuthTime:                            time.Time(session.AuthenticatedAt),
+		RequestedAt:                         session.RequestedAt,
+		Extra:                               session.Session.IDToken,
+		AuthenticationContextClassReference: session.ConsentRequest.ACR,
+		AuthenticationMethodsReferences:     session.ConsentRequest.AMR,
+	}
+	claims.Add("sid", sid)
+
+	idToken := claims.ToMap()
+	// ToMap generates a random jti, which is specific to a single issued token.
+	delete(idToken, "jti")
+
+	h.r.Writer().Write(w, r, LoginSessionIDTokenClaims(idToken))
 }
 
 // Revoke OAuth 2.0 Consent Login Sessions Parameters

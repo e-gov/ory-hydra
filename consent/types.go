@@ -602,6 +602,13 @@ type OAuth2ConsentRequest struct {
 	RequestedAt            time.Time      `json:"requested_at"`
 }
 
+// Login Session ID Token Claims
+//
+// The ID token claims of a login session, as they would be issued to the client of its most recently granted consent.
+//
+// swagger:model loginSessionIdTokenClaims
+type LoginSessionIDTokenClaims map[string]interface{}
+
 // Pass session data to a consent request.
 //
 // swagger:model acceptOAuth2ConsentRequestSession

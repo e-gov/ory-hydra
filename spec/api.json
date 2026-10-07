@@ -527,6 +527,12 @@
         },
         "type": "object"
       },
+      "loginSessionIdTokenClaims": {
+        "additionalProperties": {},
+        "description": "The ID token claims of a login session, as they would be issued to the client of its most recently granted consent.",
+        "title": "Login Session ID Token Claims",
+        "type": "object"
+      },
       "nullDuration": {
         "nullable": true,
         "pattern": "^[0-9]+(ns|us|ms|s|m|h)$",
@@ -3102,6 +3108,47 @@
           }
         },
         "summary": "Revokes OAuth 2.0 Login Sessions by either a Subject or a SessionID",
+        "tags": [
+          "oAuth2"
+        ]
+      },
+      "get": {
+        "description": "This endpoint returns the ID token claims of a login session, as they would be issued to the client of the most\nrecently granted consent of the login session: iss, sub, aud, auth_time, rat, acr, amr, sid and all claims set in\nthe consent session's ID token data. Claims that are specific to a single token (iat, exp, jti, nonce, at_hash,\nc_hash) are not included. If the login session is unknown or has no granted consent, the endpoint returns\n404 Not Found.",
+        "operationId": "getOAuth2LoginSessionClaims",
+        "parameters": [
+          {
+            "description": "Login Session ID\n\nThe login session ID (sid) to get the claims for.",
+            "in": "query",
+            "name": "sid",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/loginSessionIdTokenClaims"
+                }
+              }
+            },
+            "description": "loginSessionIdTokenClaims"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorOAuth2"
+                }
+              }
+            },
+            "description": "errorOAuth2"
+          }
+        },
+        "summary": "Get OAuth 2.0 Login Session Claims",
         "tags": [
           "oAuth2"
         ]

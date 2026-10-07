@@ -662,6 +662,37 @@ nid = ?`, flow.FlowStateConsentUsed, flow.FlowStateConsentUnused,
 	return p.filterExpiredConsentRequests(ctx, rs, includeExpiredStrategy)
 }
 
+func (p *Persister) GetLoginSessionLatestConsent(ctx context.Context, sid string) (*consent.AcceptOAuth2ConsentRequest, error) {
+	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.GetLoginSessionLatestConsent")
+	defer span.End()
+
+	var f flow.Flow
+	if err := p.Connection(ctx).
+		Where(
+			strings.TrimSpace(fmt.Sprintf(`
+(state = %d OR state = %d) AND
+login_session_id = ? AND
+consent_error='{}' AND
+nid = ? AND
+EXISTS (SELECT 1 FROM hydra_oauth2_authentication_session WHERE id = ? AND nid = ?)`, flow.FlowStateConsentUsed, flow.FlowStateConsentUnused,
+			)),
+			sid, p.NetworkID(ctx), sid, p.NetworkID(ctx)).
+		Order("requested_at DESC").
+		First(&f); errors.Is(err, sql.ErrNoRows) {
+		return nil, errorsx.WithStack(x.ErrNotFound)
+	} else if err != nil {
+		return nil, sqlcon.HandleError(err)
+	}
+
+	c, err := p.GetConcreteClient(ctx, f.ClientID)
+	if err != nil {
+		return nil, err
+	}
+	f.Client = c
+
+	return f.GetHandledConsentRequest(), nil
+}
+
 func (p *Persister) CountSubjectsGrantedConsentRequests(ctx context.Context, subject string) (int, error) {
 	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.CountSubjectsGrantedConsentRequests")
 	defer span.End()

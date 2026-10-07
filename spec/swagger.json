@@ -1448,6 +1448,47 @@
             }
           }
         }
+      },
+      "get": {
+        "description": "This endpoint returns the ID token claims of a login session, as they would be issued to the client of the most\nrecently granted consent of the login session: iss, sub, aud, auth_time, rat, acr, amr, sid and all claims set in\nthe consent session's ID token data. Claims that are specific to a single token (iat, exp, jti, nonce, at_hash,\nc_hash) are not included. If the login session is unknown or has no granted consent, the endpoint returns\n404 Not Found.",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "schemes": [
+          "http",
+          "https"
+        ],
+        "tags": [
+          "oAuth2"
+        ],
+        "summary": "Get OAuth 2.0 Login Session Claims",
+        "operationId": "getOAuth2LoginSessionClaims",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Login Session ID\n\nThe login session ID (sid) to get the claims for.",
+            "name": "sid",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "loginSessionIdTokenClaims",
+            "schema": {
+              "$ref": "#/definitions/loginSessionIdTokenClaims"
+            }
+          },
+          "default": {
+            "description": "errorOAuth2",
+            "schema": {
+              "$ref": "#/definitions/errorOAuth2"
+            }
+          }
+        }
       }
     },
     "/admin/oauth2/introspect": {
@@ -2624,6 +2665,12 @@
           }
         }
       }
+    },
+    "loginSessionIdTokenClaims": {
+      "description": "The ID token claims of a login session, as they would be issued to the client of its most recently granted consent.",
+      "type": "object",
+      "title": "Login Session ID Token Claims",
+      "additionalProperties": {}
     },
     "nullTime": {
       "type": "string",

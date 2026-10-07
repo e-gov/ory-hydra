@@ -148,12 +148,13 @@ func (h *DefaultJWTStrategy) generate(ctx context.Context, tokenType fosite.Toke
 	} else if jwtSession.GetJWTClaims() == nil {
 		return "", "", errors.New("GetTokenClaims() must not be nil")
 	} else {
+		authHandover := requestsAuthHandover(requester)
+
 		// The scope claim is only emitted for auth handover tokens. It must stay nil for every other
 		// request, because fosite omits the claim for a nil scope but renders an empty one ("scope": "")
 		// for a non-nil empty slice.
 		var scope fosite.Arguments
-		if s, ok := requester.GetSession().(*Session); ok && len(s.Scope) > 0 &&
-			requestsAuthHandover(requester) {
+		if s, ok := requester.GetSession().(*Session); ok && len(s.Scope) > 0 && authHandover {
 			scope = s.Scope
 		}
 		claims := jwtSession.GetJWTClaims().
@@ -170,6 +171,16 @@ func (h *DefaultJWTStrategy) generate(ctx context.Context, tokenType fosite.Toke
 				h.Config.GetJWTScopeField(ctx),
 			)
 
-		return h.Signer.Generate(ctx, claims.ToMapClaims(), jwtSession.GetJWTHeader())
+		mapClaims := claims.ToMapClaims()
+
+		// An auth handover token must not identify the subject. The claim is removed from the rendered
+		// claims rather than from the session, so the stored session - and with it introspection and
+		// any later grant - keeps its subject. ToMapClaims writes `sub` after the extra claims, so
+		// deleting it here also covers a `sub` set through the token hook.
+		if authHandover {
+			delete(mapClaims, "sub")
+		}
+
+		return h.Signer.Generate(ctx, mapClaims, jwtSession.GetJWTHeader())
 	}
 }

@@ -239,3 +239,77 @@ func TestGenerateAccessTokenSubjectClaim(t *testing.T) {
 		})
 	}
 }
+
+// An auth handover token carries the login session ID as `sid`, taken from the ID token claims of the
+// session. Every other access token is issued without it.
+func TestGenerateAccessTokenSessionIDClaim(t *testing.T) {
+	ctx := context.Background()
+	strategy := newTestJWTStrategy(t)
+
+	for _, tc := range []struct {
+		name            string
+		scopeParameter  string
+		requestedScopes []string
+		sessionID       string
+		expectSessionID bool
+	}{
+		{
+			name:            "auth handover requested",
+			requestedScopes: []string{"openid", AuthHandoverScope},
+			sessionID:       "login-session-id",
+			expectSessionID: true,
+		},
+		{
+			name:            "auth handover in the scope parameter only",
+			scopeParameter:  AuthHandoverScope,
+			requestedScopes: []string{"openid", "offline_access"},
+			sessionID:       "login-session-id",
+			expectSessionID: true,
+		},
+		{
+			name:            "auth handover requested without a login session",
+			requestedScopes: []string{"openid", AuthHandoverScope},
+		},
+		{
+			name:            "scope parameter without auth handover",
+			scopeParameter:  "openid",
+			requestedScopes: []string{AuthHandoverScope},
+			sessionID:       "login-session-id",
+		},
+		{
+			name:            "auth handover not requested",
+			requestedScopes: []string{"openid", "offline_access"},
+			sessionID:       "login-session-id",
+		},
+	} {
+		t.Run("case="+tc.name, func(t *testing.T) {
+			session := NewSessionWithCustomClaims("foo", []string{"sid"})
+			session.SetExpiresAt(fosite.AccessToken, time.Now().UTC().Add(time.Hour))
+			if tc.sessionID != "" {
+				session.DefaultSession.Claims.Add("sid", tc.sessionID)
+			}
+			// A `sid` set through the token hook must not end up in an auth handover token.
+			session.Extra = map[string]interface{}{"sid": "hook-session-id"}
+
+			request := fosite.NewAccessRequest(session)
+			request.SetRequestedScopes(tc.requestedScopes)
+			if tc.scopeParameter != "" {
+				request.Form = url.Values{"scope": {tc.scopeParameter}}
+			}
+
+			token, _, err := strategy.GenerateAccessToken(ctx, request)
+			require.NoError(t, err)
+
+			claims := accessTokenClaims(t, token)
+			switch {
+			case tc.expectSessionID:
+				assert.Equal(t, tc.sessionID, claims["sid"])
+			case requestsAuthHandover(request):
+				assert.NotContains(t, claims, "sid")
+			default:
+				// Non-handover tokens are left as they were: only the hook-provided value appears.
+				assert.Equal(t, "hook-session-id", claims["sid"])
+			}
+		})
+	}
+}

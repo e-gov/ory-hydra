@@ -141,6 +141,17 @@ func requestsAuthHandover(requester fosite.Requester) bool {
 	return requester.GetRequestedScopes().Has(AuthHandoverScope)
 }
 
+// loginSessionID returns the `sid` ID token claim of the session, or an empty string if it has none.
+func loginSessionID(session fosite.Session) string {
+	s, ok := session.(*Session)
+	if !ok || s.DefaultSession == nil || s.DefaultSession.Claims == nil {
+		return ""
+	}
+
+	sid, _ := s.DefaultSession.Claims.Extra["sid"].(string)
+	return sid
+}
+
 func (h *DefaultJWTStrategy) generate(ctx context.Context, tokenType fosite.TokenType, requester fosite.Requester) (string, string, error) {
 
 	if jwtSession, ok := requester.GetSession().(foauth2.JWTSessionContainer); !ok {
@@ -177,8 +188,17 @@ func (h *DefaultJWTStrategy) generate(ctx context.Context, tokenType fosite.Toke
 		// claims rather than from the session, so the stored session - and with it introspection and
 		// any later grant - keeps its subject. ToMapClaims writes `sub` after the extra claims, so
 		// deleting it here also covers a `sub` set through the token hook.
+		//
+		// It carries the login session ID instead, taken from the ID token claims where it was set when
+		// the authorize request was accepted - those survive refreshes along with the rest of the
+		// session. Any `sid` set through the token hook is overwritten, or dropped when the session has
+		// none.
 		if authHandover {
 			delete(mapClaims, "sub")
+			delete(mapClaims, "sid")
+			if sid := loginSessionID(requester.GetSession()); sid != "" {
+				mapClaims["sid"] = sid
+			}
 		}
 
 		return h.Signer.Generate(ctx, mapClaims, jwtSession.GetJWTHeader())

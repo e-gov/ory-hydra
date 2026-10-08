@@ -83,6 +83,7 @@ func TestGenerateAccessTokenScopeClaim(t *testing.T) {
 
 	newRequest := func(tc testCase) *fosite.AccessRequest {
 		session := NewSession("foo")
+		session.DefaultSession.Claims.Add("sid", "login-session-id")
 		session.SetExpiresAt(fosite.AccessToken, time.Now().UTC().Add(time.Hour))
 		session.Scope = tc.sessionScope
 
@@ -215,6 +216,7 @@ func TestGenerateAccessTokenSubjectClaim(t *testing.T) {
 	} {
 		t.Run("case="+tc.name, func(t *testing.T) {
 			session := NewSession("foo")
+			session.DefaultSession.Claims.Add("sid", "login-session-id")
 			session.SetExpiresAt(fosite.AccessToken, time.Now().UTC().Add(time.Hour))
 			// A `sub` set through the token hook must not survive either.
 			session.Extra = map[string]interface{}{"sub": "bar"}
@@ -236,6 +238,85 @@ func TestGenerateAccessTokenSubjectClaim(t *testing.T) {
 			}
 			// The session itself keeps its subject for introspection and later grants.
 			assert.Equal(t, "foo", session.Subject)
+		})
+	}
+}
+
+// An auth handover token carries the login session ID as `sid`, taken from the ID token claims of the
+// session. Every other access token is issued without it.
+func TestGenerateAccessTokenSessionIDClaim(t *testing.T) {
+	ctx := context.Background()
+	strategy := newTestJWTStrategy(t)
+
+	for _, tc := range []struct {
+		name            string
+		scopeParameter  string
+		requestedScopes []string
+		sessionID       string
+		expectSessionID bool
+		expectError     bool
+	}{
+		{
+			name:            "auth handover requested",
+			requestedScopes: []string{"openid", AuthHandoverScope},
+			sessionID:       "login-session-id",
+			expectSessionID: true,
+		},
+		{
+			name:            "auth handover in the scope parameter only",
+			scopeParameter:  AuthHandoverScope,
+			requestedScopes: []string{"openid", "offline_access"},
+			sessionID:       "login-session-id",
+			expectSessionID: true,
+		},
+		{
+			name:            "auth handover requested without a login session",
+			requestedScopes: []string{"openid", AuthHandoverScope},
+			expectError:     true,
+		},
+		{
+			name:            "scope parameter without auth handover",
+			scopeParameter:  "openid",
+			requestedScopes: []string{AuthHandoverScope},
+			sessionID:       "login-session-id",
+		},
+		{
+			name:            "auth handover not requested",
+			requestedScopes: []string{"openid", "offline_access"},
+			sessionID:       "login-session-id",
+		},
+	} {
+		t.Run("case="+tc.name, func(t *testing.T) {
+			session := NewSessionWithCustomClaims("foo", []string{"sid"})
+			session.SetExpiresAt(fosite.AccessToken, time.Now().UTC().Add(time.Hour))
+			if tc.sessionID != "" {
+				session.DefaultSession.Claims.Add("sid", tc.sessionID)
+			}
+			// A `sid` set through the token hook must not end up in an auth handover token.
+			session.Extra = map[string]interface{}{"sid": "hook-session-id"}
+
+			request := fosite.NewAccessRequest(session)
+			request.SetRequestedScopes(tc.requestedScopes)
+			if tc.scopeParameter != "" {
+				request.Form = url.Values{"scope": {tc.scopeParameter}}
+			}
+
+			token, _, err := strategy.GenerateAccessToken(ctx, request)
+			if tc.expectError {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, fosite.ErrServerError)
+				assert.Empty(t, token)
+				return
+			}
+			require.NoError(t, err)
+
+			claims := accessTokenClaims(t, token)
+			if tc.expectSessionID {
+				assert.Equal(t, tc.sessionID, claims["sid"])
+			} else {
+				// Non-handover tokens are left as they were: only the hook-provided value appears.
+				assert.Equal(t, "hook-session-id", claims["sid"])
+			}
 		})
 	}
 }

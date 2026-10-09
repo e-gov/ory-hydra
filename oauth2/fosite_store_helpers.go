@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"net/url"
+	"sync"
 	"testing"
 	"time"
 
@@ -178,6 +179,7 @@ func TestHelperRunner(t *testing.T, store InternalRegistry, k string) {
 	t.Run(fmt.Sprintf("case=testFositeStoreClientAssertionJWTValid/db=%s", k), testFositeStoreClientAssertionJWTValid(store))
 	t.Run(fmt.Sprintf("case=testHelperDeleteAccessTokens/db=%s", k), testHelperDeleteAccessTokens(store))
 	t.Run(fmt.Sprintf("case=testHelperRevokeAccessToken/db=%s", k), testHelperRevokeAccessToken(store))
+	t.Run(fmt.Sprintf("case=testHelperConsumeAccessToken/db=%s", k), testHelperConsumeAccessToken(store))
 	t.Run(fmt.Sprintf("case=testFositeJWTBearerGrantStorage/db=%s", k), testFositeJWTBearerGrantStorage(store))
 }
 
@@ -404,6 +406,65 @@ func testHelperRevokeAccessToken(x InternalRegistry) func(t *testing.T) {
 		req, err := m.GetAccessTokenSession(ctx, "4321", &Session{})
 		assert.Nil(t, req)
 		assert.EqualError(t, err, fosite.ErrNotFound.Error())
+	}
+}
+
+func testHelperConsumeAccessToken(x InternalRegistry) func(t *testing.T) {
+	return func(t *testing.T) {
+		m := x.OAuth2Storage()
+		consumer, ok := m.(AccessTokenConsumer)
+		require.True(t, ok)
+		ctx := context.Background()
+
+		require.NoError(t, m.CreateAccessTokenSession(ctx, "consume-1", &defaultRequest))
+		require.NoError(t, m.CreateAccessTokenSession(ctx, "consume-2", &defaultRequest))
+		require.NoError(t, m.CreateRefreshTokenSession(ctx, "consume-refresh", &defaultRequest))
+		t.Cleanup(func() {
+			_ = m.RevokeAccessToken(ctx, defaultRequest.GetID())
+			_ = m.DeleteRefreshTokenSession(ctx, "consume-refresh")
+		})
+
+		require.NoError(t, consumer.ConsumeAccessTokenSession(ctx, "consume-1"))
+
+		_, err := m.GetAccessTokenSession(ctx, "consume-1", &Session{})
+		assert.ErrorIs(t, err, fosite.ErrNotFound)
+		_, err = m.GetAccessTokenSession(ctx, "consume-2", &Session{})
+		assert.NoError(t, err, "other access tokens of the same request must stay active")
+		_, err = m.GetRefreshTokenSession(ctx, "consume-refresh", &Session{})
+		assert.NoError(t, err, "refresh tokens of the same request must stay active")
+
+		assert.ErrorIs(t, consumer.ConsumeAccessTokenSession(ctx, "consume-1"), fosite.ErrNotFound)
+		assert.ErrorIs(t, consumer.ConsumeAccessTokenSession(ctx, "consume-unknown"), fosite.ErrNotFound)
+
+		t.Run("case=revoked token cannot be consumed", func(t *testing.T) {
+			require.NoError(t, m.RevokeAccessToken(ctx, defaultRequest.GetID()))
+			assert.ErrorIs(t, consumer.ConsumeAccessTokenSession(ctx, "consume-2"), fosite.ErrNotFound)
+		})
+
+		t.Run("case=only one of concurrent calls succeeds", func(t *testing.T) {
+			require.NoError(t, m.CreateAccessTokenSession(ctx, "consume-concurrent", &defaultRequest))
+
+			const calls = 10
+			errs := make(chan error, calls)
+			var wg sync.WaitGroup
+			for i := 0; i < calls; i++ {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					errs <- consumer.ConsumeAccessTokenSession(ctx, "consume-concurrent")
+				}()
+			}
+			wg.Wait()
+			close(errs)
+
+			var succeeded int
+			for err := range errs {
+				if err == nil {
+					succeeded++
+				}
+			}
+			assert.Equal(t, 1, succeeded)
+		})
 	}
 }
 

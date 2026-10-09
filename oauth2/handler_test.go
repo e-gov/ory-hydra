@@ -86,6 +86,87 @@ func TestHandlerDeleteHandler(t *testing.T) {
 	require.Error(t, err, "not_found")
 }
 
+func TestHandlerConsumeAuthHandoverToken(t *testing.T) {
+	ctx := context.Background()
+	conf := internal.NewConfigurationWithDefaults()
+	conf.MustSet(ctx, config.KeyIssuerURL, "http://hydra.localhost")
+	reg := internal.NewRegistryMemory(t, conf, &contextx.Default{})
+
+	cm := reg.ClientManager()
+	store := reg.OAuth2Storage()
+
+	h := oauth2.NewHandler(reg, conf)
+
+	request := &fosite.Request{
+		ID:             "consume-handover-1",
+		RequestedAt:    time.Now().Round(time.Second),
+		Client:         &client.Client{LegacyClientID: "consume-handover-client"},
+		RequestedScope: fosite.Arguments{"openid", "auth_handover"},
+		GrantedScope:   fosite.Arguments{"openid", "auth_handover"},
+		Form:           url.Values{"foo": []string{"bar"}},
+		Session:        &oauth2.Session{DefaultSession: &openid.DefaultSession{Subject: "bar"}},
+	}
+	require.NoError(t, cm.CreateClient(ctx, request.Client.(*client.Client)))
+	require.NoError(t, store.CreateAccessTokenSession(ctx, "jwt-signature", request))
+	require.NoError(t, store.CreateAccessTokenSession(ctx, "opaque-signature", request))
+	require.NoError(t, store.CreateAccessTokenSession(ctx, "other-signature", request))
+
+	r := x.NewRouterAdmin(conf.AdminURL)
+	h.SetRoutes(r, &httprouterx.RouterPublic{Router: r.Router}, func(h http.Handler) http.Handler {
+		return h
+	})
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+
+	consume := func(t *testing.T, form url.Values) *http.Response {
+		res, err := ts.Client().PostForm(ts.URL+"/admin"+oauth2.ConsumeAuthHandoverTokenPath, form)
+		require.NoError(t, err)
+		t.Cleanup(func() { _ = res.Body.Close() })
+		return res
+	}
+
+	for _, tc := range []struct {
+		name, token string
+	}{
+		{name: "jwt", token: "header.payload.jwt-signature"},
+		{name: "opaque", token: "ory_at_key.opaque-signature"},
+	} {
+		t.Run("case="+tc.name+" token can be consumed only once", func(t *testing.T) {
+			assert.Equal(t, http.StatusNoContent, consume(t, url.Values{"token": {tc.token}}).StatusCode)
+			assert.Equal(t, http.StatusConflict, consume(t, url.Values{"token": {tc.token}}).StatusCode)
+		})
+	}
+
+	t.Run("case=other tokens of the same request stay active", func(t *testing.T) {
+		_, err := store.GetAccessTokenSession(ctx, "other-signature", new(oauth2.Session))
+		assert.NoError(t, err)
+	})
+
+	t.Run("case=unknown token", func(t *testing.T) {
+		assert.Equal(t, http.StatusConflict, consume(t, url.Values{"token": {"header.payload.unknown-signature"}}).StatusCode)
+	})
+
+	for _, tc := range []struct {
+		name string
+		form url.Values
+	}{
+		{name: "missing token", form: url.Values{}},
+		{name: "empty token", form: url.Values{"token": {""}}},
+		{name: "token without signature", form: url.Values{"token": {"other-signature"}}},
+		{name: "token with too many parts", form: url.Values{"token": {"a.b.c.other-signature"}}},
+		{name: "token with empty signature", form: url.Values{"token": {"header.payload."}}},
+	} {
+		t.Run("case="+tc.name, func(t *testing.T) {
+			assert.Equal(t, http.StatusBadRequest, consume(t, tc.form).StatusCode)
+		})
+	}
+
+	t.Run("case=malformed tokens are not consumed", func(t *testing.T) {
+		_, err := store.GetAccessTokenSession(ctx, "other-signature", new(oauth2.Session))
+		assert.NoError(t, err)
+	})
+}
+
 func TestUserinfo(t *testing.T) {
 	ctx := context.Background()
 	conf := internal.NewConfigurationWithDefaults()

@@ -4,6 +4,7 @@
 package oauth2
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -52,6 +53,9 @@ const (
 	IntrospectPath   = "/oauth2/introspect"
 	RevocationPath   = "/oauth2/revoke"
 	DeleteTokensPath = "/oauth2/tokens" // #nosec G101
+
+	// ConsumeAuthHandoverTokenPath points to the endpoint that enforces one-time use of auth handover tokens.
+	ConsumeAuthHandoverTokenPath = "/oauth2/auth/handover/consume" // #nosec G101
 )
 
 type Handler struct {
@@ -93,6 +97,7 @@ func (h *Handler) SetRoutes(admin *httprouterx.RouterAdmin, public *httprouterx.
 
 	admin.POST(IntrospectPath, h.introspectOAuth2Token)
 	admin.DELETE(DeleteTokensPath, h.deleteOAuth2Token)
+	admin.POST(ConsumeAuthHandoverTokenPath, h.consumeAuthHandoverToken)
 }
 
 // swagger:route GET /oauth2/sessions/logout oidc revokeOidcSession
@@ -1212,6 +1217,89 @@ func (h *Handler) deleteOAuth2Token(w http.ResponseWriter, r *http.Request, _ ht
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// AccessTokenConsumer deletes a single access token, so that it can be consumed only once.
+type AccessTokenConsumer interface {
+	// ConsumeAccessTokenSession deletes the access token with the given signature. Unlike DeleteAccessTokenSession,
+	// it returns fosite.ErrNotFound if no access token was deleted, so that of concurrent calls for the same signature
+	// exactly one succeeds. Other tokens of the same request are left untouched.
+	ConsumeAccessTokenSession(ctx context.Context, signature string) error
+}
+
+// Consume Auth Handover Token Request
+//
+// swagger:parameters consumeAuthHandoverToken
+type consumeAuthHandoverToken struct {
+	// The auth handover token, as issued by the token endpoint.
+	//
+	// required: true
+	// in: formData
+	Token string `json:"token"`
+}
+
+// swagger:route POST /admin/oauth2/auth/handover/consume oAuth2 consumeAuthHandoverToken
+//
+// # Consume Auth Handover Token
+//
+// This endpoint deletes the given access token, so that an auth handover token can be used only once. Unlike token
+// revocation, it deletes only the given access token and leaves the other access and refresh tokens of the same grant
+// untouched. The token itself (e.g. its signature, expiry and scope) is not validated, the caller must verify it before
+// calling this endpoint.
+//
+// Responds with 204 if the token was deleted, and with 409 if it does not exist, because it has already been consumed,
+// revoked or flushed after expiry.
+//
+//	Consumes:
+//	- application/x-www-form-urlencoded
+//
+//	Schemes: http, https
+//
+//	Responses:
+//	  204: emptyResponse
+//	  default: errorOAuth2
+func (h *Handler) consumeAuthHandoverToken(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	token := r.PostFormValue("token")
+	if token == "" {
+		h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrInvalidRequest.WithHint(`Form parameter 'token' is not defined but it should have been.`)))
+		return
+	}
+
+	signature := accessTokenSignature(token)
+	if signature == "" {
+		h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrInvalidRequest.WithHint(`Form parameter 'token' is not an access token.`)))
+		return
+	}
+
+	store, ok := h.r.OAuth2Storage().(AccessTokenConsumer)
+	if !ok {
+		h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrServerError.WithHint("The storage does not support consuming access tokens.")))
+		return
+	}
+
+	if err := store.ConsumeAccessTokenSession(r.Context(), signature); errors.Is(err, fosite.ErrNotFound) {
+		h.r.Writer().WriteError(w, r, errorsx.WithStack(x.ErrConflict.WithHint("The auth handover token has already been consumed, revoked or has expired.")))
+		return
+	} else if err != nil {
+		h.r.Writer().WriteError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// accessTokenSignature returns the storage signature of a JWT (header.payload.signature) or opaque (key.signature)
+// access token, the same way fositex.TokenStrategy does, or an empty string if the token has neither format. It is
+// duplicated here because the fositex package depends on this one.
+func accessTokenSignature(token string) string {
+	switch parts := strings.Split(token, "."); len(parts) {
+	case 2:
+		return parts[1]
+	case 3:
+		return parts[2]
+	default:
+		return ""
+	}
 }
 
 // This function will not be called, OPTIONS request will be handled by cors

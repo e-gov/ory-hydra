@@ -110,6 +110,7 @@ func TestHandlerConsumeAuthHandoverToken(t *testing.T) {
 	require.NoError(t, store.CreateAccessTokenSession(ctx, "jwt-signature", request))
 	require.NoError(t, store.CreateAccessTokenSession(ctx, "opaque-signature", request))
 	require.NoError(t, store.CreateAccessTokenSession(ctx, "other-signature", request))
+	require.NoError(t, store.CreateAccessTokenSession(ctx, "sdk-signature", request))
 
 	r := x.NewRouterAdmin(conf.AdminURL)
 	h.SetRoutes(r, &httprouterx.RouterPublic{Router: r.Router}, func(h http.Handler) http.Handler {
@@ -136,6 +137,19 @@ func TestHandlerConsumeAuthHandoverToken(t *testing.T) {
 			assert.Equal(t, http.StatusConflict, consume(t, url.Values{"token": {tc.token}}).StatusCode)
 		})
 	}
+
+	t.Run("case=token can be consumed only once with the SDK", func(t *testing.T) {
+		c := hydra.NewAPIClient(hydra.NewConfiguration())
+		c.GetConfig().Servers = hydra.ServerConfigurations{{URL: ts.URL}}
+
+		res, err := c.OAuth2Api.ConsumeAuthHandoverToken(ctx).Token("header.payload.sdk-signature").Execute()
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusNoContent, res.StatusCode)
+
+		res, err = c.OAuth2Api.ConsumeAuthHandoverToken(ctx).Token("header.payload.sdk-signature").Execute()
+		require.Error(t, err)
+		assert.Equal(t, http.StatusConflict, res.StatusCode)
+	})
 
 	t.Run("case=other tokens of the same request stay active", func(t *testing.T) {
 		_, err := store.GetAccessTokenSession(ctx, "other-signature", new(oauth2.Session))

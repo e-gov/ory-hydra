@@ -420,6 +420,118 @@ func (a *OAuth2ApiService) AcceptOAuth2LogoutRequestExecute(r ApiAcceptOAuth2Log
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
+type ApiConsumeAuthHandoverTokenRequest struct {
+	ctx        context.Context
+	ApiService *OAuth2ApiService
+	token      *string
+}
+
+// The auth handover token, as issued by the token endpoint.
+func (r ApiConsumeAuthHandoverTokenRequest) Token(token string) ApiConsumeAuthHandoverTokenRequest {
+	r.token = &token
+	return r
+}
+
+func (r ApiConsumeAuthHandoverTokenRequest) Execute() (*http.Response, error) {
+	return r.ApiService.ConsumeAuthHandoverTokenExecute(r)
+}
+
+/*
+ConsumeAuthHandoverToken Consume Auth Handover Token
+
+This endpoint deletes the given access token, so that an auth handover token can be used only once. Unlike token
+revocation, it deletes only the given access token and leaves the other access and refresh tokens of the same grant
+untouched. The token itself (e.g. its signature, expiry and scope) is not validated, the caller must verify it before
+calling this endpoint.
+
+Responds with 204 if the token was deleted, and with 409 if it does not exist, because it has already been consumed,
+revoked or flushed after expiry.
+
+	@param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+	@return ApiConsumeAuthHandoverTokenRequest
+*/
+func (a *OAuth2ApiService) ConsumeAuthHandoverToken(ctx context.Context) ApiConsumeAuthHandoverTokenRequest {
+	return ApiConsumeAuthHandoverTokenRequest{
+		ApiService: a,
+		ctx:        ctx,
+	}
+}
+
+// Execute executes the request
+func (a *OAuth2ApiService) ConsumeAuthHandoverTokenExecute(r ApiConsumeAuthHandoverTokenRequest) (*http.Response, error) {
+	var (
+		localVarHTTPMethod = http.MethodPost
+		localVarPostBody   interface{}
+		formFiles          []formFile
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "OAuth2ApiService.ConsumeAuthHandoverToken")
+	if err != nil {
+		return nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/admin/oauth2/auth/handover/consume"
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+	if r.token == nil {
+		return nil, reportError("token is required and must be specified")
+	}
+
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{"application/x-www-form-urlencoded"}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"application/json"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	localVarFormParams.Add("token", parameterToString(*r.token, ""))
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarHTTPResponse, err
+	}
+
+	localVarBody, err := ioutil.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = ioutil.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		var v ErrorOAuth2
+		err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+		if err != nil {
+			newErr.error = err.Error()
+			return localVarHTTPResponse, newErr
+		}
+		newErr.model = v
+		return localVarHTTPResponse, newErr
+	}
+
+	return localVarHTTPResponse, nil
+}
+
 type ApiCreateOAuth2ClientRequest struct {
 	ctx          context.Context
 	ApiService   *OAuth2ApiService

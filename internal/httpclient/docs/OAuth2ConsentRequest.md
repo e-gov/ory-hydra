@@ -6,6 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Acr** | Pointer to **string** | ACR represents the Authentication AuthorizationContext Class Reference value for this authentication session. You can use it to express that, for example, a user authenticated using two factor authentication. | [optional] 
 **Amr** | Pointer to **[]string** |  | [optional] 
+**AuthenticatedAt** | Pointer to **time.Time** |  | [optional] 
 **Challenge** | **string** | ID is the identifier (\&quot;authorization challenge\&quot;) of the consent authorization request. It is used to identify the session. | 
 **Client** | Pointer to [**OAuth2Client**](OAuth2Client.md) |  | [optional] 
 **Context** | Pointer to **interface{}** |  | [optional] 
@@ -87,6 +88,31 @@ SetAmr sets Amr field to given value.
 `func (o *OAuth2ConsentRequest) HasAmr() bool`
 
 HasAmr returns a boolean if a field has been set.
+
+### GetAuthenticatedAt
+
+`func (o *OAuth2ConsentRequest) GetAuthenticatedAt() time.Time`
+
+GetAuthenticatedAt returns the AuthenticatedAt field if non-nil, zero value otherwise.
+
+### GetAuthenticatedAtOk
+
+`func (o *OAuth2ConsentRequest) GetAuthenticatedAtOk() (*time.Time, bool)`
+
+GetAuthenticatedAtOk returns a tuple with the AuthenticatedAt field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetAuthenticatedAt
+
+`func (o *OAuth2ConsentRequest) SetAuthenticatedAt(v time.Time)`
+
+SetAuthenticatedAt sets AuthenticatedAt field to given value.
+
+### HasAuthenticatedAt
+
+`func (o *OAuth2ConsentRequest) HasAuthenticatedAt() bool`
+
+HasAuthenticatedAt returns a boolean if a field has been set.
 
 ### GetChallenge
 

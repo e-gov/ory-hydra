@@ -384,6 +384,33 @@ func (p *Persister) DeleteAccessTokenSession(ctx context.Context, signature stri
 	return p.deleteSessionBySignature(ctx, signature, sqlTableAccess)
 }
 
+var _ oauth2.AccessTokenConsumer = &Persister{}
+
+func (p *Persister) ConsumeAccessTokenSession(ctx context.Context, signature string) error {
+	ctx, span := p.r.Tracer(ctx).Tracer().Start(ctx, "persistence.sql.ConsumeAccessTokenSession")
+	defer span.End()
+
+	// A single statement makes consuming atomic: of concurrent calls, only one deletes the row. The raw signature is
+	// matched as well as its hash, the same way findSessionBySignature does.
+	/* #nosec G201 table is static */
+	count, err := p.Connection(ctx).
+		RawQuery(
+			fmt.Sprintf("DELETE FROM %s WHERE signature IN (?, ?) AND nid = ?", OAuth2RequestSQL{Table: sqlTableAccess}.TableName()),
+			signature,
+			SignatureHash(signature),
+			p.NetworkID(ctx),
+		).
+		ExecWithCount()
+	if err := sqlcon.HandleError(err); errors.Is(err, sqlcon.ErrConcurrentUpdate) {
+		return errors.Wrap(fosite.ErrSerializationFailure, err.Error())
+	} else if err != nil {
+		return err
+	} else if count == 0 {
+		return errorsx.WithStack(fosite.ErrNotFound)
+	}
+	return nil
+}
+
 func (p *Persister) CreateRefreshTokenSession(ctx context.Context, signature string, requester fosite.Requester) (err error) {
 	return p.createSession(ctx, signature, requester, sqlTableRefresh)
 }

@@ -60,3 +60,11 @@ type errorOAuth2NotFound struct {
 	// in: body
 	Body errorOAuth2
 }
+
+// Conflict Error Response
+//
+// swagger:response errorOAuth2Conflict
+type errorOAuth2Conflict struct {
+	// in: body
+	Body errorOAuth2
+}

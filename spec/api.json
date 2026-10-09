@@ -14,6 +14,16 @@
         },
         "description": "Bad Request Error Response"
       },
+      "errorOAuth2Conflict": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/errorOAuth2"
+            }
+          }
+        },
+        "description": "Conflict Error Response"
+      },
       "errorOAuth2Default": {
         "content": {
           "application/json": {
@@ -756,6 +766,9 @@
           },
           "amr": {
             "$ref": "#/components/schemas/StringSliceJSONFormat"
+          },
+          "authenticated_at": {
+            "$ref": "#/components/schemas/nullTime"
           },
           "challenge": {
             "description": "ID is the identifier (\"authorization challenge\") of the consent authorization request. It is used to\nidentify the session.",
@@ -2330,6 +2343,59 @@
         "summary": "Set JSON Web Key",
         "tags": [
           "jwk"
+        ]
+      }
+    },
+    "/admin/oauth2/auth/handover/consume": {
+      "post": {
+        "description": "This endpoint deletes the given access token, so that an auth handover token can be used only once. Unlike token\nrevocation, it deletes only the given access token and leaves the other access and refresh tokens of the same grant\nuntouched. The token itself (e.g. its signature, expiry and scope) is not validated, the caller must verify it before\ncalling this endpoint.\n\nResponds with 204 if the token was deleted, and with 409 if it does not exist, because it has already been consumed,\nrevoked or flushed after expiry.",
+        "operationId": "consumeAuthHandoverToken",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "properties": {
+                  "token": {
+                    "description": "The auth handover token, as issued by the token endpoint.",
+                    "required": [
+                      "token"
+                    ],
+                    "type": "string",
+                    "x-formData-name": "token"
+                  }
+                },
+                "required": [
+                  "token"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/emptyResponse"
+          },
+          "400": {
+            "$ref": "#/components/responses/errorOAuth2BadRequest"
+          },
+          "409": {
+            "$ref": "#/components/responses/errorOAuth2Conflict"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorOAuth2"
+                }
+              }
+            },
+            "description": "errorOAuth2"
+          }
+        },
+        "summary": "Consume Auth Handover Token",
+        "tags": [
+          "oAuth2"
         ]
       }
     },

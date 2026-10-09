@@ -642,6 +642,47 @@ paths:
       summary: Set JSON Web Key
       tags:
       - jwk
+  /admin/oauth2/auth/handover/consume:
+    post:
+      description: "This endpoint deletes the given access token, so that an auth\
+        \ handover token can be used only once. Unlike token\nrevocation, it deletes\
+        \ only the given access token and leaves the other access and refresh tokens\
+        \ of the same grant\nuntouched. The token itself (e.g. its signature, expiry\
+        \ and scope) is not validated, the caller must verify it before\ncalling this\
+        \ endpoint.\n\nResponds with 204 if the token was deleted, and with 409 if\
+        \ it does not exist, because it has already been consumed,\nrevoked or flushed\
+        \ after expiry."
+      operationId: consumeAuthHandoverToken
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/consumeAuthHandoverToken_request'
+      responses:
+        "204":
+          description: "Empty responses are sent when, for example, resources are\
+            \ deleted. The HTTP status code for empty responses is\ntypically 201."
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorOAuth2'
+          description: Bad Request Error Response
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorOAuth2'
+          description: Conflict Error Response
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/errorOAuth2'
+          description: errorOAuth2
+      summary: Consume Auth Handover Token
+      tags:
+      - oAuth2
   /admin/oauth2/auth/requests/consent:
     get:
       description: "When an authorization code, hybrid, or implicit OAuth 2.0 Flow\
@@ -1852,6 +1893,12 @@ components:
           schema:
             $ref: '#/components/schemas/errorOAuth2'
       description: Bad Request Error Response
+    errorOAuth2Conflict:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/errorOAuth2'
+      description: Conflict Error Response
     errorOAuth2Default:
       content:
         application/json:
@@ -2938,6 +2985,7 @@ components:
         skip: true
         request_url: request_url
         acr: acr
+        authenticated_at: 2000-01-23T04:56:07.000+00:00
         context: ""
         challenge: challenge
         client:
@@ -3021,6 +3069,10 @@ components:
           title: "StringSliceJSONFormat represents []string{} which is encoded to/from\
             \ JSON for SQL storage."
           type: array
+        authenticated_at:
+          format: date-time
+          title: NullTime implements sql.NullTime functionality.
+          type: string
         challenge:
           description: |-
             ID is the identifier ("authorization challenge") of the consent authorization request. It is used to
@@ -3181,6 +3233,7 @@ components:
           skip: true
           request_url: request_url
           acr: acr
+          authenticated_at: 2000-01-23T04:56:07.000+00:00
           context: ""
           challenge: challenge
           client:
@@ -3468,7 +3521,6 @@ components:
       type: object
     oAuth2LogoutRequest:
       example:
-        post_logout_redirect_uri: post_logout_redirect_uri
         ui_locales:
         - ui_locales
         - ui_locales
@@ -3539,6 +3591,7 @@ components:
           - response_types
           - response_types
         rp_initiated: true
+        post_logout_redirect_uri: post_logout_redirect_uri
         request_url: request_url
         sid: sid
       properties:
@@ -4335,6 +4388,17 @@ components:
         version:
           description: Version is the service's version.
           type: string
+      type: object
+    consumeAuthHandoverToken_request:
+      properties:
+        token:
+          description: "The auth handover token, as issued by the token endpoint."
+          required:
+          - token
+          type: string
+          x-formData-name: token
+      required:
+      - token
       type: object
     introspectOAuth2Token_request:
       properties:

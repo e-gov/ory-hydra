@@ -19,8 +19,9 @@ import (
 // OAuth2ConsentRequest struct for OAuth2ConsentRequest
 type OAuth2ConsentRequest struct {
 	// ACR represents the Authentication AuthorizationContext Class Reference value for this authentication session. You can use it to express that, for example, a user authenticated using two factor authentication.
-	Acr *string  `json:"acr,omitempty"`
-	Amr []string `json:"amr,omitempty"`
+	Acr             *string    `json:"acr,omitempty"`
+	Amr             []string   `json:"amr,omitempty"`
+	AuthenticatedAt *time.Time `json:"authenticated_at,omitempty"`
 	// ID is the identifier (\"authorization challenge\") of the consent authorization request. It is used to identify the session.
 	Challenge string        `json:"challenge"`
 	Client    *OAuth2Client `json:"client,omitempty"`
@@ -121,6 +122,38 @@ func (o *OAuth2ConsentRequest) HasAmr() bool {
 // SetAmr gets a reference to the given []string and assigns it to the Amr field.
 func (o *OAuth2ConsentRequest) SetAmr(v []string) {
 	o.Amr = v
+}
+
+// GetAuthenticatedAt returns the AuthenticatedAt field value if set, zero value otherwise.
+func (o *OAuth2ConsentRequest) GetAuthenticatedAt() time.Time {
+	if o == nil || o.AuthenticatedAt == nil {
+		var ret time.Time
+		return ret
+	}
+	return *o.AuthenticatedAt
+}
+
+// GetAuthenticatedAtOk returns a tuple with the AuthenticatedAt field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *OAuth2ConsentRequest) GetAuthenticatedAtOk() (*time.Time, bool) {
+	if o == nil || o.AuthenticatedAt == nil {
+		return nil, false
+	}
+	return o.AuthenticatedAt, true
+}
+
+// HasAuthenticatedAt returns a boolean if a field has been set.
+func (o *OAuth2ConsentRequest) HasAuthenticatedAt() bool {
+	if o != nil && o.AuthenticatedAt != nil {
+		return true
+	}
+
+	return false
+}
+
+// SetAuthenticatedAt gets a reference to the given time.Time and assigns it to the AuthenticatedAt field.
+func (o *OAuth2ConsentRequest) SetAuthenticatedAt(v time.Time) {
+	o.AuthenticatedAt = &v
 }
 
 // GetChallenge returns the Challenge field value
@@ -507,6 +540,9 @@ func (o OAuth2ConsentRequest) MarshalJSON() ([]byte, error) {
 	}
 	if o.Amr != nil {
 		toSerialize["amr"] = o.Amr
+	}
+	if o.AuthenticatedAt != nil {
+		toSerialize["authenticated_at"] = o.AuthenticatedAt
 	}
 	if true {
 		toSerialize["challenge"] = o.Challenge

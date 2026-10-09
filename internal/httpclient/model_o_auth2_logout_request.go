@@ -18,9 +18,9 @@ import (
 // OAuth2LogoutRequest struct for OAuth2LogoutRequest
 type OAuth2LogoutRequest struct {
 	// Challenge is the identifier (\"logout challenge\") of the logout authentication request. It is used to identify the session.
-	Challenge *string `json:"challenge,omitempty"`
-	Client *OAuth2Client `json:"client,omitempty"`
-	PostLogoutRedirectUri *string `json:"post_logout_redirect_uri,omitempty"`
+	Challenge             *string       `json:"challenge,omitempty"`
+	Client                *OAuth2Client `json:"client,omitempty"`
+	PostLogoutRedirectUri *string       `json:"post_logout_redirect_uri,omitempty"`
 	// RequestURL is the original Logout URL requested.
 	RequestUrl *string `json:"request_url,omitempty"`
 	// RPInitiated is set to true if the request was initiated by a Relying Party (RP), also known as an OAuth 2.0 Client.
@@ -28,7 +28,7 @@ type OAuth2LogoutRequest struct {
 	// SessionID is the login session ID that was requested to log out.
 	Sid *string `json:"sid,omitempty"`
 	// Subject is the user for whom the logout was request.
-	Subject *string `json:"subject,omitempty"`
+	Subject   *string  `json:"subject,omitempty"`
 	UiLocales []string `json:"ui_locales,omitempty"`
 }
 
@@ -369,5 +369,3 @@ func (v *NullableOAuth2LogoutRequest) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

@@ -119,7 +119,7 @@ func toRFCErr(v *jwt.ValidationError) *fosite.RFC6749Error {
 	}
 }
 
-// requestsAuthHandover reports whether the request asks for an auth handover token.
+// RequestsAuthHandover reports whether the request asks for an auth handover token.
 //
 // The `scope` request parameter is authoritative wherever it is present. The refresh token grant
 // handler overwrites the requested scopes with those of the original authorize request, so a `scope`
@@ -133,7 +133,7 @@ func toRFCErr(v *jwt.ValidationError) *fosite.RFC6749Error {
 //
 // Either way this is a sufficient authorization check on its own: a client that is not allowed the
 // scope cannot request it, fosite rejects the request before a token is ever generated.
-func requestsAuthHandover(requester fosite.Requester) bool {
+func RequestsAuthHandover(requester fosite.Requester) bool {
 	if raw := requester.GetRequestForm().Get("scope"); raw != "" {
 		return fosite.Arguments(strings.Fields(raw)).Has(AuthHandoverScope)
 	}
@@ -153,7 +153,7 @@ func (h *DefaultJWTStrategy) generate(ctx context.Context, tokenType fosite.Toke
 		// for a non-nil empty slice.
 		var scope fosite.Arguments
 		if s, ok := requester.GetSession().(*Session); ok && len(s.Scope) > 0 &&
-			requestsAuthHandover(requester) {
+			RequestsAuthHandover(requester) {
 			scope = s.Scope
 		}
 		claims := jwtSession.GetJWTClaims().

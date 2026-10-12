@@ -39,6 +39,7 @@ const (
 	HSMKeySetPrefix                              = "hsm.key_set_prefix"
 	HSMTokenLabel                                = "hsm.token_label" // #nosec G101
 	HSMMaxSessions                               = "hsm.max_sessions"
+	KeyAuthHandoverAudience                      = "govsso.auth_handover_audience"
 	HSMPoolWaitTimeout                           = "hsm.pool_wait_timeout"
 	HSMKeySetCacheTTL                            = "hsm.key_set_cache_ttl"
 	KeyWellKnownKeys                             = "webfinger.jwks.broadcast_keys"
@@ -510,6 +511,10 @@ func (p *DefaultProvider) HSMTokenLabel() string {
 func (p *DefaultProvider) HSMMaxSessions() *int {
 	n := p.getProvider(contextx.RootContext).Int(HSMMaxSessions)
 	return &n
+}
+
+func (p *DefaultProvider) GetAuthHandoverAudience(ctx context.Context) string {
+	return p.getProvider(ctx).String(KeyAuthHandoverAudience)
 }
 
 func (p *DefaultProvider) HSMPoolWaitTimeout() time.Duration {

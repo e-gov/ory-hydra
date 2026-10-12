@@ -1009,7 +1009,7 @@ func (h *Handler) oauth2TokenExchange(w http.ResponseWriter, r *http.Request) {
 	// expiry is set here, after the hooks, because the grant handler has already set it from the
 	// client's lifespan when the access request was created, and the access token is only generated
 	// later, in NewAccessResponse. The token response's `expires_in` follows the same session value.
-	if requestsAuthHandover(accessRequest) {
+	if RequestsAuthHandover(accessRequest) {
 		accessRequest.GetSession().SetExpiresAt(
 			fosite.AccessToken,
 			time.Now().UTC().Add(AuthHandoverTokenLifespan).Round(time.Second))

@@ -482,6 +482,19 @@
         }
       }
     },
+    "govsso": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Configures GovSSO specific settings.",
+      "properties": {
+        "auth_handover_audience": {
+          "type": "string",
+          "format": "uri",
+          "description": "The audience of auth handover tokens. A refresh token request with the `auth_handover` scope, made by an OAuth 2.0 Client that is allowed the scope, is granted this audience when it requests exactly this audience on its own, without it being whitelisted in the client's audience. Must equal GovSSO-Session `govsso.base-url`.",
+          "examples": ["https://govsso.example.com/"]
+        }
+      }
+    },
     "hsm": {
       "type": "object",
       "additionalProperties": false,

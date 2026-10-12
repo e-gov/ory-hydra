@@ -9,6 +9,7 @@ import (
 	"github.com/ory/fosite"
 	"github.com/ory/fosite/compose"
 	foauth2 "github.com/ory/fosite/handler/oauth2"
+	"github.com/ory/hydra/v2/oauth2"
 )
 
 var _ fosite.TokenEndpointHandler = (*RefreshTokenGrantHandler)(nil)
@@ -21,14 +22,29 @@ var _ fosite.TokenEndpointHandler = (*RefreshTokenGrantHandler)(nil)
 // That replacement applies to the tokens issued for this request only. The decorated handler rotates the refresh token
 // and stores the current request as the new refresh token's original request, so a persisted replacement would be
 // restored by every later refresh.
+//
+// A refresh request for an auth handover token (one with the `auth_handover` scope) may additionally be granted the
+// configured auth handover audience, provided that the client is allowed the scope. The auth handover audience is not
+// whitelisted in the client's audience, because the client's audience is also granted to its regular access tokens.
+// It is only granted when it is requested exactly as configured and on its own; any other requested audience is
+// checked against the client's audience as usual.
 type RefreshTokenGrantHandler struct {
 	*foauth2.RefreshTokenGrantHandler
+	authHandoverAudienceProvider authHandoverAudienceProvider
 }
 
-// RefreshTokenGrantFactory creates a RefreshTokenGrantHandler.
+// authHandoverAudienceProvider provides the auth handover audience, which fosite.Configurator does not.
+type authHandoverAudienceProvider interface {
+	GetAuthHandoverAudience(ctx context.Context) string
+}
+
+// RefreshTokenGrantFactory creates a RefreshTokenGrantHandler. The config must also be an
+// authHandoverAudienceProvider, as Config is; the factory panics otherwise, so that a miswired config fails at startup
+// instead of disabling the auth handover audience.
 func RefreshTokenGrantFactory(config fosite.Configurator, storage interface{}, strategy interface{}) interface{} {
 	return &RefreshTokenGrantHandler{
-		RefreshTokenGrantHandler: compose.OAuth2RefreshTokenGrantFactory(config, storage, strategy).(*foauth2.RefreshTokenGrantHandler),
+		RefreshTokenGrantHandler:     compose.OAuth2RefreshTokenGrantFactory(config, storage, strategy).(*foauth2.RefreshTokenGrantHandler),
+		authHandoverAudienceProvider: config.(authHandoverAudienceProvider),
 	}
 }
 
@@ -47,8 +63,10 @@ func (c *RefreshTokenGrantHandler) HandleTokenEndpointRequest(ctx context.Contex
 		return err
 	}
 
-	if err := c.Config.GetAudienceStrategy(ctx)(request.GetClient().GetAudience(), requestedAudience); err != nil {
-		return err
+	if !c.grantsAuthHandoverAudience(ctx, request, requestedAudience) {
+		if err := c.Config.GetAudienceStrategy(ctx)(request.GetClient().GetAudience(), requestedAudience); err != nil {
+			return err
+		}
 	}
 
 	request.SetRequestedAudience(requestedAudience)
@@ -57,6 +75,16 @@ func (c *RefreshTokenGrantHandler) HandleTokenEndpointRequest(ctx context.Contex
 	}
 
 	return nil
+}
+
+// grantsAuthHandoverAudience reports whether the requested audience is the configured auth handover audience alone,
+// requested for an auth handover token by a client that is allowed the `auth_handover` scope. The decorated handler
+// only checks the scopes granted to the original request against the client, not the ones requested with the `scope`
+// parameter of this request, hence the scope check here.
+func (c *RefreshTokenGrantHandler) grantsAuthHandoverAudience(ctx context.Context, request fosite.AccessRequester, requestedAudience fosite.Arguments) bool {
+	return oauth2.RequestsAuthHandover(request) &&
+		len(requestedAudience) == 1 && requestedAudience[0] == c.authHandoverAudienceProvider.GetAuthHandoverAudience(ctx) &&
+		c.Config.GetScopeStrategy(ctx)(request.GetClient().GetScopes(), oauth2.AuthHandoverScope)
 }
 
 func (c *RefreshTokenGrantHandler) PopulateTokenEndpointResponse(ctx context.Context, request fosite.AccessRequester, responder fosite.AccessResponder) error {

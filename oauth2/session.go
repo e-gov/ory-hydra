@@ -26,7 +26,7 @@ import (
 type Session struct {
 	*openid.DefaultSession    `json:"id_token"`
 	Extra                     map[string]interface{} `json:"extra"`
-	Scope                     []string               `json:"scope"`
+	Scope                     []string               `json:"scope,omitempty"`
 	KID                       string                 `json:"kid"`
 	ClientID                  string                 `json:"client_id"`
 	ConsentChallenge          string                 `json:"consent_challenge"`

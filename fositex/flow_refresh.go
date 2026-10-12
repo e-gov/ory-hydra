@@ -9,6 +9,7 @@ import (
 	"github.com/ory/fosite"
 	"github.com/ory/fosite/compose"
 	foauth2 "github.com/ory/fosite/handler/oauth2"
+	"github.com/ory/fosite/storage"
 )
 
 var _ fosite.TokenEndpointHandler = (*RefreshTokenGrantHandler)(nil)
@@ -77,11 +78,17 @@ func (c *RefreshTokenGrantHandler) PopulateTokenEndpointResponse(ctx context.Con
 		return c.RefreshTokenGrantHandler.PopulateTokenEndpointResponse(ctx, request, responder)
 	}
 
-	return c.RefreshTokenGrantHandler.PopulateTokenEndpointResponse(ctx, &audienceRestoringRequester{
-		AccessRequester:   request,
-		requestedAudience: originalRequest.GetRequestedAudience(),
-		grantedAudience:   originalRequest.GetGrantedAudience(),
-	}, responder)
+	// The decorated handler stores one and the same sanitized request as the session of the issued access token and
+	// as the session of the rotated refresh token. Only the latter may carry the original audience: the access token
+	// session is what introspection reports for the issued token, so it must keep the audience granted to this
+	// request. Hence the audience is restored by the storage, where the two sessions can be told apart.
+	handler := *c.RefreshTokenGrantHandler
+	handler.TokenRevocationStorage = &audienceRestoringStorage{
+		TokenRevocationStorage: c.TokenRevocationStorage,
+		requestedAudience:      originalRequest.GetRequestedAudience(),
+		grantedAudience:        originalRequest.GetGrantedAudience(),
+	}
+	return handler.PopulateTokenEndpointResponse(ctx, request, responder)
 }
 
 // audienceDiscardingRequester discards audience grants; see RefreshTokenGrantHandler.HandleTokenEndpointRequest.
@@ -91,20 +98,38 @@ type audienceDiscardingRequester struct {
 
 func (*audienceDiscardingRequester) GrantAudience(string) {}
 
-// audienceRestoringRequester restores the audience of the original request on the sanitized request that is stored,
-// leaving the audience of the request itself - and therefore of the tokens generated from it - untouched; see
-// RefreshTokenGrantHandler.PopulateTokenEndpointResponse.
-type audienceRestoringRequester struct {
-	fosite.AccessRequester
+// audienceRestoringStorage restores the audience of the original request on the request stored as the rotated
+// refresh token's session, leaving the request stored as the access token's session - and therefore the audience
+// reported for the issued token - untouched; see RefreshTokenGrantHandler.PopulateTokenEndpointResponse.
+type audienceRestoringStorage struct {
+	foauth2.TokenRevocationStorage
 	requestedAudience fosite.Arguments
 	grantedAudience   fosite.Arguments
 }
 
-func (r *audienceRestoringRequester) Sanitize(allowedParameters []string) fosite.Requester {
-	sanitized := r.AccessRequester.Sanitize(allowedParameters)
-	if request, ok := sanitized.(*fosite.Request); ok {
-		request.RequestedAudience = r.requestedAudience
-		request.GrantedAudience = r.grantedAudience
+func (s *audienceRestoringStorage) CreateRefreshTokenSession(ctx context.Context, signature string, request fosite.Requester) error {
+	if sanitized, ok := request.(*fosite.Request); ok {
+		// Copy, because the decorated handler has already handed the same request to CreateAccessTokenSession and
+		// the storage may keep a reference to it.
+		restored := *sanitized
+		restored.RequestedAudience = s.requestedAudience
+		restored.GrantedAudience = s.grantedAudience
+		request = &restored
 	}
-	return sanitized
+	return s.TokenRevocationStorage.CreateRefreshTokenSession(ctx, signature, request)
+}
+
+// BeginTX, Commit and Rollback forward transactions to the decorated storage. The decorated handler runs the rotation
+// in a transaction when the storage supports one, and the decorated storage is the one that actually knows whether it
+// does.
+func (s *audienceRestoringStorage) BeginTX(ctx context.Context) (context.Context, error) {
+	return storage.MaybeBeginTx(ctx, s.TokenRevocationStorage)
+}
+
+func (s *audienceRestoringStorage) Commit(ctx context.Context) error {
+	return storage.MaybeCommitTx(ctx, s.TokenRevocationStorage)
+}
+
+func (s *audienceRestoringStorage) Rollback(ctx context.Context) error {
+	return storage.MaybeRollbackTx(ctx, s.TokenRevocationStorage)
 }

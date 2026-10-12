@@ -92,6 +92,15 @@ func TestRefreshTokenGrantHandler(t *testing.T) {
 		return sessions[0]
 	}
 
+	// storedAccessTokenSession returns the session of the access token that the refresh has just issued.
+	storedAccessTokenSession := func(t *testing.T, store *storage.MemoryStore) fosite.Requester {
+		require.Len(t, store.AccessTokens, 1)
+		for _, session := range store.AccessTokens {
+			return session
+		}
+		return nil
+	}
+
 	t.Run("case=keeps the original audience when no audience is requested", func(t *testing.T) {
 		request, err := handleRefresh(t, url.Values{})
 		require.NoError(t, err)
@@ -129,8 +138,12 @@ func TestRefreshTokenGrantHandler(t *testing.T) {
 		request, store, err := refresh(t, url.Values{"audience": {"https://other.ory.sh/"}}, true)
 		require.NoError(t, err)
 
-		// The tokens issued for this request are addressed to the requested audience ...
+		// The tokens issued for this request are addressed to the requested audience, which is what introspection
+		// reports for the issued access token ...
 		assert.EqualValues(t, fosite.Arguments{"https://other.ory.sh/"}, request.GetGrantedAudience())
+		accessTokenSession := storedAccessTokenSession(t, store)
+		assert.EqualValues(t, fosite.Arguments{"https://other.ory.sh/"}, accessTokenSession.GetGrantedAudience())
+		assert.EqualValues(t, fosite.Arguments{"https://other.ory.sh/"}, accessTokenSession.GetRequestedAudience())
 
 		// ... but the next refresh must restore the audience of the original request, not the requested one.
 		stored := storedRefreshTokenSession(t, store)

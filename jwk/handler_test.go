@@ -65,9 +65,10 @@ func TestHandlerWellKnown(t *testing.T) {
 		var IDKS *jose.JSONWebKeySet
 
 		if conf.HSMEnabled() {
+			// Keys cannot be generated on Hardware Security Module, use the pre-generated key set.
 			var err error
-			IDKS, err = reg.KeyManager().GenerateAndPersistKeySet(context.TODO(), x.OpenIDConnectKeyName, "test-id-2", "RS256", "sig")
-			require.NoError(t, err, "problem in generating keys")
+			IDKS, err = reg.KeyManager().GetKeySet(context.TODO(), x.OpenIDConnectKeyName)
+			require.NoError(t, err, "problem in getting pre-generated keys")
 		} else {
 			var err error
 			IDKS, err = jwk.GenerateJWK(context.Background(), jose.RS256, "test-id-2", "sig")
@@ -83,17 +84,13 @@ func TestHandlerWellKnown(t *testing.T) {
 		var known jose.JSONWebKeySet
 		err = json.NewDecoder(res.Body).Decode(&known)
 		require.NoError(t, err, "problem in decoding response")
-		if conf.HSMEnabled() {
-			require.GreaterOrEqual(t, len(known.Keys), 2)
-		} else {
-			require.GreaterOrEqual(t, len(known.Keys), 1)
-		}
-
-		knownKey := known.Key("test-id-2")[0]
-		require.NotNil(t, knownKey, "Could not find key public")
+		require.GreaterOrEqual(t, len(known.Keys), 1)
 
 		expectedKey, err := jwk.FindPublicKey(IDKS)
 		require.NoError(t, err)
+
+		knownKey := known.Key(expectedKey.KeyID)[0]
+		require.NotNil(t, knownKey, "Could not find key public")
 		assert.EqualValues(t, canonicalizeThumbprints(*expectedKey), canonicalizeThumbprints(knownKey))
 	})
 }

@@ -11,7 +11,6 @@
 package hsm_test
 
 import (
-	elliptic "crypto/elliptic"
 	reflect "reflect"
 
 	crypto11 "github.com/ThalesIgnite/crypto11"
@@ -69,36 +68,6 @@ func (m *MockContext) FindKeyPairs(id, label []byte) ([]crypto11.Signer, error) 
 func (mr *MockContextMockRecorder) FindKeyPairs(id, label interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindKeyPairs", reflect.TypeOf((*MockContext)(nil).FindKeyPairs), id, label)
-}
-
-// GenerateECDSAKeyPairWithAttributes mocks base method.
-func (m *MockContext) GenerateECDSAKeyPairWithAttributes(public, private crypto11.AttributeSet, curve elliptic.Curve) (crypto11.Signer, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GenerateECDSAKeyPairWithAttributes", public, private, curve)
-	ret0, _ := ret[0].(crypto11.Signer)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GenerateECDSAKeyPairWithAttributes indicates an expected call of GenerateECDSAKeyPairWithAttributes.
-func (mr *MockContextMockRecorder) GenerateECDSAKeyPairWithAttributes(public, private, curve interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateECDSAKeyPairWithAttributes", reflect.TypeOf((*MockContext)(nil).GenerateECDSAKeyPairWithAttributes), public, private, curve)
-}
-
-// GenerateRSAKeyPairWithAttributes mocks base method.
-func (m *MockContext) GenerateRSAKeyPairWithAttributes(public, private crypto11.AttributeSet, bits int) (crypto11.SignerDecrypter, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GenerateRSAKeyPairWithAttributes", public, private, bits)
-	ret0, _ := ret[0].(crypto11.SignerDecrypter)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GenerateRSAKeyPairWithAttributes indicates an expected call of GenerateRSAKeyPairWithAttributes.
-func (mr *MockContextMockRecorder) GenerateRSAKeyPairWithAttributes(public, private, bits interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateRSAKeyPairWithAttributes", reflect.TypeOf((*MockContext)(nil).GenerateRSAKeyPairWithAttributes), public, private, bits)
 }
 
 // GetAttribute mocks base method.

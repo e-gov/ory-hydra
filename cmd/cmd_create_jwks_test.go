@@ -21,6 +21,9 @@ func TestCreateJWKS(t *testing.T) {
 	ctx := context.Background()
 	c := cmd.NewCreateJWKSCmd()
 	reg := setup(t, c)
+	if reg.Config().HSMEnabled() {
+		t.Skip("Skipping test. Keys cannot be generated when Hardware Security Module is enabled")
+	}
 
 	t.Run("case=creates successfully", func(t *testing.T) {
 		set := uuid.Must(uuid.NewV4()).String()

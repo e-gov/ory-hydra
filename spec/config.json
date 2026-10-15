@@ -574,12 +574,30 @@
         },
         "key_set_prefix": {
           "type": "string",
-          "description": "Key set prefix can be used in case of multiple Ory Hydra instances need to store keys on the same HSM partition. For example if `hsm.key_set_prefix=app1.` then key set `hydra.openid.id-token` would be generated/requested/deleted on HSM with `CKA_LABEL=app1.hydra.openid.id-token`.",
+          "description": "Key set prefix can be used in case of multiple Ory Hydra instances need to store keys on the same HSM partition. For example if `hsm.key_set_prefix=app1.` then key set `hydra.openid.id-token` would be requested from HSM with `CKA_LABEL=app1.hydra.openid.id-token`.",
           "default": ""
         },
         "max_sessions": {
           "type": "integer",
           "description": "Maximum number of concurrent sessions to open. If zero, 1024 is used."
+        },
+        "pool_wait_timeout": {
+          "description": "Sets the timeout for requesting a PKCS#11 session from the session pool. `0s` means infinite timeout.",
+          "default": "0s",
+          "allOf": [
+            {
+              "$ref": "#/definitions/duration"
+            }
+          ]
+        },
+        "key_set_cache_ttl": {
+          "description": "Sets how long JSON Web Key Sets read from HSM are cached in memory, reducing the load on HSM when signing tokens and serving `/.well-known/jwks.json`. Keys added to or removed from HSM are noticed after the cache entry expires. Failed reads are not cached. `0s` disables the cache.",
+          "default": "5m",
+          "allOf": [
+            {
+              "$ref": "#/definitions/duration"
+            }
+          ]
         }
       }
     },

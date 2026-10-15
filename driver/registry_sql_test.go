@@ -40,6 +40,10 @@ func TestDefaultKeyManager_HsmDisabled(t *testing.T) {
 }
 
 func TestDbUnknownTableColumns(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping test in short mode, requires Docker to run PostgreSQL.")
+	}
+
 	ctx := context.Background()
 	l := logrusx.New("", "")
 	c := config.MustNew(ctx, l, configx.SkipValidation())

@@ -9,6 +9,8 @@ import (
 	"github.com/ory/fosite"
 	"github.com/ory/fosite/compose"
 	foauth2 "github.com/ory/fosite/handler/oauth2"
+	"github.com/ory/hydra/v2/oauth2"
+	"github.com/ory/x/errorsx"
 )
 
 var _ fosite.TokenEndpointHandler = (*RefreshTokenGrantHandler)(nil)
@@ -21,6 +23,10 @@ var _ fosite.TokenEndpointHandler = (*RefreshTokenGrantHandler)(nil)
 // That replacement applies to the tokens issued for this request only. The decorated handler rotates the refresh token
 // and stores the current request as the new refresh token's original request, so a persisted replacement would be
 // restored by every later refresh.
+//
+// A refresh request for an auth handover token (one with the `auth_handover` scope) is rejected unless the client is
+// allowed the scope. The decorated handler only checks the scopes granted to the original request against the client,
+// not the ones requested with the `scope` parameter of this request.
 type RefreshTokenGrantHandler struct {
 	*foauth2.RefreshTokenGrantHandler
 }
@@ -33,6 +39,13 @@ func RefreshTokenGrantFactory(config fosite.Configurator, storage interface{}, s
 }
 
 func (c *RefreshTokenGrantHandler) HandleTokenEndpointRequest(ctx context.Context, request fosite.AccessRequester) error {
+	// The scope marks the request rather than authorizing access, so it must be whitelisted in the client's scopes
+	// exactly; a wildcard scope strategy would otherwise let a broad client scope such as `*` match it.
+	if c.CanHandleTokenEndpointRequest(ctx, request) && oauth2.RequestsAuthHandover(request) &&
+		!request.GetClient().GetScopes().Has(oauth2.AuthHandoverScope) {
+		return errorsx.WithStack(fosite.ErrInvalidScope.WithHintf("The OAuth 2.0 Client is not allowed to request scope '%s'.", oauth2.AuthHandoverScope))
+	}
+
 	if !request.GetRequestForm().Has("audience") {
 		return c.RefreshTokenGrantHandler.HandleTokenEndpointRequest(ctx, request)
 	}

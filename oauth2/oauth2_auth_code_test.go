@@ -449,10 +449,8 @@ func TestAuthCodeWithDefaultStrategy(t *testing.T) {
 			RedirectURIs:  []string{cb},
 			ResponseTypes: []string{"id_token", "code", "token"},
 			GrantTypes:    []string{"refresh_token", "authorization_code"},
-			// The auth handover scope is only ever requested with a refresh request, never during
-			// the authorize request, so it is deliberately left out of the client's configuration
-			// below - the refresh grant does not check the `scope` parameter against the client.
-			Scope: "hydra offline openid",
+			// The refresh grant rejects the auth handover scope unless the client is allowed it.
+			Scope: "hydra offline openid " + hydraoauth2.AuthHandoverScope,
 		}
 		require.NoError(t, reg.ClientManager().CreateClient(ctx, c))
 		conf := &oauth2.Config{
@@ -463,7 +461,9 @@ func TestAuthCodeWithDefaultStrategy(t *testing.T) {
 				TokenURL:  reg.Config().OAuth2TokenURL(ctx).String(),
 				AuthStyle: oauth2.AuthStyleInHeader,
 			},
-			Scopes: strings.Split(c.Scope, " "),
+			// The auth handover scope is only ever requested with a refresh request, never during the
+			// authorize request.
+			Scopes: []string{"hydra", "offline", "openid"},
 		}
 		testhelpers.NewLoginConsentUI(t, reg.Config(),
 			acceptLoginHandler(t, c, subject, nil),

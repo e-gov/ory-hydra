@@ -28,11 +28,17 @@ func TestRefreshTokenGrantHandler(t *testing.T) {
 		Scopes:     fosite.Arguments{"openid", "offline"},
 		Audience:   fosite.Arguments{"https://api.ory.sh/", "https://other.ory.sh/"},
 	}
+	authHandoverClient := &fosite.DefaultClient{
+		ID:         "client",
+		GrantTypes: fosite.Arguments{"refresh_token"},
+		Scopes:     fosite.Arguments{"openid", "offline", "auth_handover"},
+		Audience:   fosite.Arguments{"https://api.ory.sh/", "https://other.ory.sh/"},
+	}
 
-	// refresh performs a refresh token request with the given form values against a grant that was originally granted
-	// the "https://api.ory.sh/" audience. When populate is true, the token endpoint response is populated as well,
-	// which rotates the refresh token and stores the sessions of the issued tokens.
-	refresh := func(t *testing.T, form url.Values, populate bool) (fosite.AccessRequester, *storage.MemoryStore, error) {
+	// refreshAs performs a refresh token request by the given client with the given form values against a grant that
+	// was originally granted the "https://api.ory.sh/" audience. When populate is true, the token endpoint response is
+	// populated as well, which rotates the refresh token and stores the sessions of the issued tokens.
+	refreshAs := func(t *testing.T, client fosite.Client, form url.Values, populate bool) (fosite.AccessRequester, *storage.MemoryStore, error) {
 		store := storage.NewMemoryStore()
 		handler := fositex.RefreshTokenGrantFactory(config, store, strategy).(*fositex.RefreshTokenGrantHandler)
 
@@ -70,6 +76,11 @@ func TestRefreshTokenGrantHandler(t *testing.T) {
 		}
 
 		return request, store, handler.PopulateTokenEndpointResponse(ctx, request, fosite.NewAccessResponse())
+	}
+
+	// refresh performs a refresh token request by the client that is not allowed the `auth_handover` scope.
+	refresh := func(t *testing.T, form url.Values, populate bool) (fosite.AccessRequester, *storage.MemoryStore, error) {
+		return refreshAs(t, client, form, populate)
 	}
 
 	// handleRefresh performs a refresh token request without populating the token endpoint response.
@@ -146,5 +157,34 @@ func TestRefreshTokenGrantHandler(t *testing.T) {
 		stored := storedRefreshTokenSession(t, store)
 		assert.EqualValues(t, fosite.Arguments{"https://api.ory.sh/"}, stored.GetGrantedAudience())
 		assert.EqualValues(t, fosite.Arguments{"https://api.ory.sh/"}, stored.GetRequestedAudience())
+	})
+
+	t.Run("case=fails when a client that is not allowed the auth_handover scope requests it", func(t *testing.T) {
+		_, err := handleRefresh(t, url.Values{"scope": {"openid auth_handover"}})
+		require.Error(t, err)
+
+		assert.ErrorIs(t, err, fosite.ErrInvalidScope)
+	})
+
+	t.Run("case=fails when a client that is not allowed the auth_handover scope requests it with an audience", func(t *testing.T) {
+		_, err := handleRefresh(t, url.Values{"scope": {"auth_handover"}, "audience": {"https://other.ory.sh/"}})
+		require.Error(t, err)
+
+		assert.ErrorIs(t, err, fosite.ErrInvalidScope)
+	})
+
+	t.Run("case=allows a client that is allowed the auth_handover scope to request it", func(t *testing.T) {
+		request, _, err := refreshAs(t, authHandoverClient, url.Values{"scope": {"openid auth_handover"}}, false)
+		require.NoError(t, err)
+
+		assert.EqualValues(t, fosite.Arguments{"https://api.ory.sh/"}, request.GetGrantedAudience())
+		assert.EqualValues(t, fosite.Arguments{"openid", "offline"}, request.GetGrantedScopes())
+	})
+
+	t.Run("case=allows a client that is allowed the auth_handover scope to request it with an audience", func(t *testing.T) {
+		request, _, err := refreshAs(t, authHandoverClient, url.Values{"scope": {"auth_handover"}, "audience": {"https://other.ory.sh/"}}, false)
+		require.NoError(t, err)
+
+		assert.EqualValues(t, fosite.Arguments{"https://other.ory.sh/"}, request.GetGrantedAudience())
 	})
 }

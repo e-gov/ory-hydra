@@ -11,6 +11,7 @@ import (
 
 	"github.com/gorilla/sessions"
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/ory/graceful"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
@@ -246,8 +247,10 @@ func (m *RegistryBase) GrantValidator() *trust.GrantValidator {
 func (m *RegistryBase) HealthHandler() *healthx.Handler {
 	if m.hh == nil {
 		m.hh = healthx.NewHandler(m.Writer(), m.buildVersion, healthx.ReadyCheckers{
-			"database": func(_ *http.Request) error {
-				return m.r.Ping()
+			"database": func(r *http.Request) error {
+				ctx, cancel := context.WithTimeout(r.Context(), graceful.DefaultReadTimeout)
+				defer cancel()
+				return m.r.PingContext(ctx)
 			},
 			"migrations": func(r *http.Request) error {
 				if m.migrationStatus != nil && !m.migrationStatus.HasPending() {

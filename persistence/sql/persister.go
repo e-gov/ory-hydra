@@ -11,7 +11,6 @@ import (
 	"github.com/gobuffalo/pop/v6"
 	"github.com/gobuffalo/x/randx"
 	"github.com/gofrs/uuid"
-
 	"github.com/pkg/errors"
 
 	"github.com/ory/fosite"
@@ -158,9 +157,11 @@ func (p *Persister) Connection(ctx context.Context) *pop.Connection {
 	return popx.GetConnection(ctx, p.conn)
 }
 
-func (p *Persister) Ping() error {
-	type pinger interface{ Ping() error }
-	return p.conn.Store.(pinger).Ping()
+func (p *Persister) Ping(ctx context.Context) error {
+	type pinger interface {
+		PingContext(ctx context.Context) error
+	}
+	return p.conn.Store.(pinger).PingContext(ctx)
 }
 
 func (p *Persister) mustSetNetwork(nid uuid.UUID, v interface{}) interface{} {

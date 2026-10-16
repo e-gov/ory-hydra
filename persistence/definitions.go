@@ -29,7 +29,7 @@ type (
 		MigrateUp(context.Context) error
 		PrepareMigration(context.Context) error
 		Connection(context.Context) *pop.Connection
-		Ping() error
+		Ping(ctx context.Context) error
 	}
 	Provider interface {
 		Persister() Persister

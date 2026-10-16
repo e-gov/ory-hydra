@@ -40,6 +40,7 @@ import (
 type Registry interface {
 	dbal.Driver
 
+	PingContext(ctx context.Context) error
 	Init(ctx context.Context, skipNetworkInit bool, migrate bool, ctxer contextx.Contextualizer) error
 
 	WithBuildInfo(v, h, d string) Registry

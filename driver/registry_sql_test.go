@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/require"
 
 	"github.com/stretchr/testify/assert"
@@ -79,6 +80,37 @@ func TestDbUnknownTableColumns(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, actual, 1)
 	})
+}
+
+func TestDBStatsCollectorIsRegistered(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping test in short mode, requires Docker to run PostgreSQL.")
+	}
+	ctx := context.Background()
+	l := logrusx.New("", "")
+	c := config.MustNew(ctx, l, configx.SkipValidation())
+	c.MustSet(ctx, config.KeyDSN, "postgres://user:password@127.0.0.1:9999/postgres")
+	reg, err := NewRegistryWithoutInit(c, l)
+	require.NoError(t, err)
+	r := reg.(*RegistrySQL)
+	r.initialPing = sussessfulPing()
+	require.NoError(t, r.Init(ctx, true, false, &contextx.Default{}))
+
+	metrics, err := prometheus.DefaultGatherer.Gather()
+	require.NoError(t, err)
+
+	var found bool
+	for _, m := range metrics {
+		if m.GetName() != "go_sql_max_open_connections" {
+			continue
+		}
+		for _, l := range m.GetMetric()[0].GetLabel() {
+			if l.GetName() == "db_name" && l.GetValue() == "hydra" {
+				found = true
+			}
+		}
+	}
+	assert.True(t, found, "expected the database connection pool metrics to be collected")
 }
 
 func sussessfulPing() func(r *RegistrySQL) error {

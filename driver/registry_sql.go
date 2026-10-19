@@ -5,12 +5,16 @@ package driver
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
 	"github.com/gobuffalo/pop/v6"
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/jmoiron/sqlx"
 	"github.com/luna-duclos/instrumentedsql"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 
 	"github.com/ory/hydra/v2/client"
 	"github.com/ory/hydra/v2/consent"
@@ -100,6 +104,8 @@ func (m *RegistrySQL) Init(
 			return errorsx.WithStack(err)
 		}
 
+		m.registerDBStatsCollector(c)
+
 		p, err := sql.NewPersister(ctx, c, m, m.Config(), m.l)
 		if err != nil {
 			return err
@@ -156,6 +162,19 @@ func (m *RegistrySQL) Init(
 	}
 
 	return nil
+}
+
+func (m *RegistrySQL) registerDBStatsCollector(c *pop.Connection) {
+	store, ok := c.Store.(interface{ Unsafe() *sqlx.DB })
+	if !ok {
+		m.Logger().Error("Unable to access the underlying database handle, database connection pool metrics are not collected.")
+		return
+	}
+
+	err := prometheus.Register(collectors.NewDBStatsCollector(store.Unsafe().DB, "hydra"))
+	if err != nil && !errors.As(err, new(prometheus.AlreadyRegisteredError)) {
+		m.Logger().WithError(err).Warn("Unable to register the database connection pool metrics collector.")
+	}
 }
 
 func (m *RegistrySQL) alwaysCanHandle(dsn string) bool {

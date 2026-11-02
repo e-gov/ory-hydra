@@ -57,6 +57,14 @@ type TokenHookResponse struct {
 	Session consent.AcceptOAuth2ConsentRequestSession `json:"session"`
 }
 
+// TokenHookErrorResponse is the error response body received from the token hook.
+//
+// swagger:ignore
+type TokenHookErrorResponse struct {
+	// ErrorDescription is the human-readable error description returned to the client.
+	ErrorDescription string `json:"error_description"`
+}
+
 func executeHookAndUpdateSession(ctx context.Context, reg x.HTTPClientProvider, hookURL *url.URL, reqBodyBytes []byte, session *Session) error {
 	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, hookURL.String(), bytes.NewReader(reqBodyBytes))
 	if err != nil {
@@ -86,6 +94,18 @@ func executeHookAndUpdateSession(ctx context.Context, reg x.HTTPClientProvider, 
 	case http.StatusNoContent:
 		// Token is permitted without overriding session data
 		return nil
+	case http.StatusBadRequest:
+		description := "The token hook target responded with an error."
+		var errBody TokenHookErrorResponse
+		if err := json.NewDecoder(resp.Body).Decode(&errBody); err == nil && errBody.ErrorDescription != "" {
+			description = errBody.ErrorDescription
+		}
+		return errorsx.WithStack(
+			fosite.ErrInvalidRequest.
+				WithHint("").
+				WithDescription(description).
+				WithDebugf("Token hook responded with HTTP status code: %s", resp.Status),
+		)
 	case http.StatusForbidden:
 		return errorsx.WithStack(
 			fosite.ErrAccessDenied.

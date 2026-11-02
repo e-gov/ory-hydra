@@ -1509,6 +1509,40 @@ func TestAuthCodeWithMockStrategy(t *testing.T) {
 						t.Run("hook=new", run("new"))
 					})
 
+					t.Run("should fail token refresh with `invalid_request` if refresh hook rejected the request", func(t *testing.T) {
+						run := func(hookType string, body string, expectedDescription string) func(t *testing.T) {
+							return func(t *testing.T) {
+								hs := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+									w.Header().Set("Content-Type", "application/json")
+									w.WriteHeader(http.StatusBadRequest)
+									_, _ = w.Write([]byte(body))
+								}))
+								defer hs.Close()
+
+								if hookType == "legacy" {
+									conf.MustSet(ctx, config.KeyRefreshTokenHookURL, hs.URL)
+									defer conf.MustSet(ctx, config.KeyRefreshTokenHookURL, nil)
+								} else {
+									conf.MustSet(ctx, config.KeyTokenHookURL, hs.URL)
+									defer conf.MustSet(ctx, config.KeyTokenHookURL, nil)
+								}
+
+								res, err := testRefresh(t, &refreshedToken, ts.URL, false)
+								require.NoError(t, err)
+								assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+
+								var errBody fosite.RFC6749ErrorJson
+								require.NoError(t, json.NewDecoder(res.Body).Decode(&errBody))
+								require.Equal(t, fosite.ErrInvalidRequest.Error(), errBody.Name)
+								require.Equal(t, expectedDescription, errBody.Description)
+							}
+						}
+						t.Run("hook=legacy", run("legacy", `{"error_description":"Session has expired."}`, "Session has expired."))
+						t.Run("hook=new", run("new", `{"error_description":"Session has expired."}`, "Session has expired."))
+						t.Run("hook=legacy,body=empty", run("legacy", ``, "The token hook target responded with an error."))
+						t.Run("hook=new,body=empty", run("new", ``, "The token hook target responded with an error."))
+					})
+
 					t.Run("should fail token refresh with `access_denied` if legacy refresh hook denied the request", func(t *testing.T) {
 						run := func(hookType string) func(t *testing.T) {
 							return func(t *testing.T) {

@@ -640,10 +640,26 @@ func (h *Handler) acceptOAuth2LoginRequest(w http.ResponseWriter, r *http.Reques
 	}
 
 	if ar.Skip {
+		if p.AuthenticatedAtOverride != nil {
+			h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrInvalidRequest.WithHint("Field 'authenticated_at' must not be set when the login request is skipped.")))
+			return
+		}
 		p.Remember = true // If skip is true remember is also true to allow consecutive calls as the same user!
 		p.AuthenticatedAt = ar.AuthenticatedAt
 	} else {
-		p.AuthenticatedAt = sqlxx.NullTime(time.Now().UTC().
+		authenticatedAt := time.Now().UTC()
+		if p.AuthenticatedAtOverride != nil {
+			if p.AuthenticatedAtOverride.IsZero() {
+				h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrInvalidRequest.WithHint("Field 'authenticated_at' must not be a zero value.")))
+				return
+			}
+			if p.AuthenticatedAtOverride.After(authenticatedAt) {
+				h.r.Writer().WriteError(w, r, errorsx.WithStack(fosite.ErrInvalidRequest.WithHint("Field 'authenticated_at' must not be in the future.")))
+				return
+			}
+			authenticatedAt = p.AuthenticatedAtOverride.UTC()
+		}
+		p.AuthenticatedAt = sqlxx.NullTime(authenticatedAt.
 			// Rounding is important to avoid SQL time synchronization issues in e.g. MySQL!
 			Truncate(time.Second))
 		ar.AuthenticatedAt = p.AuthenticatedAt

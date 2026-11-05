@@ -2070,6 +2070,12 @@ components:
           title: "StringSliceJSONFormat represents []string{} which is encoded to/from\
             \ JSON for SQL storage."
           type: array
+        authenticated_at:
+          description: "AuthenticatedAt sets the time when the end-user authenticated.\
+            \ If not set, the time of accepting the login\nrequest is used. Must not\
+            \ be in the future and must not be set if the login request is skipped."
+          format: date-time
+          type: string
         context:
           title: "JSONRawMessage represents a json.RawMessage that works well with\
             \ JSON, SQL, and Swagger."

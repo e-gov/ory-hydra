@@ -785,3 +785,120 @@ func TestGetLoginSessionClaims(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, status)
 	})
 }
+
+func TestAcceptLoginRequestWithAuthenticatedAt(t *testing.T) {
+	conf := internal.NewConfigurationWithDefaults()
+	reg := internal.NewRegistryMemory(t, conf, &contextx.Default{})
+
+	cl := &client.Client{LegacyClientID: "authenticated-at-client"}
+	require.NoError(t, reg.ClientManager().CreateClient(context.Background(), cl))
+
+	h := NewHandler(reg, conf)
+	r := x.NewRouterAdmin(conf.AdminURL)
+	h.SetRoutes(r)
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+
+	createLoginRequest := func(t *testing.T, challenge string, skip bool) {
+		lr := &LoginRequest{
+			Client:     cl,
+			ID:         challenge,
+			Verifier:   challenge + "-verifier",
+			CSRF:       challenge + "-csrf",
+			RequestURL: "http://192.0.2.1",
+		}
+		if skip {
+			lr.Skip = true
+			lr.Subject = "sub123"
+		}
+		require.NoError(t, reg.ConsentManager().CreateLoginRequest(context.Background(), lr))
+	}
+
+	acceptLogin := func(t *testing.T, challenge string, body map[string]interface{}) (int, gjson.Result) {
+		b, err := json.Marshal(body)
+		require.NoError(t, err)
+		req, err := http.NewRequest(http.MethodPut, ts.URL+"/admin"+LoginPath+"/accept?challenge="+challenge, bytes.NewBuffer(b))
+		require.NoError(t, err)
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer res.Body.Close()
+		var rb bytes.Buffer
+		_, err = rb.ReadFrom(res.Body)
+		require.NoError(t, err)
+		return res.StatusCode, gjson.Parse(rb.String())
+	}
+
+	getHandledLoginRequest := func(t *testing.T, redirectTo string) *HandledLoginRequest {
+		u, err := url.Parse(redirectTo)
+		require.NoError(t, err)
+		handled, err := reg.ConsentManager().VerifyAndInvalidateLoginRequest(context.Background(), u.Query().Get("login_verifier"))
+		require.NoError(t, err)
+		return handled
+	}
+
+	t.Run("case=uses given authenticated_at", func(t *testing.T) {
+		challenge := "authenticated-at-given"
+		createLoginRequest(t, challenge, false)
+		authenticatedAt := time.Now().UTC().Add(-time.Hour).Truncate(time.Second)
+
+		status, body := acceptLogin(t, challenge, map[string]interface{}{
+			"subject":          "sub123",
+			"authenticated_at": authenticatedAt.Format(time.RFC3339),
+		})
+
+		require.Equal(t, http.StatusOK, status, body.Raw)
+		handled := getHandledLoginRequest(t, body.Get("redirect_to").String())
+		assert.Equal(t, authenticatedAt, time.Time(handled.AuthenticatedAt).UTC())
+	})
+
+	t.Run("case=uses current time when authenticated_at is not given", func(t *testing.T) {
+		challenge := "authenticated-at-missing"
+		createLoginRequest(t, challenge, false)
+		before := time.Now().UTC().Truncate(time.Second)
+
+		status, body := acceptLogin(t, challenge, map[string]interface{}{"subject": "sub123"})
+
+		require.Equal(t, http.StatusOK, status, body.Raw)
+		handled := getHandledLoginRequest(t, body.Get("redirect_to").String())
+		assert.False(t, time.Time(handled.AuthenticatedAt).Before(before))
+	})
+
+	t.Run("case=rejects authenticated_at in the future", func(t *testing.T) {
+		challenge := "authenticated-at-future"
+		createLoginRequest(t, challenge, false)
+
+		status, body := acceptLogin(t, challenge, map[string]interface{}{
+			"subject":          "sub123",
+			"authenticated_at": time.Now().UTC().Add(time.Hour).Format(time.RFC3339),
+		})
+
+		assert.Equal(t, http.StatusBadRequest, status, body.Raw)
+		assert.Contains(t, body.Get("error_description").String(), "must not be in the future")
+	})
+
+	t.Run("case=rejects zero authenticated_at", func(t *testing.T) {
+		challenge := "authenticated-at-zero"
+		createLoginRequest(t, challenge, false)
+
+		status, body := acceptLogin(t, challenge, map[string]interface{}{
+			"subject":          "sub123",
+			"authenticated_at": time.Time{}.Format(time.RFC3339),
+		})
+
+		assert.Equal(t, http.StatusBadRequest, status, body.Raw)
+		assert.Contains(t, body.Get("error_description").String(), "must not be a zero value")
+	})
+
+	t.Run("case=rejects authenticated_at when login request is skipped", func(t *testing.T) {
+		challenge := "authenticated-at-skip"
+		createLoginRequest(t, challenge, true)
+
+		status, body := acceptLogin(t, challenge, map[string]interface{}{
+			"subject":          "sub123",
+			"authenticated_at": time.Now().UTC().Add(-time.Hour).Format(time.RFC3339),
+		})
+
+		assert.Equal(t, http.StatusBadRequest, status, body.Raw)
+		assert.Contains(t, body.Get("error_description").String(), "must not be set when the login request is skipped")
+	})
+}

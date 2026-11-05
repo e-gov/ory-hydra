@@ -2312,6 +2312,11 @@
         "amr": {
           "$ref": "#/definitions/StringSliceJSONFormat"
         },
+        "authenticated_at": {
+          "description": "AuthenticatedAt sets the time when the end-user authenticated. If not set, the time of accepting the login\nrequest is used. Must not be in the future and must not be set if the login request is skipped.",
+          "type": "string",
+          "format": "date-time"
+        },
         "context": {
           "$ref": "#/definitions/JSONRawMessage"
         },

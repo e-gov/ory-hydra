@@ -315,6 +315,12 @@ type HandledLoginRequest struct {
 	// data.
 	Context sqlxx.JSONRawMessage `json:"context"`
 
+	// AuthenticatedAt sets the time when the end-user authenticated. If not set, the time of accepting the login
+	// request is used. Must not be in the future and must not be set if the login request is skipped.
+	//
+	// required: false
+	AuthenticatedAtOverride *time.Time `json:"authenticated_at,omitempty" faker:"-"`
+
 	// If set to true means that the request was already handled. This
 	// can happen on form double-submit or other errors. If this is set
 	// we recommend redirecting the user to `request_url` to re-initiate

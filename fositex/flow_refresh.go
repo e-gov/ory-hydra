@@ -5,12 +5,15 @@ package fositex
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
 	"github.com/ory/fosite"
 	"github.com/ory/fosite/compose"
 	foauth2 "github.com/ory/fosite/handler/oauth2"
 	"github.com/ory/fosite/storage"
 	"github.com/ory/hydra/v2/oauth2"
+	"github.com/ory/x/errorsx"
 )
 
 var _ fosite.TokenEndpointHandler = (*RefreshTokenGrantHandler)(nil)
@@ -24,11 +27,11 @@ var _ fosite.TokenEndpointHandler = (*RefreshTokenGrantHandler)(nil)
 // and stores the current request as the new refresh token's original request, so a persisted replacement would be
 // restored by every later refresh.
 //
-// A refresh request for an auth handover token (one with the `auth_handover` scope) may additionally be granted the
-// configured auth handover audience, provided that the client is allowed the scope. The auth handover audience is not
-// whitelisted in the client's audience, because the client's audience is also granted to its regular access tokens.
-// It is only granted when it is requested exactly as configured and on its own; any other requested audience is
-// checked against the client's audience as usual.
+// A refresh request for an auth handover token (one with the `auth_handover` scope) may only be granted the configured
+// auth handover audience, provided that the client is allowed the scope. The auth handover audience is not whitelisted
+// in the client's audience, because the client's audience is also granted to its regular access tokens. It is only
+// granted when it is requested exactly as configured and on its own; any other requested audience is rejected, even
+// one that the client's audience allows.
 type RefreshTokenGrantHandler struct {
 	*foauth2.RefreshTokenGrantHandler
 	authHandoverAudienceProvider authHandoverAudienceProvider
@@ -64,10 +67,12 @@ func (c *RefreshTokenGrantHandler) HandleTokenEndpointRequest(ctx context.Contex
 		return err
 	}
 
-	if !c.grantsAuthHandoverAudience(ctx, request, requestedAudience) {
-		if err := c.Config.GetAudienceStrategy(ctx)(request.GetClient().GetAudience(), requestedAudience); err != nil {
+	if oauth2.RequestsAuthHandover(request) {
+		if err := c.validateAuthHandoverRequest(ctx, request, requestedAudience); err != nil {
 			return err
 		}
+	} else if err := c.Config.GetAudienceStrategy(ctx)(request.GetClient().GetAudience(), requestedAudience); err != nil {
+		return err
 	}
 
 	request.SetRequestedAudience(requestedAudience)
@@ -78,14 +83,22 @@ func (c *RefreshTokenGrantHandler) HandleTokenEndpointRequest(ctx context.Contex
 	return nil
 }
 
-// grantsAuthHandoverAudience reports whether the requested audience is the configured auth handover audience alone,
-// requested for an auth handover token by a client that is allowed the `auth_handover` scope. The decorated handler
-// only checks the scopes granted to the original request against the client, not the ones requested with the `scope`
-// parameter of this request, hence the scope check here.
-func (c *RefreshTokenGrantHandler) grantsAuthHandoverAudience(ctx context.Context, request fosite.AccessRequester, requestedAudience fosite.Arguments) bool {
-	return oauth2.RequestsAuthHandover(request) &&
-		len(requestedAudience) == 1 && requestedAudience[0] == c.authHandoverAudienceProvider.GetAuthHandoverAudience(ctx) &&
-		c.Config.GetScopeStrategy(ctx)(request.GetClient().GetScopes(), oauth2.AuthHandoverScope)
+func (c *RefreshTokenGrantHandler) validateAuthHandoverRequest(ctx context.Context, request fosite.AccessRequester, requestedAudience fosite.Arguments) error {
+	if !c.Config.GetScopeStrategy(ctx)(request.GetClient().GetScopes(), oauth2.AuthHandoverScope) {
+		return errorsx.WithStack(fosite.ErrInvalidScope.WithHintf("The client is not allowed to request an auth handover token, because it has not been granted scope '%s'.", oauth2.AuthHandoverScope))
+	}
+	authHandoverAudience := c.authHandoverAudienceProvider.GetAuthHandoverAudience(ctx)
+	if len(requestedAudience) != 1 || requestedAudience[0] != authHandoverAudience {
+		requestedAudienceJson, err := json.Marshal(requestedAudience)
+		if err != nil {
+			requestedAudienceJson = []byte("?")
+		}
+		errorHint := fmt.Sprintf(
+			"When requesting auth handover token, the requested audience must be [\"%s\"], was %s.",
+			authHandoverAudience, string(requestedAudienceJson))
+		return errorsx.WithStack(fosite.ErrInvalidRequest.WithHint(errorHint))
+	}
+	return nil
 }
 
 func (c *RefreshTokenGrantHandler) PopulateTokenEndpointResponse(ctx context.Context, request fosite.AccessRequester, responder fosite.AccessResponder) error {

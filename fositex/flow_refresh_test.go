@@ -5,11 +5,13 @@ package fositex_test
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/ory/hydra/v2/oauth2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -230,48 +232,81 @@ func TestRefreshTokenGrantHandlerAuthHandover(t *testing.T) {
 		return request, handler.HandleTokenEndpointRequest(ctx, request)
 	}
 
+	assertErrorInvalidRequest := func(t *testing.T, err error, hint string) {
+		require.Error(t, err)
+		assert.ErrorIs(t, err, fosite.ErrInvalidRequest)
+		assert.Equal(t, hint, fosite.ErrorToRFC6749Error(err).HintField)
+	}
+
+	assertErrorInvalidScope := func(t *testing.T, err error, hint string) {
+		require.Error(t, err)
+		assert.ErrorIs(t, err, fosite.ErrInvalidScope)
+		assert.Equal(t, hint, fosite.ErrorToRFC6749Error(err).HintField)
+	}
+
 	t.Run("case=grants the auth handover audience although the client has not whitelisted it", func(t *testing.T) {
 		request, err := refresh(t, newConfig(authHandoverAudience), authHandoverClient,
 			url.Values{"scope": {"auth_handover"}, "audience": {authHandoverAudience}})
-		require.NoError(t, err)
 
+		require.NoError(t, err)
 		assert.EqualValues(t, fosite.Arguments{authHandoverAudience}, request.GetRequestedAudience())
 		assert.EqualValues(t, fosite.Arguments{authHandoverAudience}, request.GetGrantedAudience())
 	})
 
 	t.Run("case=fails when the auth handover audience is combined with another audience", func(t *testing.T) {
+		extraAudience := "https://api.ory.sh/"
+		requestedAudience := []string{extraAudience, authHandoverAudience}
 		request, err := refresh(t, newConfig(authHandoverAudience), authHandoverClient,
-			url.Values{"scope": {"auth_handover"}, "audience": {"https://api.ory.sh/ " + authHandoverAudience}})
-		require.Error(t, err)
+			url.Values{"scope": {"auth_handover"}, "audience": {strings.Join(requestedAudience, " ")}})
 
-		assert.ErrorIs(t, err, fosite.ErrInvalidRequest)
+		expectedErrMsg := fmt.Sprintf(
+			"When requesting auth handover token, the requested audience must be [\"%s\"], was [\"%s\",\"%s\"].",
+			authHandoverAudience, extraAudience, authHandoverAudience)
+		assertErrorInvalidRequest(t, err, expectedErrMsg)
+		assert.Empty(t, request.GetGrantedAudience())
+	})
+
+	t.Run("case=fails when an audience whitelisted by the client is requested instead of the auth handover audience", func(t *testing.T) {
+		requestedAudience := "https://api.ory.sh/"
+		request, err := refresh(t, newConfig(authHandoverAudience), authHandoverClient,
+			url.Values{"scope": {"auth_handover"}, "audience": {requestedAudience}})
+
+		expectedErrMsg := fmt.Sprintf(
+			"When requesting auth handover token, the requested audience must be [\"%s\"], was [\"%s\"].",
+			authHandoverAudience, requestedAudience)
+		assertErrorInvalidRequest(t, err, expectedErrMsg)
 		assert.Empty(t, request.GetGrantedAudience())
 	})
 
 	t.Run("case=fails when a path below the auth handover audience is requested", func(t *testing.T) {
+		requestedAudience := authHandoverAudience + "some/path"
 		request, err := refresh(t, newConfig(authHandoverAudience), authHandoverClient,
-			url.Values{"scope": {"auth_handover"}, "audience": {authHandoverAudience + "some/path"}})
-		require.Error(t, err)
+			url.Values{"scope": {"auth_handover"}, "audience": {requestedAudience}})
 
-		assert.ErrorIs(t, err, fosite.ErrInvalidRequest)
+		expectedErrMsg := fmt.Sprintf(
+			"When requesting auth handover token, the requested audience must be [\"%s\"], was [\"%s\"].",
+			authHandoverAudience, requestedAudience)
+		assertErrorInvalidRequest(t, err, expectedErrMsg)
 		assert.Empty(t, request.GetGrantedAudience())
 	})
 
 	t.Run("case=fails when the auth handover audience is requested in a different case", func(t *testing.T) {
+		requestedAudience := strings.ToUpper(authHandoverAudience)
 		request, err := refresh(t, newConfig(authHandoverAudience), authHandoverClient,
-			url.Values{"scope": {"auth_handover"}, "audience": {strings.ToUpper(authHandoverAudience)}})
-		require.Error(t, err)
+			url.Values{"scope": {"auth_handover"}, "audience": {requestedAudience}})
 
-		assert.ErrorIs(t, err, fosite.ErrInvalidRequest)
+		expectedErrMsg := fmt.Sprintf(
+			"When requesting auth handover token, the requested audience must be [\"%s\"], was [\"%s\"].",
+			authHandoverAudience, requestedAudience)
+		assertErrorInvalidRequest(t, err, expectedErrMsg)
 		assert.Empty(t, request.GetGrantedAudience())
 	})
 
 	t.Run("case=fails when the client is not allowed the auth handover scope", func(t *testing.T) {
 		request, err := refresh(t, newConfig(authHandoverAudience), newClient("openid", "offline"),
 			url.Values{"scope": {"auth_handover"}, "audience": {authHandoverAudience}})
-		require.Error(t, err)
 
-		assert.ErrorIs(t, err, fosite.ErrInvalidRequest)
+		assertErrorInvalidScope(t, err, fmt.Sprintf("The client is not allowed to request an auth handover token, because it has not been granted scope '%s'.", oauth2.AuthHandoverScope))
 		assert.Empty(t, request.GetGrantedAudience())
 	})
 
@@ -284,9 +319,9 @@ func TestRefreshTokenGrantHandlerAuthHandover(t *testing.T) {
 
 	t.Run("case=fails when the auth handover audience is not configured", func(t *testing.T) {
 		request, err := refresh(t, newConfig(""), authHandoverClient,
-			url.Values{"scope": {"auth_handover"}, "audience": {authHandoverAudience}})
-		require.Error(t, err)
+			url.Values{"scope": {"auth_handover"}, "audience": {""}})
 
+		require.Error(t, err)
 		assert.ErrorIs(t, err, fosite.ErrInvalidRequest)
 		assert.Empty(t, request.GetGrantedAudience())
 	})
@@ -294,9 +329,8 @@ func TestRefreshTokenGrantHandlerAuthHandover(t *testing.T) {
 	t.Run("case=fails when the auth handover audience is requested without the auth handover scope", func(t *testing.T) {
 		request, err := refresh(t, newConfig(authHandoverAudience), authHandoverClient,
 			url.Values{"audience": {authHandoverAudience}})
-		require.Error(t, err)
+		assertErrorInvalidRequest(t, err, fmt.Sprintf("Requested audience '%s' has not been whitelisted by the OAuth 2.0 Client.", authHandoverAudience))
 
-		assert.ErrorIs(t, err, fosite.ErrInvalidRequest)
 		assert.Empty(t, request.GetGrantedAudience())
 	})
 }
